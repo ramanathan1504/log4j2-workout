@@ -1,0 +1,110 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Every filter Log4j ships, at every scope it can be attached. Feature matrix §3.
+
+  Filters resolve at four scopes, evaluated in this order:
+    1. context-wide  — <Filters> directly under <Configuration>
+    2. logger        — inside a <Logger>/<Root>
+    3. appender-ref  — inside an <AppenderRef>
+    4. appender      — inside the appender element itself
+
+  Each returns ACCEPT / DENY / NEUTRAL. ACCEPT short-circuits the remaining
+  filters at that scope; NEUTRAL falls through. Getting onMatch/onMismatch
+  backwards is the single most common misconfiguration, so every filter below
+  states both explicitly rather than relying on defaults.
+
+  ScriptFilter needs a JSR-223 engine (groovy-jsr223) on the classpath.
+-->
+<Configuration status="WARN" name="filter-all">
+
+  <Properties>
+    <Property name="threshold">DEBUG</Property>
+  </Properties>
+
+  <!-- ══ Scope 1: context-wide. Applied before any logger is consulted. ══ -->
+  <Filters>
+    <!-- Drop anything below the threshold outright -->
+    <ThresholdFilter level="${threshold}" onMatch="NEUTRAL" onMismatch="DENY"/>
+
+    <!-- Time-of-day window. onMatch=NEUTRAL so it only ever excludes. -->
+    <TimeFilter start="00:00:00" end="23:59:59" timezone="UTC"
+                onMatch="NEUTRAL" onMismatch="DENY"/>
+
+    <!-- Rate limiting: allow 20 events/sec, buffer up to 100 -->
+    <BurstFilter level="TRACE" rate="20" maxBurst="100"
+                 onMatch="NEUTRAL" onMismatch="DENY"/>
+  </Filters>
+
+  <Appenders>
+    <Console name="Console" target="SYSTEM_OUT">
+      <PatternLayout pattern="%d{HH:mm:ss.SSS} %-5level %notEmpty{[%marker] }%logger{1.} - %msg%n"/>
+
+      <!-- ══ Scope 4: appender-level ══ -->
+      <Filters>
+        <!-- Marker hierarchy: matches SECURITY *and* its child AUDIT -->
+        <MarkerFilter marker="SECURITY" onMatch="ACCEPT" onMismatch="NEUTRAL"/>
+        <NoMarkerFilter onMatch="NEUTRAL" onMismatch="NEUTRAL"/>
+
+        <!-- Exact level, and an inclusive level band -->
+        <LevelMatchFilter level="ERROR" onMatch="ACCEPT" onMismatch="NEUTRAL"/>
+        <LevelRangeFilter minLevel="FATAL" maxLevel="TRACE"
+                          onMatch="NEUTRAL" onMismatch="DENY"/>
+
+        <!-- Message content. useRawMsg=false matches the formatted message. -->
+        <RegexFilter regex=".*(password|secret|token).*" useRawMsg="false"
+                     onMatch="DENY" onMismatch="NEUTRAL"/>
+        <StringMatchFilter text="internal-only"
+                           onMatch="DENY" onMismatch="NEUTRAL"/>
+
+        <!-- MDC-based. ThreadContextMapFilter matches key/value pairs. -->
+        <ThreadContextMapFilter operator="or" onMatch="NEUTRAL" onMismatch="NEUTRAL">
+          <KeyValuePair key="tenant" value="acme-corp"/>
+          <KeyValuePair key="userId" value="alice"/>
+        </ThreadContextMapFilter>
+
+        <!-- Threshold that varies by MDC key -->
+        <DynamicThresholdFilter key="userId" defaultThreshold="INFO"
+                                onMatch="NEUTRAL" onMismatch="NEUTRAL">
+          <KeyValuePair key="alice" value="TRACE"/>
+        </DynamicThresholdFilter>
+
+        <!-- MapMessage / StructuredDataMessage payload matching -->
+        <MapFilter operator="or" onMatch="NEUTRAL" onMismatch="NEUTRAL">
+          <KeyValuePair key="event" value="checkout"/>
+        </MapFilter>
+        <StructuredDataFilter operator="or" onMatch="NEUTRAL" onMismatch="NEUTRAL">
+          <KeyValuePair key="type" value="audit"/>
+        </StructuredDataFilter>
+      </Filters>
+    </Console>
+
+    <Console name="Errors" target="SYSTEM_ERR">
+      <PatternLayout pattern="%d{HH:mm:ss.SSS} %-5level %logger{1.} - %msg%n%xEx{5}"/>
+      <ThresholdFilter level="ERROR" onMatch="ACCEPT" onMismatch="DENY"/>
+    </Console>
+
+    <Null name="Blackhole">
+      <!-- DenyAllFilter: the explicit way to say "nothing reaches this appender" -->
+      <DenyAllFilter/>
+    </Null>
+  </Appenders>
+
+  <Loggers>
+    <!-- ══ Scope 2: logger-level ══ -->
+    <Logger name="org.apache.logging.bench" level="TRACE" additivity="false">
+      <ThresholdFilter level="TRACE" onMatch="NEUTRAL" onMismatch="DENY"/>
+
+      <!-- ══ Scope 3: appender-ref level — narrows this reference only ══ -->
+      <AppenderRef ref="Console">
+        <LevelRangeFilter minLevel="FATAL" maxLevel="TRACE"
+                          onMatch="NEUTRAL" onMismatch="DENY"/>
+      </AppenderRef>
+      <AppenderRef ref="Errors" level="ERROR"/>
+    </Logger>
+
+    <Root level="INFO">
+      <AppenderRef ref="Console"/>
+    </Root>
+  </Loggers>
+
+</Configuration>

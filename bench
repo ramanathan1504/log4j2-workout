@@ -1,0 +1,213 @@
+#!/usr/bin/env bash
+#
+# bench — drive the Log4j feature bench across the version × config × app matrix.
+#
+#   ./bench list                                    what exists
+#   ./bench run core-java --config xml/layout-ecs   run scenarios under a config
+#   ./bench run core-java --log4j 2.25.4 exceptions run one scenario on one version
+#   ./bench matrix --scenario exceptions            same scenario, every version
+#   ./bench repro 4143 --log4j 2.26.0               build a standalone repro zip
+#
+# Every run forks a real JVM with an explicit classpath rather than running
+# inside Maven's, so what executes here is exactly what a repro zip would ship.
+
+set -euo pipefail
+
+ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+CACHE="$ROOT/.bench"
+mkdir -p "$CACHE"
+
+# ── The version axis ────────────────────────────────────────────────────────
+# Ordered oldest → newest. `matrix` walks this list.
+VERSIONS=(
+  2.24.1
+  2.25.4
+  2.25.5
+  2.26.0
+  2.26.1
+  2.27.0
+  2.27.0-SNAPSHOT
+  3.0.0-SNAPSHOT
+)
+DEFAULT_VERSION=2.27.0-SNAPSHOT
+
+APPS=(core-java spring-boot-maven)
+
+die()  { printf '\033[31merror:\033[0m %s\n' "$*" >&2; exit 1; }
+info() { printf '\033[36m▸\033[0m %s\n' "$*" >&2; }
+
+# ── JDK selection ───────────────────────────────────────────────────────────
+java_home_for() {
+  local want="$1"
+  [[ -z "$want" ]] && { echo "${JAVA_HOME:-$(/usr/libexec/java_home 2>/dev/null)}"; return; }
+  /usr/libexec/java_home -v "$want" 2>/dev/null \
+    || die "no JDK $want installed (see: /usr/libexec/java_home -V)"
+}
+
+# ── Maven flags for a given Log4j version ───────────────────────────────────
+# 3.x needs its profile: it pins a separate API line (2.24.3) and adds the
+# artifacts that were split out of log4j-core. -Dlog4j3=true additionally
+# suppresses the 2.x-only modules, which Maven cannot infer from the profile.
+# Sets the global MVN_FLAGS array. A global rather than a return value because
+# macOS ships bash 3.2, which has no mapfile/readarray to capture one.
+MVN_FLAGS=()
+set_mvn_flags() {
+  local version="$1"
+  MVN_FLAGS=(-Dlog4j.version="$version")
+  if [[ "$version" == 3.* ]]; then
+    MVN_FLAGS+=(-Plog4j-3x -Dlog4j3=true)
+  fi
+}
+
+module_path_for() {
+  case "$1" in
+    core-java)         echo "apps/core-java" ;;
+    spring-boot-maven) echo "apps/spring-boot-maven" ;;
+    *) die "unknown app '$1' (known: ${APPS[*]})" ;;
+  esac
+}
+
+main_class_for() {
+  case "$1" in
+    core-java)         echo "org.apache.logging.bench.Bench" ;;
+    spring-boot-maven) echo "org.apache.logging.bench.spring.BenchApplication" ;;
+  esac
+}
+
+# ── Classpath resolution, cached per (app, version) ─────────────────────────
+classpath_for() {
+  local app="$1" version="$2"
+  local module; module="$(module_path_for "$app")"
+  local key="$CACHE/cp-${app}-${version}.txt"
+
+  # Rebuild the cached classpath whenever any POM is newer than it.
+  if [[ ! -s "$key" ]] || [[ -n "$(find "$ROOT" -name pom.xml -newer "$key" -not -path '*/target/*' 2>/dev/null)" ]]; then
+    info "resolving classpath: $app @ log4j $version"
+    set_mvn_flags "$version"
+    ( cd "$ROOT" && mvn -q -pl "$module" -am \
+        "${MVN_FLAGS[@]}" \
+        -DskipTests install \
+        org.apache.maven.plugins:maven-dependency-plugin:3.8.1:build-classpath \
+        -Dmdep.outputFile="$key" >&2 ) || die "classpath resolution failed for $app @ $version"
+  fi
+
+  printf '%s:%s/%s/target/classes' "$(cat "$key")" "$ROOT" "$module"
+}
+
+# Accepts a full path, a repo-relative path, or a bare name like
+# "xml/layout-ecs" / "layout-ecs". Always emits an absolute path, because
+# Log4j resolves a relative log4j.configurationFile against the JVM's cwd.
+resolve_config() {
+  local cfg="$1"
+  [[ -z "$cfg" ]] && return 0
+
+  local candidate
+  for candidate in \
+      "$cfg" \
+      "$ROOT/$cfg" \
+      "$ROOT/configs/$cfg" \
+      "$ROOT/configs/$cfg.xml" \
+      "$ROOT/configs/xml/$cfg.xml"; do
+    if [[ -f "$candidate" ]]; then
+      [[ "$candidate" = /* ]] && printf '%s\n' "$candidate" || printf '%s/%s\n' "$PWD" "$candidate"
+      return 0
+    fi
+  done
+  die "no such config: $cfg (try: ./bench list --configs)"
+}
+
+# ── Commands ────────────────────────────────────────────────────────────────
+cmd_list() {
+  case "${1:-all}" in
+    --versions|versions)
+      printf '%s\n' "${VERSIONS[@]}" ;;
+    --apps|apps)
+      printf '%s\n' "${APPS[@]}" ;;
+    --configs|configs)
+      ( cd "$ROOT/configs" && find . -type f \( -name '*.xml' -o -name '*.json' -o -name '*.yaml' -o -name '*.properties' \) \
+          | sed 's|^\./||' | sort ) ;;
+    *)
+      echo "Apps:";     printf '  %s\n' "${APPS[@]}"
+      echo; echo "Log4j versions:"; printf '  %s\n' "${VERSIONS[@]}"
+      echo; echo "Configs:"; cmd_list --configs | sed 's/^/  /'
+      echo; echo "Scenarios:"
+      cmd_run core-java --quiet-banner -- --list 2>/dev/null | sed 's/^/  /' || true
+      ;;
+  esac
+}
+
+cmd_run() {
+  local app="${1:-core-java}"; shift || true
+  local version="$DEFAULT_VERSION" config="" javaver="" args=()
+
+  while [[ $# -gt 0 ]]; do
+    case "$1" in
+      --log4j)  version="$2"; shift 2 ;;
+      --config) config="$2";  shift 2 ;;
+      --java)   javaver="$2"; shift 2 ;;
+      --quiet-banner) shift ;;
+      --) shift; args+=("$@"); break ;;
+      *) args+=("$1"); shift ;;
+    esac
+  done
+
+  local cp;   cp="$(classpath_for "$app" "$version")"
+  local jhome; jhome="$(java_home_for "$javaver")"
+  local jvm_args=()
+
+  if [[ -n "$config" ]]; then
+    local resolved; resolved="$(resolve_config "$config")"
+    jvm_args+=("-Dlog4j.configurationFile=$resolved")
+  fi
+
+  # Run from the repo root so relative log paths in configs land in ./logs
+  cd "$ROOT"
+  exec "$jhome/bin/java" "${jvm_args[@]}" -cp "$cp" "$(main_class_for "$app")" "${args[@]}"
+}
+
+cmd_matrix() {
+  local scenario="" config="" app="core-java"
+  while [[ $# -gt 0 ]]; do
+    case "$1" in
+      --scenario) scenario="$2"; shift 2 ;;
+      --config)   config="$2";   shift 2 ;;
+      --app)      app="$2";      shift 2 ;;
+      *) die "matrix: unexpected argument '$1'" ;;
+    esac
+  done
+
+  local results="$CACHE/matrix-$(date +%Y%m%d-%H%M%S).log"
+  printf 'Log4j matrix — app=%s scenario=%s config=%s\n\n' \
+    "$app" "${scenario:-<all>}" "${config:-<default>}" | tee "$results"
+
+  for version in "${VERSIONS[@]}"; do
+    printf '\n═══ log4j %s ═══\n' "$version" | tee -a "$results"
+    local run_args=("$app" --log4j "$version")
+    [[ -n "$config"   ]] && run_args+=(--config "$config")
+    [[ -n "$scenario" ]] && run_args+=("$scenario")
+
+    if ( "$0" run "${run_args[@]}" ) >>"$results" 2>&1; then
+      printf '  \033[32mPASS\033[0m  %s\n' "$version"
+    else
+      printf '  \033[31mFAIL\033[0m  %s (exit %d)\n' "$version" "$?"
+    fi
+  done
+
+  printf '\nFull output: %s\n' "$results"
+}
+
+cmd_repro() { exec "$ROOT/scripts/repro.sh" "$@"; }
+
+usage() {
+  sed -n '2,20p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//'
+}
+
+case "${1:-help}" in
+  list)   shift; cmd_list "$@" ;;
+  run)    shift; cmd_run "$@" ;;
+  matrix) shift; cmd_matrix "$@" ;;
+  repro)  shift; cmd_repro "$@" ;;
+  clean)  rm -rf "$CACHE"; info "cleared $CACHE" ;;
+  help|--help|-h) usage ;;
+  *) die "unknown command '$1' (try: ./bench help)" ;;
+esac

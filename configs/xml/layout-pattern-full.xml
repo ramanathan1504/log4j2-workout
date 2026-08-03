@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  PatternLayout with (nearly) every converter switched on at once, one per line,
+  labelled. Feature matrix §4.
+
+  Deliberately verbose: this is the config to run when you need to see what a
+  given converter actually emits on a given version, or to spot a converter that
+  silently stopped resolving after a change.
+
+  %location-based converters (%C %F %L %M %l) force location capture, which is
+  expensive — that cost is the point here, not an oversight.
+-->
+<Configuration status="WARN" name="layout-pattern-full">
+
+  <Appenders>
+    <Console name="Console" target="SYSTEM_OUT">
+      <PatternLayout>
+        <!-- CDATA, because patterns routinely contain <, > and & — for example
+             the %equals replacement below. Without it the XML parser chokes. -->
+        <Pattern><![CDATA[
+%n== event ======================================================%n
+  date             %d{yyyy-MM-dd HH:mm:ss.SSS}
+  date(ISO8601)    %d{ISO8601}
+  date(UNIX)       %d{UNIX_MILLIS}
+  date(tz+locale)  %d{EEEE dd MMMM yyyy}{UTC}{de-DE}
+  relative         %r ms since JVM start
+  level            %p / %-5level / %highlight{%level}
+  logger           %c
+  logger{36}       %c{36}
+  logger{1.}       %c{1.}
+  class            %C
+  method           %M
+  file:line        %F:%L
+  location         %l
+  fqcn             %fqcn
+  thread           %t (id %T, priority %tp)
+  processId        %pid{-}
+  sequenceNumber   %sn
+  nanoTime         %N
+  uuid(time)       %u{TIME}
+  uuid(random)     %u{RANDOM}
+  marker           %marker
+  markerSimple     %markerSimpleName
+  endOfBatch       %endOfBatch
+  MDC(all)         %X
+  MDC(traceId)     %X{traceId}
+  NDC              %x
+  map              %K{event}
+  traceId (otel)   %traceId
+  spanId  (otel)   %spanId
+  traceFlags       %traceFlags
+  message          %m
+  message(nolook)  %m{nolookups}
+  --- transforms ---
+  encode(HTML)     %encode{%m}{HTML}
+  encode(JSON)     %encode{%m}{JSON}
+  maxLength(24)    %maxLen{%m}{24}
+  replace          %replace{%m}{\s+}{_}
+  repeat           %repeat{=}{20}
+  notEmpty         %notEmpty{[%marker] }
+  equals           %equals{%level}{INFO}{<-- it was INFO>}
+  style            %style{styled text}{bold,magenta}
+  --- throwable ---
+  throwable        %throwable{short}
+  extended         %xEx{3}
+  rootFirst        %rEx{3}
+== end ========================================================
+        ]]></Pattern>
+      </PatternLayout>
+    </Console>
+  </Appenders>
+
+  <Loggers>
+    <Logger name="org.apache.logging.bench" level="TRACE"/>
+    <Root level="INFO">
+      <AppenderRef ref="Console"/>
+    </Root>
+  </Loggers>
+
+</Configuration>

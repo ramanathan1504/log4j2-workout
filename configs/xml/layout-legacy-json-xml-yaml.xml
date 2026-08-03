@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  The Jackson-backed legacy layouts: JsonLayout, XmlLayout, YamlLayout, plus
+  HtmlLayout. Feature matrix §2.
+
+  All four need Jackson on the classpath (jackson-databind, and the -xml /
+  -yaml dataformat modules respectively). JsonLayout in particular is superseded
+  by JsonTemplateLayout — it is kept here because plenty of deployments still
+  run it, so regressions in it still matter.
+-->
+<Configuration status="WARN" name="layout-legacy-json-xml-yaml">
+
+  <Appenders>
+    <Console name="Json" target="SYSTEM_OUT">
+      <JsonLayout compact="false"
+                  eventEol="true"
+                  properties="true"
+                  includeStacktrace="true"
+                  stacktraceAsString="false"
+                  includeTimeMillis="true"/>
+    </Console>
+
+    <Console name="Xml" target="SYSTEM_OUT">
+      <XmlLayout compact="false" properties="true" includeStacktrace="true"/>
+    </Console>
+
+    <Console name="Yaml" target="SYSTEM_OUT">
+      <YamlLayout properties="true" includeStacktrace="true"/>
+    </Console>
+
+    <File name="Html" fileName="logs/layout-html/report.html" append="false">
+      <HtmlLayout title="Log4j Bench — HtmlLayout"
+                  contentType="text/html"
+                  charset="UTF-8"
+                  locationInfo="true"/>
+    </File>
+  </Appenders>
+
+  <Loggers>
+    <Logger name="org.apache.logging.bench" level="TRACE"/>
+    <Root level="INFO">
+      <AppenderRef ref="Json"/>
+      <AppenderRef ref="Html"/>
+      <!-- <AppenderRef ref="Xml"/> -->
+      <!-- <AppenderRef ref="Yaml"/> -->
+    </Root>
+  </Loggers>
+
+</Configuration>

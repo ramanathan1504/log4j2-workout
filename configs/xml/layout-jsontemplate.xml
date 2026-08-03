@@ -1,0 +1,91 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  JsonTemplateLayout — the modern JSON layout. Requires log4j-layout-template-json.
+  Feature matrix §5.
+
+  Four appenders, one per built-in event template, so a single run shows the same
+  events rendered every way. Swap eventTemplateUri to compare, or point it at your
+  own template file.
+
+  Throwable rendering here goes through ThrowableStackTraceRenderer, which is a
+  different code path from PatternLayout's ThrowableProxy — bugs frequently exist
+  in one and not the other, so always check both when triaging.
+-->
+<Configuration status="WARN" name="layout-jsontemplate">
+
+  <Appenders>
+    <!-- Log4j's own JSON shape -->
+    <Console name="Default" target="SYSTEM_OUT">
+      <JsonTemplateLayout eventTemplateUri="classpath:JsonLayout.json"/>
+    </Console>
+
+    <!-- Elastic Common Schema, as produced by Log4j itself (not the Elastic jar) -->
+    <Console name="Ecs" target="SYSTEM_OUT">
+      <JsonTemplateLayout eventTemplateUri="classpath:EcsLayout.json">
+        <EventTemplateAdditionalField key="service.name" value="log4j-bench"/>
+        <EventTemplateAdditionalField key="service.environment" value="bench"/>
+      </JsonTemplateLayout>
+    </Console>
+
+    <!-- Graylog GELF -->
+    <Console name="Gelf" target="SYSTEM_OUT">
+      <JsonTemplateLayout eventTemplateUri="classpath:GelfLayout.json"/>
+    </Console>
+
+    <!-- Google Cloud Logging -->
+    <Console name="Gcp" target="SYSTEM_OUT">
+      <JsonTemplateLayout eventTemplateUri="classpath:GcpLayout.json"/>
+    </Console>
+
+    <!-- An inline template: exactly the fields you want, nothing else. Shows the
+         resolver syntax (§5) — timestamp, level, message, mdc, exception. -->
+    <Console name="Custom" target="SYSTEM_OUT">
+      <JsonTemplateLayout>
+        <EventTemplate><![CDATA[
+{
+  "@timestamp":  {"$resolver": "timestamp", "pattern": {"format": "yyyy-MM-dd'T'HH:mm:ss.SSSZ"}},
+  "level":       {"$resolver": "level", "field": "name"},
+  "levelValue":  {"$resolver": "level", "field": "severity", "severity": {"field": "code"}},
+  "logger":      {"$resolver": "logger", "field": "name"},
+  "thread":      {"$resolver": "thread", "field": "name"},
+  "message":     {"$resolver": "message", "stringified": true},
+  "mdc":         {"$resolver": "mdc"},
+  "ndc":         {"$resolver": "ndc"},
+  "marker":      {"$resolver": "marker", "field": "name"},
+  "endOfBatch":  {"$resolver": "endOfBatch"},
+  "counter":     {"$resolver": "counter"},
+  "source":      {
+    "class":  {"$resolver": "source", "field": "className"},
+    "method": {"$resolver": "source", "field": "methodName"},
+    "file":   {"$resolver": "source", "field": "fileName"},
+    "line":   {"$resolver": "source", "field": "lineNumber"}
+  },
+  "error": {
+    "type":       {"$resolver": "exception", "field": "className"},
+    "message":    {"$resolver": "exception", "field": "message"},
+    "stackTrace": {"$resolver": "exception", "field": "stackTrace", "stackTrace": {"stringified": true}}
+  },
+  "rootCause": {
+    "type":    {"$resolver": "exceptionRootCause", "field": "className"},
+    "message": {"$resolver": "exceptionRootCause", "field": "message"}
+  }
+}
+        ]]></EventTemplate>
+      </JsonTemplateLayout>
+    </Console>
+  </Appenders>
+
+  <Loggers>
+    <Logger name="org.apache.logging.bench" level="TRACE"/>
+    <Root level="INFO">
+      <AppenderRef ref="Custom"/>
+      <!-- Enable these to see the same event in every standard shape at once:
+      <AppenderRef ref="Default"/>
+      <AppenderRef ref="Ecs"/>
+      <AppenderRef ref="Gelf"/>
+      <AppenderRef ref="Gcp"/>
+      -->
+    </Root>
+  </Loggers>
+
+</Configuration>

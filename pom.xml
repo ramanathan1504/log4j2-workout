@@ -1,17 +1,19 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
-  <groupId>com.playground</groupId>
-  <artifactId>log4j2-workout-parent</artifactId>
-  <version>1.0-SNAPSHOT</version>
+
+  <groupId>org.apache.logging.bench</groupId>
+  <artifactId>log4j-bench-parent</artifactId>
+  <version>1.0.0-SNAPSHOT</version>
   <packaging>pom</packaging>
-  <name>Log4j2 Workout - Parent</name>
+  <name>Log4j Bench :: Parent</name>
+  <description>Complete Log4j feature bench — every appender, layout, filter, lookup and config format across 1.x, 2.x and 3.x</description>
 
   <modules>
-    <module>core-java-test</module>
-    <module>lab-db-logging</module>
-    <module>spring-boot-test</module>
-    <module>log4j2-web-test</module>
+    <module>apps/core-java</module>
+    <module>apps/spring-boot-maven</module>
   </modules>
 
   <properties>
@@ -19,79 +21,49 @@
     <maven.compiler.source>${java.version}</maven.compiler.source>
     <maven.compiler.target>${java.version}</maven.compiler.target>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+
+    <!-- ══ THE VERSION AXIS ══ override with -Dlog4j.version=X or a -P profile ══ -->
     <log4j.version>2.27.0-SNAPSHOT</log4j.version>
+    <!-- 3.x pins its own API line; for 2.x this is ignored (BOM supplies it) -->
+    <log4j.api.version>${log4j.version}</log4j.api.version>
+
+    <!-- Log4j 1.x native (baseline comparison against the 1.2-api bridge) -->
+    <log4j1.version>1.2.17</log4j1.version>
+    <reload4j.version>1.2.25</reload4j.version>
+
+    <!-- Ecosystem -->
     <slf4j.version>2.0.17</slf4j.version>
     <disruptor.version>4.0.0</disruptor.version>
     <spring-boot.version>3.4.3</spring-boot.version>
+    <ecs-layout.version>1.8.0</ecs-layout.version>
+    <jackson.version>2.18.2</jackson.version>
+    <commons-compress.version>1.27.1</commons-compress.version>
+    <kafka.version>3.9.0</kafka.version>
     <mysql.version>8.3.0</mysql.version>
+    <postgresql.version>42.7.5</postgresql.version>
+    <h2.version>2.3.232</h2.version>
+    <junit.version>5.11.4</junit.version>
+
+    <!-- Capability flags, flipped by version profiles. Modules use these to
+         skip artifacts that do not exist on the selected Log4j line. -->
+    <log4j.has.log4j1api>true</log4j.has.log4j1api>
+    <log4j.has.web>true</log4j.has.web>
+    <log4j.has.jcl>true</log4j.has.jcl>
+    <log4j.async.artifact>log4j-core</log4j.async.artifact>
   </properties>
 
   <dependencyManagement>
     <dependencies>
-      <!-- ── Log4j Core ── -->
+      <!-- ═══ Log4j BOM FIRST — must out-rank the Spring Boot BOM below ═══ -->
       <dependency>
         <groupId>org.apache.logging.log4j</groupId>
-        <artifactId>log4j-api</artifactId>
+        <artifactId>log4j-bom</artifactId>
         <version>${log4j.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.apache.logging.log4j</groupId>
-        <artifactId>log4j-core</artifactId>
-        <version>${log4j.version}</version>
+        <type>pom</type>
+        <scope>import</scope>
       </dependency>
 
-      <!-- ── Log4j Extensions & Connectors ── -->
-      <dependency>
-        <groupId>org.apache.logging.log4j</groupId>
-        <artifactId>log4j-mongodb</artifactId>
-        <version>${log4j.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.apache.logging.log4j</groupId>
-        <artifactId>log4j-jdbc-dbcp2</artifactId>
-        <version>${log4j.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.apache.logging.log4j</groupId>
-        <artifactId>log4j-layout-template-json</artifactId>
-        <version>${log4j.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.apache.logging.log4j</groupId>
-        <artifactId>log4j-docker</artifactId>
-        <version>${log4j.version}</version>
-      </dependency>
-
-      <!-- ── Bridges ── -->
-      <dependency>
-        <groupId>org.apache.logging.log4j</groupId>
-        <artifactId>log4j-jcl</artifactId>
-        <version>${log4j.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.apache.logging.log4j</groupId>
-        <artifactId>log4j-slf4j2-impl</artifactId>
-        <version>${log4j.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.slf4j</groupId>
-        <artifactId>slf4j-api</artifactId>
-        <version>${slf4j.version}</version>
-      </dependency>
-
-      <!-- ── Database & Performance ── -->
-      <dependency>
-        <groupId>com.mysql</groupId>
-        <artifactId>mysql-connector-j</artifactId>
-        <version>${mysql.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>com.lmax</groupId>
-        <artifactId>disruptor</artifactId>
-        <version>${disruptor.version}</version>
-      </dependency>
-
-      <!-- ── Spring Boot BOM ── -->
+      <!-- ═══ Spring Boot BOM SECOND — Log4j entries above win ═══ -->
       <dependency>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-dependencies</artifactId>
@@ -99,6 +71,125 @@
         <type>pom</type>
         <scope>import</scope>
       </dependency>
+
+      <!-- ═══ Log4j modules the BOM does not manage ═══
+           log4j-jdbc-dbcp2 is published but absent from log4j-bom on the 2.x
+           line, so its version has to be pinned by hand. -->
+      <dependency>
+        <groupId>org.apache.logging.log4j</groupId>
+        <artifactId>log4j-jdbc-dbcp2</artifactId>
+        <version>${log4j.version}</version>
+      </dependency>
+
+      <!-- ═══ Not in either BOM ═══ -->
+      <dependency>
+        <groupId>co.elastic.logging</groupId>
+        <artifactId>log4j2-ecs-layout</artifactId>
+        <version>${ecs-layout.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>com.lmax</groupId>
+        <artifactId>disruptor</artifactId>
+        <version>${disruptor.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.commons</groupId>
+        <artifactId>commons-compress</artifactId>
+        <version>${commons-compress.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>log4j</groupId>
+        <artifactId>log4j</artifactId>
+        <version>${log4j1.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>ch.qos.reload4j</groupId>
+        <artifactId>reload4j</artifactId>
+        <version>${reload4j.version}</version>
+      </dependency>
     </dependencies>
   </dependencyManagement>
+
+  <profiles>
+    <!-- ══════════ LOG4J VERSION AXIS ══════════ -->
+    <profile>
+      <id>log4j-2.24</id>
+      <properties><log4j.version>2.24.1</log4j.version></properties>
+    </profile>
+    <profile>
+      <id>log4j-2.25</id>
+      <properties><log4j.version>2.25.5</log4j.version></properties>
+    </profile>
+    <profile>
+      <id>log4j-2.25.4</id>
+      <!-- the line Apache Spark branch-4.2 ships -->
+      <properties><log4j.version>2.25.4</log4j.version></properties>
+    </profile>
+    <profile>
+      <id>log4j-2.26</id>
+      <properties><log4j.version>2.26.1</log4j.version></properties>
+    </profile>
+    <profile>
+      <id>log4j-2.27</id>
+      <properties><log4j.version>2.27.0</log4j.version></properties>
+    </profile>
+    <profile>
+      <id>log4j-2x-snapshot</id>
+      <properties><log4j.version>2.27.0-SNAPSHOT</log4j.version></properties>
+    </profile>
+
+    <!-- Log4j 3.x: separate API line, several modules absent, async/compress split out -->
+    <profile>
+      <id>log4j-3x</id>
+      <properties>
+        <log4j.version>3.0.0-SNAPSHOT</log4j.version>
+        <log4j.api.version>2.24.3</log4j.api.version>
+        <log4j.has.log4j1api>false</log4j.has.log4j1api>
+        <log4j.has.web>false</log4j.has.web>
+        <log4j.has.jcl>false</log4j.has.jcl>
+        <log4j.async.artifact>log4j-async-logger</log4j.async.artifact>
+      </properties>
+    </profile>
+
+    <!-- ══════════ JAVA AXIS ══════════ -->
+    <profile>
+      <id>java8</id>
+      <properties><java.version>8</java.version></properties>
+    </profile>
+    <profile>
+      <id>java21</id>
+      <properties><java.version>21</java.version></properties>
+    </profile>
+    <profile>
+      <id>java22</id>
+      <properties><java.version>22</java.version></properties>
+    </profile>
+  </profiles>
+
+  <build>
+    <pluginManagement>
+      <plugins>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-compiler-plugin</artifactId>
+          <version>3.13.0</version>
+        </plugin>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-surefire-plugin</artifactId>
+          <version>3.5.2</version>
+        </plugin>
+        <plugin>
+          <groupId>org.codehaus.mojo</groupId>
+          <artifactId>exec-maven-plugin</artifactId>
+          <version>3.5.0</version>
+        </plugin>
+        <plugin>
+          <groupId>org.springframework.boot</groupId>
+          <artifactId>spring-boot-maven-plugin</artifactId>
+          <version>${spring-boot.version}</version>
+        </plugin>
+      </plugins>
+    </pluginManagement>
+  </build>
 </project>

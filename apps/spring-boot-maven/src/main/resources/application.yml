@@ -1,0 +1,30 @@
+server:
+  port: 8081
+
+spring:
+  application:
+    name: log4j-bench
+  profiles:
+    # Switched with --spring.profiles.active=production to exercise the
+    # SpringProfile arbiter in configs/xml/arbiter-spring-profile.xml
+    active: development
+
+management:
+  endpoints:
+    web:
+      exposure:
+        # loggers: change a level at runtime with no restart —
+        #   curl -X POST localhost:8081/actuator/loggers/org.apache.logging.bench \
+        #        -H 'Content-Type: application/json' -d '{"configuredLevel":"TRACE"}'
+        include: health,info,loggers,metrics,env
+  endpoint:
+    health:
+      show-details: always
+
+logging:
+  # Left unset on purpose. Point it at any config in configs/ instead:
+  #   --logging.config=configs/xml/layout-jsontemplate.xml
+  # or via the JVM flag the bench CLI uses: -Dlog4j.configurationFile=...
+  level:
+    root: INFO
+    org.apache.logging.bench: TRACE

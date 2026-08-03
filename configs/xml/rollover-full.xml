@@ -1,0 +1,112 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Rollover: every triggering policy, both strategies, compression, and the full
+  Delete action vocabulary. Feature matrix §6.
+
+  Thresholds are deliberately tiny (KB, 1-minute intervals) so a short run
+  produces many rollovers. Do not copy these numbers into anything real.
+
+  Run it with the bench CLI, selecting this file as the config, and the
+  "rollover" scenario. It reports which files rolled and which compressed.
+-->
+<Configuration status="WARN" name="rollover-full">
+
+  <Properties>
+    <Property name="dir">${sys:bench.log.dir:-logs}/rollover</Property>
+    <Property name="pattern">%d{HH:mm:ss.SSS} %-5level %logger{1.} - %msg%n</Property>
+  </Properties>
+
+  <Appenders>
+
+    <!-- ══ Size + time + onStartup, default strategy, gzip ══ -->
+    <RollingFile name="Composite"
+                 fileName="${dir}/composite/app.log"
+                 filePattern="${dir}/composite/app-%d{yyyy-MM-dd-HH-mm}-%i.log.gz">
+      <PatternLayout pattern="${pattern}"/>
+      <Policies>
+        <OnStartupTriggeringPolicy minSize="1"/>
+        <TimeBasedTriggeringPolicy interval="1" modulate="true"/>
+        <SizeBasedTriggeringPolicy size="20KB"/>
+      </Policies>
+      <!-- compressionLevel 0-9; maxCompressionDelaySeconds spreads the CPU/IO
+           burst that occurs when many hosts roll at the same instant (midnight). -->
+      <DefaultRolloverStrategy max="20" compressionLevel="9" maxCompressionDelaySeconds="3">
+        <Delete basePath="${dir}/composite" maxDepth="2">
+          <IfFileName glob="app-*.log.gz">
+            <IfAny>
+              <IfAccumulatedFileCount exceeds="15"/>
+              <IfAccumulatedFileSize exceeds="5 MB"/>
+              <IfLastModified age="P7D"/>
+            </IfAny>
+          </IfFileName>
+        </Delete>
+      </DefaultRolloverStrategy>
+    </RollingFile>
+
+    <!-- ══ Cron-triggered ══ -->
+    <RollingFile name="Cron"
+                 fileName="${dir}/cron/app.log"
+                 filePattern="${dir}/cron/app-%d{yyyy-MM-dd-HH-mm-ss}.log.gz">
+      <PatternLayout pattern="${pattern}"/>
+      <!-- Every 30 seconds. evaluateOnStartup rolls immediately if the previous
+           scheduled time has already passed. -->
+      <CronTriggeringPolicy schedule="0/30 * * * * ?" evaluateOnStartup="true"/>
+      <DefaultRolloverStrategy max="10"/>
+    </RollingFile>
+
+    <!-- ══ Direct write: no active "app.log", events go straight to the rolled
+         name. Avoids the rename step entirely. ══ -->
+    <RollingFile name="DirectWrite"
+                 filePattern="${dir}/direct/app-%d{yyyy-MM-dd-HH-mm}-%i.log.gz">
+      <PatternLayout pattern="${pattern}"/>
+      <Policies>
+        <TimeBasedTriggeringPolicy interval="1" modulate="true"/>
+        <SizeBasedTriggeringPolicy size="20KB"/>
+      </Policies>
+      <DirectWriteRolloverStrategy maxFiles="10" compressionLevel="6"/>
+    </RollingFile>
+
+    <!-- ══ Compression formats. The suffix on filePattern selects the codec;
+         .zst/.xz/.bz2 need commons-compress (plus zstd-jni / xz). ══ -->
+    <RollingFile name="Zip"
+                 fileName="${dir}/zip/app.log"
+                 filePattern="${dir}/zip/app-%i.log.zip">
+      <PatternLayout pattern="${pattern}"/>
+      <SizeBasedTriggeringPolicy size="20KB"/>
+      <DefaultRolloverStrategy max="5"/>
+    </RollingFile>
+
+    <RollingFile name="Zstd"
+                 fileName="${dir}/zstd/app.log"
+                 filePattern="${dir}/zstd/app-%i.log.zst">
+      <PatternLayout pattern="${pattern}"/>
+      <SizeBasedTriggeringPolicy size="20KB"/>
+      <DefaultRolloverStrategy max="5"/>
+    </RollingFile>
+
+    <!-- ══ RollingRandomAccessFile: same policies, ByteBuffer-backed IO ══ -->
+    <RollingRandomAccessFile name="RandomAccess"
+                             fileName="${dir}/random-access/app.log"
+                             filePattern="${dir}/random-access/app-%i.log.gz"
+                             immediateFlush="false"
+                             bufferSize="262144">
+      <PatternLayout pattern="${pattern}"/>
+      <SizeBasedTriggeringPolicy size="20KB"/>
+      <DefaultRolloverStrategy max="5"/>
+    </RollingRandomAccessFile>
+
+  </Appenders>
+
+  <Loggers>
+    <Logger name="org.apache.logging.bench" level="TRACE"/>
+    <Root level="INFO">
+      <AppenderRef ref="Composite"/>
+      <AppenderRef ref="Cron"/>
+      <AppenderRef ref="DirectWrite"/>
+      <AppenderRef ref="Zip"/>
+      <AppenderRef ref="Zstd"/>
+      <AppenderRef ref="RandomAccess"/>
+    </Root>
+  </Loggers>
+
+</Configuration>
