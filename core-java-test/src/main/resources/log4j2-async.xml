@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  core-java-test — ASYNC logging configuration.
+
+  Activate with:
+    mvn exec:java -Dlog4j.configurationFile=log4j2-async.xml
+
+  Uses AsyncAppender (wraps sync appenders) and AsyncLogger (uses LMAX Disruptor
+  ring buffer for lowest-latency, highest-throughput logging).
+  Requires disruptor JAR on classpath — already declared in pom.xml.
+-->
+<Configuration status="WARN" name="CoreJavaTest-Async">
+
+    <Properties>
+        <Property name="LOG_DIR">logs</Property>
+        <Property name="PATTERN">
+            %d{HH:mm:ss.SSS} [%-20t] %-5level %-35logger{1.} [%X{traceId:-}|%X{userId:-}] - %msg%n
+        </Property>
+    </Properties>
+
+    <Appenders>
+
+        <!-- Underlying sync appenders (wrapped by Async below) -->
+        <Console name="ConsoleSync" target="SYSTEM_OUT">
+            <PatternLayout pattern="${PATTERN}"/>
+        </Console>
+
+        <Console name="JsonConsoleSync" target="SYSTEM_OUT">
+            <JsonTemplateLayout>
+                <EventTemplateAdditionalField key="containerId" value="${docker:containerId:-unknown}"/>
+                <EventTemplateAdditionalField key="app"         value="core-java-test-async"/>
+            </JsonTemplateLayout>
+        </Console>
+
+        <RollingFile name="RollingFileSync"
+                     fileName="${LOG_DIR}/app-async.log"
+                     filePattern="${LOG_DIR}/app-async-%d{yyyy-MM-dd}-%i.log.gz">
+            <PatternLayout pattern="${PATTERN}"/>
+            <Policies>
+                <TimeBasedTriggeringPolicy interval="1"/>
+                <SizeBasedTriggeringPolicy size="10MB"/>
+            </Policies>
+            <DefaultRolloverStrategy max="7"/>
+        </RollingFile>
+
+        <!--
+          AsyncAppender: puts log events on a queue and dispatches
+          them from a dedicated background thread.
+        -->
+        <Async name="AsyncAll" bufferSize="1024">
+            <AppenderRef ref="ConsoleSync"/>
+            <AppenderRef ref="JsonConsoleSync"/>
+            <AppenderRef ref="RollingFileSync"/>
+        </Async>
+
+    </Appenders>
+
+    <Loggers>
+        <!--
+          AsyncLogger: uses LMAX Disruptor ring buffer.
+          This is the recommended approach for truly non-blocking logging.
+          The calling thread is never blocked even under high load.
+        -->
+        <AsyncLogger name="com.playground" level="trace" additivity="false">
+            <AppenderRef ref="AsyncAll"/>
+        </AsyncLogger>
+
+        <Root level="info">
+            <AppenderRef ref="AsyncAll"/>
+        </Root>
+    </Loggers>
+
+</Configuration>
+

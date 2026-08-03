@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Configuration status="WARN" name="composite-bar">
+  <Loggers>
+	<Logger name="com.example.log4j2webtest" level="INFO" additivity="false">
+	  <AppenderRef ref="CompositeConsole"/>
+	  <AppenderRef ref="CompositeFile"/>
+	</Logger>
+	<Root level="ERROR">
+	  <AppenderRef ref="CompositeConsole"/>
+	  <AppenderRef ref="CompositeFile"/>
+	</Root>
+  </Loggers>
+</Configuration>

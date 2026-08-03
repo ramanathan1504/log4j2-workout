@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Test-only Log4j2 configuration.
+  Uses JsonTemplateLayout on the console appender to trigger ThrowableStackTraceRenderer,
+  which is the path that hits the mutating-hashCode NPE bug in 2.25.0–2.26.0.
+-->
+<Configuration status="WARN" name="test-regression-config">
+
+    <Appenders>
+        <!-- PatternLayout console for human-readable test output -->
+        <Console name="Console" target="SYSTEM_OUT">
+            <PatternLayout pattern="%d{HH:mm:ss.SSS} [%t] %-5level %logger{36} - %msg%n%xThrowable"/>
+        </Console>
+
+        <!-- JsonTemplateLayout console — triggers ThrowableStackTraceRenderer path -->
+        <Console name="JsonConsole" target="SYSTEM_OUT">
+            <JsonTemplateLayout eventTemplateUri="classpath:EcsLayout.json"/>
+        </Console>
+    </Appenders>
+
+    <Loggers>
+        <!-- Regression test package -->
+        <Logger name="com.springtest.regression" level="error" additivity="false">
+            <AppenderRef ref="Console"/>
+            <AppenderRef ref="JsonConsole"/>
+        </Logger>
+
+        <!-- Spring Boot test services -->
+        <Logger name="com.springtest" level="trace" additivity="false">
+            <AppenderRef ref="Console"/>
+        </Logger>
+
+        <Root level="warn">
+            <AppenderRef ref="Console"/>
+        </Root>
+    </Loggers>
+
+</Configuration>

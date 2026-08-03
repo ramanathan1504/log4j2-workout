@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Configuration status="WARN" name="single-config">
+  <Properties>
+    <Property name="servletContextName">${web:servletContextName}</Property>
+  </Properties>
+  <Appenders>
+    <Console name="SingleConsole" target="SYSTEM_OUT">
+      <PatternLayout pattern="SINGLE-CTX=${servletContextName} | %msg%n"/>
+    </Console>
+    <File name="SingleFile" fileName="${sys:catalina.base}/logs/log4j2-web-test-repro.log" append="true">
+      <PatternLayout pattern="SINGLE-CTX=${servletContextName} | %msg%n"/>
+    </File>
+  </Appenders>
+  <Loggers>
+    <Logger name="com.example.log4j2webtest" level="INFO" additivity="false">
+      <AppenderRef ref="SingleConsole"/>
+      <AppenderRef ref="SingleFile"/>
+    </Logger>
+    <Root level="ERROR">
+      <AppenderRef ref="SingleConsole"/>
+      <AppenderRef ref="SingleFile"/>
+    </Root>
+  </Loggers>
+</Configuration>
+
