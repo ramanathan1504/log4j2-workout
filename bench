@@ -157,7 +157,13 @@ cmd_run() {
 
   if [[ -n "$config" ]]; then
     local resolved; resolved="$(resolve_config "$config")"
+    # Spring Boot's Log4J2LoggingSystem reconfigures Log4j during startup and
+    # ignores log4j.configurationFile — it honours `logging.config` instead.
+    # Set both so the same --config flag works for every app.
     jvm_args+=("-Dlog4j.configurationFile=$resolved")
+    if [[ "$app" == spring-boot-* ]]; then
+      jvm_args+=("-Dlogging.config=$resolved")
+    fi
   fi
 
   # Run from the repo root so relative log paths in configs land in ./logs
