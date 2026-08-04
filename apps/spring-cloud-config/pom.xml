@@ -1,0 +1,130 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <parent>
+    <groupId>org.apache.logging.bench</groupId>
+    <artifactId>log4j-bench-parent</artifactId>
+    <version>1.0.0-SNAPSHOT</version>
+    <relativePath>../../pom.xml</relativePath>
+  </parent>
+
+  <artifactId>bench-spring-cloud-config</artifactId>
+  <name>Log4j Bench :: Spring Cloud Config</name>
+  <description>log4j-spring-cloud-config-client against an embedded Spring Cloud Config Server</description>
+
+  <!--
+    2.x ONLY: log4j-spring-cloud-config-client has no 3.x release.
+
+    The module is two classes, and knowing that shapes the test:
+
+      WatchEventManager    implements Log4j's WatchEventService SPI, so Log4j's
+                           WatchManager subscribes itself on startup
+      Log4j2EventListener  a Spring listener that turns an EnvironmentChangeEvent
+                           into WatchEventManager.publishEvent(), which calls
+                           checkFiles() on every subscribed WatchManager
+
+    So what it buys you is timing: a Spring Cloud refresh makes Log4j re-read a
+    watched configuration IMMEDIATELY, instead of at the next monitorInterval
+    tick. That is the assertion this app makes — the configuration is watched
+    with a five-minute interval, so a reload inside a second can only have come
+    from the event.
+
+    Note Log4j2EventListener is @ConditionalOnProperty("spring.cloud.config.watch.enabled"),
+    so without that property the module is on the classpath and inert.
+
+    No container: the config server runs embedded, in this JVM, with the native
+    (filesystem) backend.
+  -->
+
+  <properties>
+    <spring-cloud.version>2024.0.0</spring-cloud.version>
+  </properties>
+
+  <dependencyManagement>
+    <dependencies>
+      <dependency>
+        <groupId>org.springframework.cloud</groupId>
+        <artifactId>spring-cloud-dependencies</artifactId>
+        <version>${spring-cloud.version}</version>
+        <type>pom</type>
+        <scope>import</scope>
+      </dependency>
+    </dependencies>
+  </dependencyManagement>
+
+  <!-- Logback must go, or it wins the SLF4J binding and Spring Boot selects
+       LogbackLoggingSystem — at which point `logging.config` points Logback at a
+       Log4j configuration and nothing under test runs. spring-cloud-config-server
+       pulls spring-boot-starter-logging transitively, so excluding it from one
+       dependency is not enough; this has to be configuration-wide, for the same
+       reason apps/spring-boot-gradle does it. -->
+  <dependencies>
+    <dependency>
+      <groupId>org.apache.logging.log4j</groupId>
+      <artifactId>log4j-api</artifactId>
+      <version>${log4j.api.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.logging.log4j</groupId>
+      <artifactId>log4j-core</artifactId>
+    </dependency>
+
+    <!-- The module under test -->
+    <dependency>
+      <groupId>org.apache.logging.log4j</groupId>
+      <artifactId>log4j-spring-cloud-config-client</artifactId>
+    </dependency>
+
+    <!-- The embedded server, and the client that talks to it -->
+    <dependency>
+      <groupId>org.springframework.cloud</groupId>
+      <artifactId>spring-cloud-config-server</artifactId>
+      <exclusions>
+        <exclusion>
+          <groupId>org.springframework.boot</groupId>
+          <artifactId>spring-boot-starter-logging</artifactId>
+        </exclusion>
+      </exclusions>
+    </dependency>
+    <dependency>
+      <groupId>org.springframework.cloud</groupId>
+      <artifactId>spring-cloud-starter-config</artifactId>
+      <exclusions>
+        <exclusion>
+          <groupId>org.springframework.boot</groupId>
+          <artifactId>spring-boot-starter-logging</artifactId>
+        </exclusion>
+      </exclusions>
+    </dependency>
+
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-web</artifactId>
+      <exclusions>
+        <exclusion>
+          <groupId>org.springframework.boot</groupId>
+          <artifactId>spring-boot-starter-logging</artifactId>
+        </exclusion>
+      </exclusions>
+    </dependency>
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-log4j2</artifactId>
+    </dependency>
+  </dependencies>
+
+  <build>
+    <plugins>
+      <plugin>
+        <groupId>org.codehaus.mojo</groupId>
+        <artifactId>exec-maven-plugin</artifactId>
+        <configuration>
+          <mainClass>org.apache.logging.bench.cloud.CloudConfigBench</mainClass>
+        </configuration>
+      </plugin>
+    </plugins>
+  </build>
+</project>

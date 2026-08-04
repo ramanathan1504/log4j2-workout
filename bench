@@ -35,12 +35,13 @@ VERSIONS=(
 DEFAULT_VERSION=2.27.0-SNAPSHOT
 
 APPS=(core-java spring-boot-maven db log4j1-bridge jakarta-web spring-boot-gradle
-      java8-baseline bridges-in bridges-out bridges-to-jul custom-plugins jpa smtp javax-web jdbc-jndi jms)
+      java8-baseline bridges-in bridges-out bridges-to-jul custom-plugins jpa smtp javax-web jdbc-jndi jms spring-cloud-config)
 
 # Apps that cannot build on 3.x, because the Log4j artifacts they need have no
 # 3.x release. `matrix` skips these rather than reporting a spurious failure.
 APPS_2X_ONLY=(log4j1-bridge jakarta-web spring-boot-gradle
-              bridges-in bridges-out bridges-to-jul jpa smtp javax-web jms)
+              bridges-in bridges-out bridges-to-jul jpa smtp javax-web jms
+              spring-cloud-config)
 
 is_2x_only() {
   local app="$1" a
@@ -142,6 +143,7 @@ module_path_for() {
     javax-web)          echo "apps/javax-web" ;;
     jdbc-jndi)          echo "apps/jdbc-jndi" ;;
     jms)                echo "apps/jms" ;;
+    spring-cloud-config) echo "apps/spring-cloud-config" ;;
     bridges-in)         echo "apps/bridges-in" ;;
     bridges-out)        echo "apps/bridges-out" ;;
     bridges-to-jul)     echo "apps/bridges-to-jul" ;;
@@ -167,6 +169,7 @@ main_class_for() {
     javax-web)          echo "org.apache.logging.bench.javaxweb.JavaxWebBench" ;;
     jdbc-jndi)          echo "org.apache.logging.bench.jndi.JdbcJndiBench" ;;
     jms)                echo "org.apache.logging.bench.jms.JmsBench" ;;
+    spring-cloud-config) echo "org.apache.logging.bench.cloud.CloudConfigBench" ;;
     bridges-in)         echo "org.apache.logging.bench.bridges.BridgesInBench" ;;
     bridges-out)        echo "org.apache.logging.bench.bridges.BridgesOutBench" ;;
     bridges-to-jul)     echo "org.apache.logging.bench.bridges.ToJulBench" ;;

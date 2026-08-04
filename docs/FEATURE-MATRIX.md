@@ -280,16 +280,14 @@ Spring Boot under both Maven and Gradle.
 `./bench coverage` recomputes this from the source clone and the resolved classpaths, so it
 does not go stale as either moves.
 
-**No classpath yet (8):** `log4j-appserver` · `log4j-jakarta-jms` · `log4j-jakarta-smtp` ·
-`log4j-jdbc-jndi` · `log4j-jpa` · `log4j-spring-cloud-config-client` · `log4j-taglib` ·
-`log4j-web` (javax). Each needs either a javax servlet container, a broker, a mail server, a
-JPA provider or a config server, which is why they are grouped rather than bolted onto an
-existing app.
+**Every shippable 2.x module is now on some app's classpath — 41 of 41.** `./bench coverage`
+recomputes that from the source clone and the resolved classpaths, so it does not go stale as
+either moves.
 
-`log4j-plugin-processor` is covered by `apps/custom-plugins`, which is the one of these that
-needed no infrastructure: a custom appender, filter, lookup and pattern converter, discovered
-through the `Log4j2Plugins.dat` the processor generates. It checks the build-time and run-time
-halves separately, since either can fail while the other passes.
+The last eight needed infrastructure, and all of it ended up embedded rather than
+containerised — H2, GreenMail, Tomcat 9, ActiveMQ Artemis, an in-process JNDI provider and a
+Spring Cloud Config server all run inside the bench JVM. So every module is exercised by an
+ordinary `./bench run`, with nothing to start first.
 
 **On a classpath but not yet driven by a config or scenario:** Syslog · Http ·
 Kafka · JeroMQ · SMTP · MongoDB · Cassandra · CouchDB — every one of them a
@@ -328,6 +326,8 @@ Things the configs above turned up, verified against the source clone rather tha
 
 | Finding | Where |
 |---|---|
+| **`Log4j2EventListener`'s `@ConditionalOnProperty("spring.cloud.config.watch.enabled")` has no effect.** The class is annotated `@Component` with that condition, but log4j-spring-cloud-config-client registers it in `META-INF/spring.factories` under `org.springframework.context.ApplicationListener` — and SpringApplication instantiates those directly, without bean definitions. Conditions are a bean-definition mechanism, so the listener is active whether or not the property is set, and never appears in the bean factory. Anyone trying to switch it off with the documented property will find it still running | `apps/spring-cloud-config` |
+| A Spring Cloud Config **server** with `spring-cloud-starter-config` also on its classpath tries to act as its own client, importing from the default `configserver:http://localhost:8888`. It needs `spring.cloud.config.enabled=false` — but setting that in one context of a multi-context JVM makes the resolver decline for the *other* one too, and the client then fails with "Incorrect ConfigDataLocationResolver chosen", which never mentions the property. `ConfigServerConfigDataLocationResolver.isResolvable()` binds it, so the client must set it back to `true` explicitly | `apps/spring-cloud-config` |
 | The JMS appender requires a layout — without one it reports "No layout provided for JmsAppender" and returns null — and the layout decides the JMS message TYPE, not just its text. `MessageLayout` hands over the event's `Message` object, so a `StringMapMessage` arrives as a JMS `MapMessage` carrying its own keys (with no Level or LoggerName at all) and anything else as an `ObjectMessage`; `PatternLayout` produces a `TextMessage`. This is the appender `MessageLayout` exists for, given `toByteArray()` returns null for every stream appender | `apps/jms` |
 | `InitialContext` copies only the standard `java.naming.*` keys from system properties, so a JNDI provider needing its own keys (Artemis's `connectionFactory.*`, `queue.*`) cannot be configured with `-D` at all. It silently falls back to its defaults — `tcp://localhost:61616` — and the appender fails with "JMS message producer not available", naming nothing about where it tried to connect. A `jndi.properties` on the classpath is the only way to reach the context the appender builds for itself | `apps/jms` |
 | The JNDI `DataSource` connection source resolves its name while the appender is being **built**, so the binding must exist before the first logger acquired anywhere in the JVM. A conventional `private static final Logger` field initialises at class load — before `main()` — so an application that binds in `main()` is already too late, and the error names the JNDI name rather than the ordering. A container guarantees the ordering; a standalone application does not | `apps/jdbc-jndi` |

@@ -135,6 +135,7 @@
         <module>apps/smtp</module>
         <module>apps/javax-web</module>
         <module>apps/jms</module>
+        <module>apps/spring-cloud-config</module>
       </modules>
     </profile>
 

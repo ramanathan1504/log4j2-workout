@@ -44,6 +44,7 @@ zip to attach to the issue.
 │   ├── javax-web/           log4j-web + appserver + taglib on Tomcat 9
 │   ├── jdbc-jndi/           JDBC DataSource resolved through in-process JNDI
 │   ├── jms/                 JMS appender against embedded ActiveMQ Artemis
+│   ├── spring-cloud-config/ config-server-driven reload, server embedded
 │   └── db/                  JDBC / Mongo / Cassandra / CouchDB appenders
 ├── infra/docker-compose.yml Kafka, Mongo, Cassandra, CouchDB, Postgres, MySQL,
 │                            syslog-ng, MailHog, Elasticsearch, Kibana
