@@ -1,0 +1,151 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Async infrastructure: both async models, all four queue implementations, and
+  the wait strategy. Feature matrix §8.
+
+  Two entirely separate mechanisms share the word "async", and confusing them is
+  the usual reason a "fully async" application is not:
+
+    AsyncLogger / AsyncRoot   the LMAX Disruptor, one ring buffer for the whole
+                              context, chosen per logger. The caller hands off
+                              before the layout runs.
+    AsyncAppender             a queue in front of ONE appender. The caller still
+                              does the LoggerConfig work; only the append is
+                              deferred.
+
+  Mixing them is legal and shown below. What is not obvious is the interaction:
+  an AsyncLogger whose appender is an AsyncAppender hands off twice, so the
+  event crosses two thread boundaries and its ordering relative to events on
+  other loggers stops being meaningful at all.
+
+  The queue implementations are the AsyncAppender's, not the AsyncLogger's:
+  AsyncLogger always uses the Disruptor ring buffer. Three of the four need a
+  third-party jar, and a missing one is not fatal — Log4j falls back to
+  ArrayBlockingQueue and says so only at DEBUG, so a config that looks like it
+  is using JCTools may not be.
+-->
+<Configuration status="WARN" name="async-queues">
+
+  <Properties>
+    <Property name="dir">${sys:bench.log.dir:-logs}/async</Property>
+    <Property name="pattern">%d{HH:mm:ss.SSS} [%t] %-5level %logger{1.} - %msg%n</Property>
+  </Properties>
+
+  <!-- ══ AsyncWaitStrategyFactory ══════════════════════════════════════════
+       How the Disruptor's consumer thread waits for work — the single biggest
+       latency/CPU trade-off in async logging, and context-wide rather than
+       per-logger.
+
+         Block    park on a lock. Lowest CPU, highest latency. The default.
+         Timeout  block with a timeout, then re-check.
+         Yield    spin briefly, then Thread.yield().
+         Sleep    spin, yield, then park for a nanosecond.
+
+       Yield and Sleep burn a core to save microseconds; they are the right
+       answer only when the consumer is never idle. Named classes rather than
+       keywords, because this takes any WaitStrategy implementation.
+
+       The attribute is `class`, NOT `factoryClassName` — the builder field is
+       called factoryClassName but @PluginBuilderAttribute renames it. Use the
+       field name and the element fails @Required with "AsyncWaitStrategyFactory
+       cannot be configured without a factory class name", which reads as though
+       the attribute were missing entirely rather than misspelled. -->
+  <AsyncWaitStrategyFactory
+      class="org.apache.logging.log4j.core.async.DefaultAsyncWaitStrategyFactory"/>
+
+  <Appenders>
+    <Console name="Console" target="SYSTEM_OUT">
+      <PatternLayout pattern="${pattern}"/>
+    </Console>
+
+    <!-- The appenders the async wrappers sit in front of. Each queue writes to
+         its own file so a run shows which events went through which. -->
+    <File name="ArrayTarget" fileName="${dir}/array-blocking-queue.log" append="false">
+      <PatternLayout pattern="[array] ${pattern}"/>
+    </File>
+    <File name="DisruptorTarget" fileName="${dir}/disruptor-blocking-queue.log" append="false">
+      <PatternLayout pattern="[disruptor] ${pattern}"/>
+    </File>
+    <File name="JcToolsTarget" fileName="${dir}/jctools-blocking-queue.log" append="false">
+      <PatternLayout pattern="[jctools] ${pattern}"/>
+    </File>
+    <File name="TransferTarget" fileName="${dir}/linked-transfer-queue.log" append="false">
+      <PatternLayout pattern="[transfer] ${pattern}"/>
+    </File>
+    <File name="SyncTarget" fileName="${dir}/sync.log" append="false">
+      <PatternLayout pattern="[sync] ${pattern}"/>
+    </File>
+
+    <!-- ══ ArrayBlockingQueue — the default ═══════════════════════════════════
+         java.util.concurrent, no extra dependency. bufferSize is in EVENTS, and
+         blocking decides what happens when it is full: true makes the caller
+         wait (back-pressure), false discards, which is what the
+         AsyncQueueFullPolicy governs. Default is true.
+
+         shutdownTimeout is worth setting in a bench: the default 0 means "wait
+         forever for the queue to drain", and a wedged appender then hangs JVM
+         shutdown rather than losing events. -->
+    <Async name="AsyncArray" bufferSize="512" blocking="true" shutdownTimeout="2000">
+      <AppenderRef ref="ArrayTarget"/>
+      <ArrayBlockingQueue/>
+    </Async>
+
+    <!-- ══ DisruptorBlockingQueue — Conversant ════════════════════════════════
+         Needs com.conversantmedia:disruptor. spinPolicy is the same trade-off
+         as the wait strategy above, one level down. -->
+    <Async name="AsyncDisruptor" bufferSize="512" blocking="true" shutdownTimeout="2000">
+      <AppenderRef ref="DisruptorTarget"/>
+      <DisruptorBlockingQueue spinPolicy="WAITING"/>
+    </Async>
+
+    <!-- ══ JCToolsBlockingQueue ═══════════════════════════════════════════════
+         Needs org.jctools:jctools-core. waitStrategy again: PARK / YIELD /
+         SPIN / PROGRESSIVE. -->
+    <Async name="AsyncJcTools" bufferSize="512" blocking="true" shutdownTimeout="2000">
+      <AppenderRef ref="JcToolsTarget"/>
+      <JCToolsBlockingQueue waitStrategy="PARK"/>
+    </Async>
+
+    <!-- ══ LinkedTransferQueue ════════════════════════════════════════════════
+         java.util.concurrent again, unbounded. bufferSize is therefore ignored,
+         which matters: back-pressure is impossible, so a slow appender grows
+         the queue until the heap is gone rather than slowing the application
+         down. -->
+    <Async name="AsyncTransfer" bufferSize="512" blocking="true" shutdownTimeout="2000">
+      <AppenderRef ref="TransferTarget"/>
+      <LinkedTransferQueue/>
+    </Async>
+  </Appenders>
+
+  <Loggers>
+    <!-- ══ AsyncLogger — the Disruptor path ═══════════════════════════════════
+         includeLocation="false" is the default and the reason async logging is
+         fast: capturing location means walking the stack at call time, on the
+         caller's thread, which costs more than everything else the logger does.
+         Set it true here only because %l in a pattern would otherwise render as
+         "?" and look like a bug.
+
+         Note this logger's appender is itself an AsyncAppender: two hand-offs,
+         two thread boundaries. -->
+    <AsyncLogger name="org.apache.logging.bench.scenario.MessageScenario" level="TRACE"
+                 includeLocation="true" additivity="false">
+      <AppenderRef ref="AsyncArray"/>
+      <AppenderRef ref="AsyncDisruptor"/>
+    </AsyncLogger>
+
+    <!-- Mixed: a plain synchronous logger alongside the async ones, in the same
+         configuration. This is the arrangement most applications actually have,
+         and the one where ordering surprises appear. -->
+    <Logger name="org.apache.logging.bench" level="TRACE" additivity="false">
+      <AppenderRef ref="Console"/>
+      <AppenderRef ref="SyncTarget"/>
+      <AppenderRef ref="AsyncJcTools"/>
+      <AppenderRef ref="AsyncTransfer"/>
+    </Logger>
+
+    <Root level="INFO">
+      <AppenderRef ref="Console"/>
+    </Root>
+  </Loggers>
+
+</Configuration>

@@ -1,0 +1,121 @@
+{
+  "configuration": {
+    "status": "WARN",
+    "name": "async-queues",
+
+    "properties": {
+      "property": [
+        { "name": "dir", "value": "${sys:bench.log.dir:-logs}/async" },
+        { "name": "pattern", "value": "%d{HH:mm:ss.SSS} [%t] %-5level %logger{1.} - %msg%n" }
+      ]
+    },
+
+    "AsyncWaitStrategyFactory": {
+      "class": "org.apache.logging.log4j.core.async.DefaultAsyncWaitStrategyFactory"
+    },
+
+    "appenders": {
+      "Console": {
+        "name": "Console",
+        "target": "SYSTEM_OUT",
+        "PatternLayout": { "pattern": "${pattern}" }
+      },
+
+      "File": [
+        {
+          "name": "ArrayTarget",
+          "fileName": "${dir}/array-blocking-queue.log",
+          "append": "false",
+          "PatternLayout": { "pattern": "[array] ${pattern}" }
+        },
+        {
+          "name": "DisruptorTarget",
+          "fileName": "${dir}/disruptor-blocking-queue.log",
+          "append": "false",
+          "PatternLayout": { "pattern": "[disruptor] ${pattern}" }
+        },
+        {
+          "name": "JcToolsTarget",
+          "fileName": "${dir}/jctools-blocking-queue.log",
+          "append": "false",
+          "PatternLayout": { "pattern": "[jctools] ${pattern}" }
+        },
+        {
+          "name": "TransferTarget",
+          "fileName": "${dir}/linked-transfer-queue.log",
+          "append": "false",
+          "PatternLayout": { "pattern": "[transfer] ${pattern}" }
+        },
+        {
+          "name": "SyncTarget",
+          "fileName": "${dir}/sync.log",
+          "append": "false",
+          "PatternLayout": { "pattern": "[sync] ${pattern}" }
+        }
+      ],
+
+      "Async": [
+        {
+          "name": "AsyncArray",
+          "bufferSize": "512",
+          "blocking": "true",
+          "shutdownTimeout": "2000",
+          "AppenderRef": { "ref": "ArrayTarget" },
+          "ArrayBlockingQueue": {}
+        },
+        {
+          "name": "AsyncDisruptor",
+          "bufferSize": "512",
+          "blocking": "true",
+          "shutdownTimeout": "2000",
+          "AppenderRef": { "ref": "DisruptorTarget" },
+          "DisruptorBlockingQueue": { "spinPolicy": "WAITING" }
+        },
+        {
+          "name": "AsyncJcTools",
+          "bufferSize": "512",
+          "blocking": "true",
+          "shutdownTimeout": "2000",
+          "AppenderRef": { "ref": "JcToolsTarget" },
+          "JCToolsBlockingQueue": { "waitStrategy": "PARK" }
+        },
+        {
+          "name": "AsyncTransfer",
+          "bufferSize": "512",
+          "blocking": "true",
+          "shutdownTimeout": "2000",
+          "AppenderRef": { "ref": "TransferTarget" },
+          "LinkedTransferQueue": {}
+        }
+      ]
+    },
+
+    "loggers": {
+      "AsyncLogger": {
+        "name": "org.apache.logging.bench.scenario.MessageScenario",
+        "level": "TRACE",
+        "includeLocation": "true",
+        "additivity": "false",
+        "AppenderRef": [
+          { "ref": "AsyncArray" },
+          { "ref": "AsyncDisruptor" }
+        ]
+      },
+      "logger": {
+        "name": "org.apache.logging.bench",
+        "level": "TRACE",
+        "additivity": "false",
+        "AppenderRef": [
+          { "ref": "Console" },
+          { "ref": "SyncTarget" },
+          { "ref": "AsyncJcTools" },
+          { "ref": "AsyncTransfer" }
+        ]
+      },
+      "root": {
+        "level": "INFO",
+        "AppenderRef": { "ref": "Console" }
+      }
+    }
+  }
+}

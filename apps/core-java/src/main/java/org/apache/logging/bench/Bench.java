@@ -6,6 +6,7 @@ import java.util.Map;
 
 import org.apache.logging.log4j.LogManager;
 
+import org.apache.logging.bench.scenario.CustomLevelScenario;
 import org.apache.logging.bench.scenario.ExceptionScenario;
 import org.apache.logging.bench.scenario.LookupScenario;
 import org.apache.logging.bench.scenario.MessageScenario;
@@ -34,7 +35,8 @@ public final class Bench {
             new ThreadContextScenario(),
             new ExceptionScenario(),
             new RolloverScenario(),
-            new ProgrammaticScenario());
+            new ProgrammaticScenario(),
+            new CustomLevelScenario());
 
     public static void main(final String[] args) {
         if (args.length > 0 && ("--list".equals(args[0]) || "list".equals(args[0]))) {

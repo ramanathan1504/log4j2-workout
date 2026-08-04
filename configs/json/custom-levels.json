@@ -1,0 +1,91 @@
+{
+  "configuration": {
+    "status": "WARN",
+    "name": "custom-levels",
+
+    "properties": {
+      "property": [
+        { "name": "dir", "value": "${sys:bench.log.dir:-logs}/custom-levels" },
+        { "name": "pattern", "value": "%d{HH:mm:ss.SSS} %-8level %logger{1.} - %msg%n" }
+      ]
+    },
+
+    "CustomLevels": {
+      "CustomLevel": [
+        { "name": "AUDIT", "intLevel": "150" },
+        { "name": "NOTICE", "intLevel": "350" },
+        { "name": "VERBOSE", "intLevel": "550" }
+      ]
+    },
+
+    "appenders": {
+      "Console": {
+        "name": "Console",
+        "target": "SYSTEM_OUT",
+        "PatternLayout": { "pattern": "${pattern}" }
+      },
+
+      "File": [
+        {
+          "name": "AuditFile",
+          "fileName": "${dir}/audit.log",
+          "append": "false",
+          "PatternLayout": { "pattern": "${pattern}" },
+          "ThresholdFilter": { "level": "AUDIT", "onMatch": "ACCEPT", "onMismatch": "DENY" }
+        },
+        {
+          "name": "AuditOnlyFile",
+          "fileName": "${dir}/audit-only.log",
+          "append": "false",
+          "PatternLayout": { "pattern": "${pattern}" },
+          "LevelMatchFilter": { "level": "AUDIT", "onMatch": "ACCEPT", "onMismatch": "DENY" }
+        },
+        {
+          "name": "BandFile",
+          "fileName": "${dir}/notice-to-verbose.log",
+          "append": "false",
+          "PatternLayout": { "pattern": "${pattern}" },
+          "LevelRangeFilter": {
+            "minLevel": "NOTICE",
+            "maxLevel": "VERBOSE",
+            "onMatch": "ACCEPT",
+            "onMismatch": "DENY"
+          }
+        },
+        {
+          "name": "SelectorFile",
+          "fileName": "${dir}/by-level.log",
+          "append": "false",
+          "PatternLayout": {
+            "LevelPatternSelector": {
+              "defaultPattern": "${pattern}",
+              "PatternMatch": [
+                { "key": "AUDIT", "pattern": "%d{ISO8601} AUDIT %logger - %msg %X%n%xEx{5}" },
+                { "key": "VERBOSE", "pattern": "%d{HH:mm:ss.SSS} verbose %logger{1.} - %msg%n" }
+              ]
+            }
+          }
+        }
+      ]
+    },
+
+    "loggers": {
+      "logger": {
+        "name": "org.apache.logging.bench",
+        "level": "VERBOSE",
+        "additivity": "false",
+        "AppenderRef": [
+          { "ref": "Console" },
+          { "ref": "AuditFile" },
+          { "ref": "AuditOnlyFile" },
+          { "ref": "BandFile" },
+          { "ref": "SelectorFile" }
+        ]
+      },
+      "root": {
+        "level": "INFO",
+        "AppenderRef": { "ref": "Console" }
+      }
+    }
+  }
+}

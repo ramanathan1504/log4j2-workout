@@ -1,0 +1,124 @@
+# Custom levels, in YAML.
+# Mirrors configs/xml/custom-levels.xml. Feature matrix §11.
+#
+# A custom level is a name bound to an integer, and the integer decides
+# everything. The built-in scale it slots into:
+#
+#   OFF 0 · FATAL 100 · ERROR 200 · WARN 300 · INFO 400 · DEBUG 500 · TRACE 600
+#
+# Lower is more severe, so intLevel 150 sits between FATAL and ERROR and a
+# logger at ERROR will NOT pass it. Getting that direction backwards is the
+# usual mistake.
+#
+# Two limits worth knowing:
+#   * The level is global to the JVM once created, not scoped to the
+#     configuration. Level.forName wins the first time and is then permanent —
+#     a second registration with a different integer returns the original.
+#   * Log4j's API has no audit()/notice() method, so reaching a custom level
+#     from code means logger.log(Level.forName(...), ...) or a generated custom
+#     logger. A config alone does not make one usable.
+
+Configuration:
+  status: WARN
+  name: custom-levels
+
+  Properties:
+    Property:
+      - name: dir
+        value: ${sys:bench.log.dir:-logs}/custom-levels
+      - name: pattern
+        value: "%d{HH:mm:ss.SSS} %-8level %logger{1.} - %msg%n"
+
+  # Must come before anything referencing the names: a filter naming AUDIT
+  # before this is resolved gets a null level and is dropped as "Unknown level".
+  CustomLevels:
+    CustomLevel:
+      # Between FATAL (100) and ERROR (200): more severe than an error.
+      - name: AUDIT
+        intLevel: 150
+      # Between WARN (300) and INFO (400): the syslog NOTICE idea.
+      - name: NOTICE
+        intLevel: 350
+      # Between DEBUG (500) and TRACE (600).
+      - name: VERBOSE
+        intLevel: 550
+
+  Appenders:
+    # %-8level rather than %-5level: "VERBOSE" is seven characters and would
+    # otherwise push the columns out.
+    Console:
+      name: Console
+      target: SYSTEM_OUT
+      PatternLayout:
+        pattern: ${pattern}
+
+    File:
+      # Everything at AUDIT or more severe — which also catches FATAL (100),
+      # because a threshold is "this severe or more", not "this level only".
+      - name: AuditFile
+        fileName: ${dir}/audit.log
+        append: false
+        PatternLayout:
+          pattern: ${pattern}
+        ThresholdFilter:
+          level: AUDIT
+          onMatch: ACCEPT
+          onMismatch: DENY
+
+      # Exactly AUDIT, which is what an audit trail usually wants:
+      # LevelMatchFilter, not ThresholdFilter.
+      - name: AuditOnlyFile
+        fileName: ${dir}/audit-only.log
+        append: false
+        PatternLayout:
+          pattern: ${pattern}
+        LevelMatchFilter:
+          level: AUDIT
+          onMatch: ACCEPT
+          onMismatch: DENY
+
+      # A band spanning custom and built-in levels: NOTICE (350) down to
+      # VERBOSE (550), so it holds NOTICE, INFO, DEBUG and VERBOSE but not WARN
+      # or TRACE. minLevel is the more severe bound.
+      - name: BandFile
+        fileName: ${dir}/notice-to-verbose.log
+        append: false
+        PatternLayout:
+          pattern: ${pattern}
+        LevelRangeFilter:
+          minLevel: NOTICE
+          maxLevel: VERBOSE
+          onMatch: ACCEPT
+          onMismatch: DENY
+
+      # Custom levels work in a pattern selector too — a full stack for AUDIT,
+      # one line for everything else.
+      - name: SelectorFile
+        fileName: ${dir}/by-level.log
+        append: false
+        PatternLayout:
+          LevelPatternSelector:
+            defaultPattern: ${pattern}
+            PatternMatch:
+              - key: AUDIT
+                pattern: "%d{ISO8601} AUDIT %logger - %msg %X%n%xEx{5}"
+              - key: VERBOSE
+                pattern: "%d{HH:mm:ss.SSS} verbose %logger{1.} - %msg%n"
+
+  Loggers:
+    # A logger set to a custom level. VERBOSE is 550, so this passes everything
+    # down to VERBOSE but stops TRACE (600).
+    Logger:
+      name: org.apache.logging.bench
+      level: VERBOSE
+      additivity: false
+      AppenderRef:
+        - ref: Console
+        - ref: AuditFile
+        - ref: AuditOnlyFile
+        - ref: BandFile
+        - ref: SelectorFile
+    Root:
+      level: INFO
+      AppenderRef:
+        ref: Console
