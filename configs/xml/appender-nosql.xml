@@ -1,0 +1,109 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  The NoSQL appenders: MongoDB, Cassandra and CouchDB. Feature matrix §1.
+
+    docker compose -f infra/docker-compose.yml up -d mongodb cassandra couchdb
+
+  Cassandra takes 60–90 seconds to accept connections after the container
+  starts, which is much longer than everything else here. A run started too
+  early fails at appender construction, not at write time, so the appender is
+  simply absent for the whole run rather than retrying.
+
+  ── What NoSql is, and is not ───────────────────────────────────────────────
+
+  MongoDb and CouchDb are not appenders. They are PROVIDERS for the generic
+  `NoSql` appender, which owns the buffering and the event-to-document mapping
+  and delegates only the storage. That is why the element below is <NoSql> with
+  a provider inside, and why the provider's own attributes are the only
+  connection configuration.
+
+  Cassandra IS its own appender, because CQL needs a table and typed columns
+  rather than a document — so it takes ColumnMapping elements like the JDBC
+  appender, not a provider.
+
+  bufferSize="0" throughout: anything above 0 batches, and a test that asserts
+  on documents right after logging finds nothing.
+-->
+<Configuration status="WARN" name="appender-nosql">
+
+  <Appenders>
+    <Console name="Console" target="SYSTEM_OUT">
+      <PatternLayout pattern="%d{HH:mm:ss.SSS} %-5level %logger{1.} - %msg%n"/>
+    </Console>
+
+    <!-- ══ MongoDB ═══════════════════════════════════════════════════════════
+         The provider takes a connection string, so database and credentials all
+         live in one URI. The collection is created on first write, unlike every
+         SQL appender in this bench.
+
+         Log4j maps the event into a document itself: level, loggerName, message,
+         millis, thread, plus contextMap and thrown as nested documents. There is
+         no layout — a document is not bytes. -->
+    <NoSql name="Mongo" bufferSize="0">
+      <MongoDb connection="mongodb://localhost:27017/log4j.events"/>
+    </NoSql>
+
+    <!-- ══ CouchDB ═══════════════════════════════════════════════════════════
+         HTTP under the hood, so unlike Mongo this one has credentials as
+         separate attributes and a database that must already exist — CouchDB
+         does not create one on first write, and the appender reports a 404 that
+         names the database rather than the missing setup step. The db app
+         creates it before logging. -->
+    <NoSql name="CouchDb" bufferSize="0">
+      <CouchDb databaseName="log4j"
+               protocol="http"
+               server="localhost"
+               port="5984"
+               username="log4j"
+               password="log4j"/>
+    </NoSql>
+
+    <!-- ══ Cassandra ═════════════════════════════════════════════════════════
+         Its own appender, with explicit column mappings — CQL is typed, so the
+         event has to be projected onto columns the way the JDBC appender does.
+
+         The keyspace and table must exist first: this appender creates neither.
+         `columnFamily` is the CQL table name, kept from the pre-CQL3 vocabulary.
+
+         The timestamp column needs the converter form, not a pattern: CQL wants
+         a real timestamp type rather than a formatted string. -->
+    <Cassandra name="Cassandra"
+               clusterName="log4j-bench"
+               keyspace="log4j"
+               table="log_events"
+               bufferSize="0"
+               batched="false">
+      <SocketAddress host="localhost" port="9042"/>
+      <ColumnMapping name="id" pattern="%uuid{TIME}" type="java.util.UUID"/>
+      <ColumnMapping name="timeid" literal="now()"/>
+      <ColumnMapping name="message" pattern="%message"/>
+      <ColumnMapping name="level" pattern="%level"/>
+      <ColumnMapping name="logger" pattern="%logger"/>
+      <ColumnMapping name="marker" pattern="%marker"/>
+      <ColumnMapping name="thread" pattern="%thread"/>
+      <ColumnMapping name="event_date" type="java.util.Date" literal="dateOf(now())"/>
+      <ColumnMapping name="mdc" type="org.apache.logging.log4j.spi.ThreadContextMap"/>
+    </Cassandra>
+  </Appenders>
+
+  <Loggers>
+    <Logger name="org.apache.logging.bench" level="TRACE"/>
+
+    <!-- The drivers log through SLF4J. Routed back into the appenders they
+         implement, a failed write logs, which writes, which fails. -->
+    <Logger name="org.mongodb" level="WARN" additivity="false">
+      <AppenderRef ref="Console"/>
+    </Logger>
+    <Logger name="com.datastax" level="WARN" additivity="false">
+      <AppenderRef ref="Console"/>
+    </Logger>
+
+    <Root level="INFO">
+      <AppenderRef ref="Console"/>
+      <AppenderRef ref="Mongo"/>
+      <AppenderRef ref="CouchDb"/>
+      <AppenderRef ref="Cassandra"/>
+    </Root>
+  </Loggers>
+
+</Configuration>

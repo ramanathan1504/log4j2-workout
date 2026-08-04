@@ -20,6 +20,7 @@
     <module>apps/java8-baseline</module>
     <module>apps/custom-plugins</module>
     <module>apps/jdbc-jndi</module>
+    <module>apps/network</module>
   </modules>
 
   <properties>

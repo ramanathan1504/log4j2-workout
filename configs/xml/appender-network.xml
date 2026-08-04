@@ -1,0 +1,202 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Every appender that talks over a network. Feature matrix §1.
+
+  These are the only appenders in the bench that need something running:
+
+    docker compose -f infra/docker-compose.yml up -d kafka syslog mailhog
+
+  Two of the destinations are inside the bench JVM instead — the Http and Socket
+  appenders point at listeners the network app starts itself. That is not a
+  shortcut: it means the app can assert on the exact bytes those appenders put
+  on the wire, which is the whole question for a protocol appender and is
+  impossible when the far end is a black box.
+
+  ── What makes these different from every other appender ────────────────────
+
+  A file appender fails loudly and immediately. A network appender does not:
+
+    * The destination may be absent at configuration time and appear later, so
+      most of these DEFER connecting. A misconfigured host produces nothing at
+      startup — reconnectionDelayMillis simply retries forever in the background.
+    * ignoreExceptions defaults to TRUE, which swallows send failures entirely.
+      Every appender here sets it false, so a failure reaches the status logger
+      rather than vanishing.
+    * "It logged without error" therefore proves nothing at all. The network app
+      asserts on what ARRIVED at each destination.
+-->
+<Configuration status="WARN" name="appender-network">
+
+  <Properties>
+    <Property name="pattern">%d{HH:mm:ss.SSS} %-5level %logger{1.} %notEmpty{%X }- %msg%n</Property>
+  </Properties>
+
+  <Appenders>
+    <Console name="Console" target="SYSTEM_OUT">
+      <PatternLayout pattern="${pattern}"/>
+    </Console>
+
+    <!-- ══ Syslog, BSD (RFC3164) over UDP ════════════════════════════════════
+         The container maps 514 to 5514 on the host, so nothing needs root.
+
+         UDP is fire-and-forget: the appender cannot tell whether anything is
+         listening, so a wrong port here is completely silent. That is worth
+         seeing once — it is the reason the app checks the receiver's file
+         rather than the absence of errors. -->
+    <Syslog name="SyslogBsd"
+            format="RFC3164"
+            host="localhost"
+            port="5514"
+            protocol="UDP"
+            facility="LOCAL0"
+            appName="log4j-bench"
+            newLine="true"
+            ignoreExceptions="false"/>
+
+    <!-- ══ Syslog, RFC5424 over TCP ══════════════════════════════════════════
+         The structured variant: MDC becomes a structured-data element, so a
+         receiver gets fields rather than prose. Same mdcId rule as
+         layout-remaining — no '@', Log4j appends the enterprise number. -->
+    <Syslog name="SyslogRfc5424"
+            format="RFC5424"
+            host="localhost"
+            port="5514"
+            protocol="TCP"
+            facility="LOCAL0"
+            enterpriseNumber="32473"
+            appName="log4j-bench"
+            messageId="bench"
+            includeMDC="true"
+            mdcId="bench"
+            newLine="true"
+            reconnectionDelayMillis="2000"
+            ignoreExceptions="false"/>
+
+    <!-- ══ Socket ════════════════════════════════════════════════════════════
+         A raw TCP stream with whatever layout is configured — no protocol of
+         its own. Points at a listener the app starts, so the test can compare
+         the received bytes against the layout.
+
+         immediateFail=false plus reconnectionDelayMillis means a dead
+         destination is retried rather than failing the call, which is what
+         makes a wrong host silent. -->
+    <Socket name="SocketTcp"
+            host="localhost"
+            port="4560"
+            protocol="TCP"
+            immediateFail="false"
+            reconnectionDelayMillis="2000"
+            ignoreExceptions="false">
+      <PatternLayout pattern="${pattern}"/>
+    </Socket>
+
+    <!-- ══ Http ══════════════════════════════════════════════════════════════
+         POSTs each event to a URL. Unlike Socket it is request/response, so a
+         non-2xx status IS an error the appender can see and report — the only
+         appender here that gets real feedback from its destination.
+
+         The app serves this endpoint itself and records what arrives. -->
+    <Http name="Http" url="http://localhost:8123/log" method="POST"
+          connectTimeoutMillis="2000" readTimeoutMillis="2000"
+          ignoreExceptions="false">
+      <JsonTemplateLayout eventTemplateUri="classpath:EcsLayout.json"/>
+      <Property name="X-Bench-Source" value="log4j-bench"/>
+    </Http>
+
+    <!-- ══ Kafka ═════════════════════════════════════════════════════════════
+         syncSend=true waits for the broker to acknowledge, so a failure is
+         visible. Set it false and sends become fire-and-forget: faster, and a
+         broker that is refusing writes looks identical to one that is not.
+
+         The Kafka client's own logging must not come back through Log4j, or a
+         send failure logs, which sends, which fails — the appender's docs call
+         this out and the Loggers section below is where it is prevented. -->
+    <Kafka name="Kafka" topic="log4j-bench" syncSend="true" ignoreExceptions="false">
+      <PatternLayout pattern="${pattern}"/>
+      <Property name="bootstrap.servers">localhost:9092</Property>
+      <!-- Fail fast rather than blocking the logging thread for a minute when
+           the broker is down. The default max.block.ms is 60 seconds. -->
+      <Property name="max.block.ms">5000</Property>
+      <Property name="request.timeout.ms">5000</Property>
+      <Property name="delivery.timeout.ms">10000</Property>
+    </Kafka>
+
+    <!-- ══ JeroMQ (ZeroMQ) ═══════════════════════════════════════════════════
+         A ZeroMQ PUB socket. There is no broker: the appender binds and
+         publishes, and whoever subscribes receives. A PUB socket with no
+         subscriber silently discards, so the app subscribes BEFORE logging —
+         and even then ZeroMQ's slow-joiner behaviour means the first message
+         can be lost, which is a property of the transport rather than a bug. -->
+    <JeroMQ name="JeroMq" ignoreExceptions="false">
+      <PatternLayout pattern="${pattern}"/>
+      <!-- Endpoints are <Property name="endpoint"> ELEMENTS, not attributes.
+           There is no `endpoint` attribute and no `topic` attribute at all —
+           JeroMqAppender takes @PluginElement("Properties") and picks out the
+           entries named "endpoint". Writing them as attributes earns
+
+             ERROR JeroMQ contains invalid attributes "endpoint", "topic"
+
+           after which the appender still BUILDS, binds nothing, and publishes
+           into the void: no endpoints means no sockets, and a PUB socket with
+           no peer discards silently either way. So the misconfiguration costs
+           one status-logger line and then looks exactly like success.
+
+           Repeat the element to publish to several endpoints. -->
+      <Property name="endpoint">tcp://*:5556</Property>
+    </JeroMQ>
+
+    <!-- ══ SMTP, over the network this time ══════════════════════════════════
+         apps/smtp covers the appender against an in-process server. This one
+         targets MailHog in a container, which is the realistic arrangement: a
+         real SMTP dialogue over a socket. Same buffering semantics — nothing
+         is sent until an event reaches the trigger level. -->
+    <SMTP name="Mail"
+          subject="[log4j-bench] $${event:Level}: $${event:Message}"
+          from="bench@example.com"
+          to="ops@example.com"
+          smtpHost="localhost"
+          smtpPort="1025"
+          smtpProtocol="smtp"
+          bufferSize="5"
+          ignoreExceptions="false">
+      <ThresholdFilter level="ERROR" onMatch="ACCEPT" onMismatch="DENY"/>
+      <HtmlLayout title="log4j-bench network SMTP" locationInfo="true"/>
+    </SMTP>
+  </Appenders>
+
+  <Loggers>
+    <Logger name="org.apache.logging.bench" level="TRACE"/>
+
+    <!--
+      The clients' own logging must NOT reach these appenders.
+
+      Kafka, ZeroMQ and the mail stack all log through SLF4J or Log4j. Route
+      their output back into the appender they implement and a single send
+      failure becomes a loop: the failure logs, the log sends, the send fails.
+      additivity="false" onto the console is what breaks it, and it is the
+      reason the Kafka appender's documentation says to configure the
+      org.apache.kafka logger explicitly.
+    -->
+    <Logger name="org.apache.kafka" level="WARN" additivity="false">
+      <AppenderRef ref="Console"/>
+    </Logger>
+    <Logger name="org.zeromq" level="WARN" additivity="false">
+      <AppenderRef ref="Console"/>
+    </Logger>
+    <Logger name="jakarta.mail" level="WARN" additivity="false">
+      <AppenderRef ref="Console"/>
+    </Logger>
+
+    <Root level="INFO">
+      <AppenderRef ref="Console"/>
+      <AppenderRef ref="SyslogBsd"/>
+      <AppenderRef ref="SyslogRfc5424"/>
+      <AppenderRef ref="SocketTcp"/>
+      <AppenderRef ref="Http"/>
+      <AppenderRef ref="Kafka"/>
+      <AppenderRef ref="JeroMq"/>
+      <AppenderRef ref="Mail"/>
+    </Root>
+  </Loggers>
+
+</Configuration>

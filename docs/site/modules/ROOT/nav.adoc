@@ -1,0 +1,7 @@
+* xref:index.adoc[Overview]
+* xref:running.adoc[Running the bench]
+* xref:axes.adoc[The four axes]
+* xref:apps.adoc[Applications]
+* xref:configs.adoc[Configurations]
+* xref:infra.adoc[Backing services]
+* xref:findings.adoc[Findings]
