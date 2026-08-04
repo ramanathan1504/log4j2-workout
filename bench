@@ -35,12 +35,12 @@ VERSIONS=(
 DEFAULT_VERSION=2.27.0-SNAPSHOT
 
 APPS=(core-java spring-boot-maven db log4j1-bridge jakarta-web spring-boot-gradle
-      java8-baseline bridges-in bridges-out bridges-to-jul custom-plugins)
+      java8-baseline bridges-in bridges-out bridges-to-jul custom-plugins jpa)
 
 # Apps that cannot build on 3.x, because the Log4j artifacts they need have no
 # 3.x release. `matrix` skips these rather than reporting a spurious failure.
 APPS_2X_ONLY=(log4j1-bridge jakarta-web spring-boot-gradle
-              bridges-in bridges-out bridges-to-jul)
+              bridges-in bridges-out bridges-to-jul jpa)
 
 is_2x_only() {
   local app="$1" a
@@ -137,6 +137,7 @@ module_path_for() {
     jakarta-web)        echo "apps/jakarta-web" ;;
     java8-baseline)     echo "apps/java8-baseline" ;;
     custom-plugins)     echo "apps/custom-plugins" ;;
+    jpa)                echo "apps/jpa" ;;
     bridges-in)         echo "apps/bridges-in" ;;
     bridges-out)        echo "apps/bridges-out" ;;
     bridges-to-jul)     echo "apps/bridges-to-jul" ;;
@@ -157,6 +158,7 @@ main_class_for() {
     jakarta-web)        echo "org.apache.logging.bench.web.WebBench" ;;
     java8-baseline)     echo "org.apache.logging.bench.java8.Java8Bench" ;;
     custom-plugins)     echo "org.apache.logging.bench.plugins.CustomPluginBench" ;;
+    jpa)                echo "org.apache.logging.bench.jpa.JpaBench" ;;
     bridges-in)         echo "org.apache.logging.bench.bridges.BridgesInBench" ;;
     bridges-out)        echo "org.apache.logging.bench.bridges.BridgesOutBench" ;;
     bridges-to-jul)     echo "org.apache.logging.bench.bridges.ToJulBench" ;;
@@ -177,6 +179,24 @@ extra_jvm_args_for() {
       # Tomcat's own catalina.sh exports. Without them the app dies at startup.
       EXTRA_JVM_ARGS+=(--add-opens=java.base/java.io=ALL-UNNAMED
                        -Dsun.io.useCanonCaches=false)
+      ;;
+    jpa)
+      # log4j-jpa's ThrowableAttributeConverter reflects into java.lang.Throwable
+      # in a STATIC INITIALISER:
+      #
+      #   THROWABLE_CAUSE = Throwable.class.getDeclaredField("cause");
+      #   THROWABLE_CAUSE.setAccessible(true);
+      #
+      # On JDK 16+ that throws InaccessibleObjectException, which the surrounding
+      # catch does not handle — it catches only NoSuchFieldException — so the
+      # class fails to initialise. The JPA provider then reports
+      # ExceptionInInitializerError from a Class.forName deep inside its own
+      # deployment code, naming neither Log4j, nor the converter, nor the flag
+      # that would fix it. Every write then fails with "manager cannot create
+      # EntityManager or transaction".
+      #
+      # So log4j-jpa is unusable on any current JDK without this.
+      EXTRA_JVM_ARGS+=(--add-opens=java.base/java.lang=ALL-UNNAMED)
       ;;
     bridges-in)
       # log4j-jul only takes effect if the JUL LogManager is replaced before any

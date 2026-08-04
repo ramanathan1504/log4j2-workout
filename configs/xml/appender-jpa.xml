@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  The JPA appender. Feature matrix §1.
+
+  The whole configuration is two attributes, which is the point: unlike the JDBC
+  appender, Log4j is told only which persistence unit to use and which entity to
+  instantiate. Connection URL, credentials, dialect and schema generation all
+  live in META-INF/persistence.xml, in apps/jpa.
+
+  That split is worth internalising before debugging one of these. A wrong URL
+  produces a Log4j appender error mentioning JPA, so the message points at
+  Log4j while the mistake is in a file Log4j never reads.
+
+  Usable only with the jpa app, which owns the entity and the persistence unit.
+-->
+<Configuration status="WARN" name="appender-jpa">
+
+  <Appenders>
+    <Console name="Console" target="SYSTEM_OUT">
+      <PatternLayout pattern="%d{HH:mm:ss.SSS} %-5level %logger{1.} - %msg%n"/>
+    </Console>
+
+    <!-- bufferSize="0" writes each event in its own transaction. Above 0 the
+         appender batches, and a test asserting on row counts immediately after
+         logging finds nothing — same trap as the JDBC appender, one layer
+         further away from the database.
+
+         entityClassName must be the FULLY QUALIFIED name of a class listed in
+         persistence.xml. Log4j instantiates it reflectively per event via its
+         LogEvent constructor, so a mismatch here is a runtime failure, not a
+         configuration one. -->
+    <JPA name="Jpa"
+         persistenceUnitName="benchLogging"
+         entityClassName="org.apache.logging.bench.jpa.BenchLogEntity"
+         bufferSize="0"/>
+  </Appenders>
+
+  <Loggers>
+    <Logger name="org.apache.logging.bench" level="TRACE"/>
+    <Root level="INFO">
+      <AppenderRef ref="Console"/>
+      <AppenderRef ref="Jpa"/>
+    </Root>
+  </Loggers>
+
+</Configuration>

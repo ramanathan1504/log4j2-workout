@@ -1,0 +1,111 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <parent>
+    <groupId>org.apache.logging.bench</groupId>
+    <artifactId>log4j-bench-parent</artifactId>
+    <version>1.0.0-SNAPSHOT</version>
+    <relativePath>../../pom.xml</relativePath>
+  </parent>
+
+  <artifactId>bench-jpa</artifactId>
+  <name>Log4j Bench :: JPA Appender</name>
+  <description>The JPA appender against EclipseLink and embedded H2 — no container required</description>
+
+  <!--
+    2.x ONLY: log4j-jpa has no 3.x release.
+
+    Two things decide this module's dependencies, and both are easy to get
+    wrong:
+
+      * log4j-jpa is built against javax.persistence, NOT jakarta.persistence.
+        That rules out Hibernate 6 and any provider that made the jakarta jump;
+        the persistence API artifact must be one that still ships the javax
+        package.
+
+      * EclipseLink 2.7 is what log4j-jpa itself is tested against, so it is
+        what is used here. A provider mismatch does not fail at build time — it
+        fails when the appender first writes, with a PersistenceException about
+        an unknown entity.
+
+    No container: H2 runs in-process, so this is part of the normal matrix
+    rather than something behind a docker-compose step.
+  -->
+
+  <properties>
+    <eclipselink.version>2.7.15</eclipselink.version>
+  </properties>
+
+  <dependencies>
+    <dependency>
+      <groupId>org.apache.logging.log4j</groupId>
+      <artifactId>log4j-api</artifactId>
+      <version>${log4j.api.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.logging.log4j</groupId>
+      <artifactId>log4j-core</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.logging.log4j</groupId>
+      <artifactId>log4j-jpa</artifactId>
+    </dependency>
+
+    <!-- The javax.persistence API. jakarta.persistence-api 2.2 is the last
+         release that still publishes the javax.persistence package, which is
+         why the version is pinned rather than managed. -->
+    <dependency>
+      <groupId>jakarta.persistence</groupId>
+      <artifactId>jakarta.persistence-api</artifactId>
+      <version>2.2.3</version>
+    </dependency>
+
+    <!-- The provider log4j-jpa is tested against -->
+    <dependency>
+      <groupId>org.eclipse.persistence</groupId>
+      <artifactId>org.eclipse.persistence.jpa</artifactId>
+      <version>${eclipselink.version}</version>
+    </dependency>
+
+    <dependency>
+      <groupId>com.h2database</groupId>
+      <artifactId>h2</artifactId>
+      <version>${h2.version}</version>
+    </dependency>
+
+    <!--
+      Required by log4j-jpa's *Json*AttributeConverter classes, which build a
+      Jackson ObjectMapper in a static initialiser. log4j-jpa does not declare
+      Jackson itself, so the omission compiles and deploys fine and then fails
+      when EclipseLink loads the converter:
+
+        Caused by: java.lang.ExceptionInInitializerError
+          at java.base/java.lang.Class.forName0(Native Method)
+          at ...PrivilegedAccessHelper.getClassForName
+          at ...ConverterClass.getAttributeConverterClass
+
+      Nothing in that stack names Jackson, or the converter, or Log4j. Use the
+      non-JSON converters instead and this dependency is unnecessary.
+    -->
+    <dependency>
+      <groupId>com.fasterxml.jackson.core</groupId>
+      <artifactId>jackson-databind</artifactId>
+      <version>${jackson.version}</version>
+    </dependency>
+  </dependencies>
+
+  <build>
+    <plugins>
+      <plugin>
+        <groupId>org.codehaus.mojo</groupId>
+        <artifactId>exec-maven-plugin</artifactId>
+        <configuration>
+          <mainClass>org.apache.logging.bench.jpa.JpaBench</mainClass>
+        </configuration>
+      </plugin>
+    </plugins>
+  </build>
+</project>

@@ -1,0 +1,89 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  The persistence unit the JPA appender names. Feature matrix §1.
+
+  The appender takes persistenceUnitName and entityClassName and nothing else —
+  no URL, no credentials — so everything about the connection is here. That is
+  the practical difference from the JDBC appender: the database is configured by
+  JPA, not by Log4j, and a mistake in this file surfaces as a Log4j appender
+  error rather than a JPA one.
+
+  transaction-type="RESOURCE_LOCAL" is required. The appender manages its own
+  EntityManager and commits per batch; a JTA unit would expect a container
+  transaction that does not exist here, and every write would fail.
+
+  exclude-unlisted-classes=true keeps EclipseLink from scanning the classpath —
+  it would otherwise try to weave Log4j's own @MappedSuperclass entities.
+-->
+<persistence xmlns="http://xmlns.jcp.org/xml/ns/persistence"
+             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+             xsi:schemaLocation="http://xmlns.jcp.org/xml/ns/persistence
+                                 http://xmlns.jcp.org/xml/ns/persistence/persistence_2_2.xsd"
+             version="2.2">
+
+  <persistence-unit name="benchLogging" transaction-type="RESOURCE_LOCAL">
+    <provider>org.eclipse.persistence.jpa.PersistenceProvider</provider>
+
+    <class>org.apache.logging.bench.jpa.BenchLogEntity</class>
+
+    <!--
+      Log4j's OWN attribute converters have to be listed too.
+
+      BasicLogEventEntity annotates its accessors with @Convert referring to
+      these, and with exclude-unlisted-classes=true the provider will not scan
+      for them — so it reports
+
+        The converter class [...LevelAttributeConverter] specified on the
+        mapping attribute [level] from the class [BasicLogEventEntity] was not
+        found.
+
+      and, worse, names only the FIRST one it needed. Fix that and the next run
+      names the next, so this list is best written whole rather than
+      discovered one exception at a time. The alternative is
+      exclude-unlisted-classes=false, which makes the provider scan the entire
+      classpath — slower, and it then tries to weave things that are not
+      entities at all.
+
+      All twelve are listed even though this entity uses a subset, because which
+      ones BasicLogEventEntity references is its business and changes between
+      versions.
+    -->
+    <class>org.apache.logging.log4j.core.appender.db.jpa.converter.ContextDataAttributeConverter</class>
+    <class>org.apache.logging.log4j.core.appender.db.jpa.converter.ContextDataJsonAttributeConverter</class>
+    <class>org.apache.logging.log4j.core.appender.db.jpa.converter.ContextMapAttributeConverter</class>
+    <class>org.apache.logging.log4j.core.appender.db.jpa.converter.ContextMapJsonAttributeConverter</class>
+    <class>org.apache.logging.log4j.core.appender.db.jpa.converter.ContextStackAttributeConverter</class>
+    <class>org.apache.logging.log4j.core.appender.db.jpa.converter.ContextStackJsonAttributeConverter</class>
+    <class>org.apache.logging.log4j.core.appender.db.jpa.converter.InstantAttributeConverter</class>
+    <class>org.apache.logging.log4j.core.appender.db.jpa.converter.LevelAttributeConverter</class>
+    <class>org.apache.logging.log4j.core.appender.db.jpa.converter.MarkerAttributeConverter</class>
+    <class>org.apache.logging.log4j.core.appender.db.jpa.converter.MessageAttributeConverter</class>
+    <class>org.apache.logging.log4j.core.appender.db.jpa.converter.StackTraceElementAttributeConverter</class>
+    <class>org.apache.logging.log4j.core.appender.db.jpa.converter.ThrowableAttributeConverter</class>
+
+    <exclude-unlisted-classes>true</exclude-unlisted-classes>
+
+    <properties>
+      <!-- H2 in-process. AUTO_SERVER lets the app's own verification
+           connection coexist with EclipseLink's. -->
+      <property name="javax.persistence.jdbc.driver" value="org.h2.Driver"/>
+      <property name="javax.persistence.jdbc.url"
+                value="jdbc:h2:./logs/jpa/log4jpa;AUTO_SERVER=TRUE"/>
+      <property name="javax.persistence.jdbc.user" value="sa"/>
+      <property name="javax.persistence.jdbc.password" value=""/>
+
+      <!-- Let the provider create the table. Unlike the JDBC appender, which
+           requires the schema to exist beforehand, JPA can be asked to build
+           it — which is most of the reason to prefer this appender when the
+           schema is yours to define. -->
+      <property name="javax.persistence.schema-generation.database.action" value="create"/>
+      <property name="eclipselink.ddl-generation" value="create-or-extend-tables"/>
+      <property name="eclipselink.ddl-generation.output-mode" value="database"/>
+
+      <!-- Quiet by default: EclipseLink logs through java.util.logging, and at
+           INFO it narrates every SQL statement into the same console the bench
+           is trying to read. -->
+      <property name="eclipselink.logging.level" value="WARNING"/>
+    </properties>
+  </persistence-unit>
+</persistence>

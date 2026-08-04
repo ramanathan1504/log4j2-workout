@@ -130,6 +130,7 @@
         <module>apps/bridges-in</module>
         <module>apps/bridges-out</module>
         <module>apps/bridges-to-jul</module>
+        <module>apps/jpa</module>
       </modules>
     </profile>
 
