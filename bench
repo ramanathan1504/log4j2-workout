@@ -35,12 +35,12 @@ VERSIONS=(
 DEFAULT_VERSION=2.27.0-SNAPSHOT
 
 APPS=(core-java spring-boot-maven db log4j1-bridge jakarta-web spring-boot-gradle
-      java8-baseline bridges-in bridges-out bridges-to-jul custom-plugins jpa)
+      java8-baseline bridges-in bridges-out bridges-to-jul custom-plugins jpa smtp)
 
 # Apps that cannot build on 3.x, because the Log4j artifacts they need have no
 # 3.x release. `matrix` skips these rather than reporting a spurious failure.
 APPS_2X_ONLY=(log4j1-bridge jakarta-web spring-boot-gradle
-              bridges-in bridges-out bridges-to-jul jpa)
+              bridges-in bridges-out bridges-to-jul jpa smtp)
 
 is_2x_only() {
   local app="$1" a
@@ -138,6 +138,7 @@ module_path_for() {
     java8-baseline)     echo "apps/java8-baseline" ;;
     custom-plugins)     echo "apps/custom-plugins" ;;
     jpa)                echo "apps/jpa" ;;
+    smtp)               echo "apps/smtp" ;;
     bridges-in)         echo "apps/bridges-in" ;;
     bridges-out)        echo "apps/bridges-out" ;;
     bridges-to-jul)     echo "apps/bridges-to-jul" ;;
@@ -159,6 +160,7 @@ main_class_for() {
     java8-baseline)     echo "org.apache.logging.bench.java8.Java8Bench" ;;
     custom-plugins)     echo "org.apache.logging.bench.plugins.CustomPluginBench" ;;
     jpa)                echo "org.apache.logging.bench.jpa.JpaBench" ;;
+    smtp)               echo "org.apache.logging.bench.smtp.SmtpBench" ;;
     bridges-in)         echo "org.apache.logging.bench.bridges.BridgesInBench" ;;
     bridges-out)        echo "org.apache.logging.bench.bridges.BridgesOutBench" ;;
     bridges-to-jul)     echo "org.apache.logging.bench.bridges.ToJulBench" ;;

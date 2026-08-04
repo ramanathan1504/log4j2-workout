@@ -40,6 +40,7 @@ zip to attach to the issue.
 │   ├── bridges-to-jul/      Log4j API → java.util.logging
 │   ├── custom-plugins/      plugin authoring, via log4j-plugin-processor
 │   ├── jpa/                 JPA appender on EclipseLink + embedded H2
+│   ├── smtp/                SMTP appender against embedded GreenMail
 │   └── db/                  JDBC / Mongo / Cassandra / CouchDB appenders
 ├── infra/docker-compose.yml Kafka, Mongo, Cassandra, CouchDB, Postgres, MySQL,
 │                            syslog-ng, MailHog, Elasticsearch, Kibana

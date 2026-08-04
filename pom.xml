@@ -131,6 +131,7 @@
         <module>apps/bridges-out</module>
         <module>apps/bridges-to-jul</module>
         <module>apps/jpa</module>
+        <module>apps/smtp</module>
       </modules>
     </profile>
 

@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  The SMTP appender. Feature matrix §1, §12.
+
+  Unlike every other appender, this one does not send per event. It keeps a
+  cyclic buffer of the last bufferSize events and sends ONLY when an event at or
+  above the trigger level arrives — the buffered events then travel with it as
+  context. Two consequences worth internalising:
+
+    * A run that never reaches the trigger level produces no mail, no error, and
+      no way to tell a working appender from a broken one. That is why the smtp
+      app asserts on the message that arrives rather than on the absence of
+      errors.
+    * The buffer is per appender, not per logger, so the context attached to an
+      error is whatever happened most recently anywhere in the application.
+
+  Which mail implementation runs is NOT decided here. log4j-core's SmtpAppender
+  is written against javax.mail and picks a MailManagerFactory by ServiceLoader,
+  so log4j-jakarta-smtp on the classpath silently replaces the whole mail stack.
+  Nothing in this file changes either way; the app prints which one won.
+
+  Usable only with the smtp app, which runs the in-process server this points at.
+-->
+<Configuration status="WARN" name="appender-smtp">
+
+  <Appenders>
+    <Console name="Console" target="SYSTEM_OUT">
+      <PatternLayout pattern="%d{HH:mm:ss.SSS} %-5level %logger{1.} - %msg%n"/>
+    </Console>
+
+    <!--
+      smtpHost/smtpPort point at the GreenMail server the app starts on
+      127.0.0.1:3025. No credentials: GreenMail accepts unauthenticated
+      submission, which keeps the config free of secrets.
+
+      bufferSize is in EVENTS, and is the number of *preceding* events kept —
+      the triggering event is extra. Set it to 0 and the mail contains only the
+      error, which discards the context that makes this appender useful.
+    -->
+    <SMTP name="Mail"
+          subject="[log4j-bench] $${event:Level}: $${event:Message}"
+          from="bench@example.com"
+          to="ops@example.com"
+          cc="audit@example.com"
+          smtpHost="127.0.0.1"
+          smtpPort="3025"
+          smtpProtocol="smtp"
+          smtpDebug="false"
+          bufferSize="10"
+          ignoreExceptions="false">
+      <!-- The trigger. ThresholdFilter here decides what SENDS, not what is
+           buffered: everything reaching the appender is buffered, and only a
+           match causes a send. -->
+      <ThresholdFilter level="ERROR" onMatch="ACCEPT" onMismatch="DENY"/>
+
+      <!-- HtmlLayout is the conventional choice — the buffered events become a
+           table, which is far more readable in a mail client than a wall of
+           text. PatternLayout works too and produces a plain-text body. -->
+      <HtmlLayout title="log4j-bench SMTP appender" locationInfo="true"/>
+    </SMTP>
+  </Appenders>
+
+  <Loggers>
+    <Logger name="org.apache.logging.bench" level="TRACE"/>
+    <Root level="INFO">
+      <AppenderRef ref="Console"/>
+      <AppenderRef ref="Mail"/>
+    </Root>
+  </Loggers>
+
+</Configuration>

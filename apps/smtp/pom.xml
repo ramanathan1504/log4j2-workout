@@ -1,0 +1,91 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <parent>
+    <groupId>org.apache.logging.bench</groupId>
+    <artifactId>log4j-bench-parent</artifactId>
+    <version>1.0.0-SNAPSHOT</version>
+    <relativePath>../../pom.xml</relativePath>
+  </parent>
+
+  <artifactId>bench-smtp</artifactId>
+  <name>Log4j Bench :: SMTP Appender</name>
+  <description>The SMTP appender over log4j-jakarta-smtp, against an embedded GreenMail server</description>
+
+  <!--
+    2.x ONLY: log4j-jakarta-smtp has no 3.x release.
+
+    The interesting thing about this module is that it contains no appender.
+    The SMTP appender lives in log4j-core and is built against javax.mail;
+    log4j-jakarta-smtp supplies only a jakarta.mail MailManager plus a
+    META-INF/services/org.apache.logging.log4j.core.net.MailManagerFactory
+    entry. SmtpAppender then picks its implementation with
+
+      ServiceLoader.load(MailManagerFactory.class)... .orElseGet(SmtpManager.FACTORY)
+
+    so putting this jar on the classpath swaps the mail stack with no change to
+    any configuration. That also means it is invisible: nothing in the config or
+    the log says which one won, which is why the app reports the class.
+
+    No container: GreenMail runs an SMTP server in-process, so the appender is
+    verified end to end — the assertion is the message that arrives, not the
+    absence of an error.
+  -->
+
+  <properties>
+    <greenmail.version>2.1.3</greenmail.version>
+  </properties>
+
+  <dependencies>
+    <dependency>
+      <groupId>org.apache.logging.log4j</groupId>
+      <artifactId>log4j-api</artifactId>
+      <version>${log4j.api.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.logging.log4j</groupId>
+      <artifactId>log4j-core</artifactId>
+    </dependency>
+
+    <!-- The jakarta.mail MailManager. Deliberately WITHOUT javax.mail on the
+         classpath: with both present the ServiceLoader still picks this one,
+         but the result stops being a clean test of which implementation runs. -->
+    <dependency>
+      <groupId>org.apache.logging.log4j</groupId>
+      <artifactId>log4j-jakarta-smtp</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>jakarta.mail</groupId>
+      <artifactId>jakarta.mail-api</artifactId>
+      <version>2.1.3</version>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.angus</groupId>
+      <artifactId>angus-mail</artifactId>
+      <version>2.0.3</version>
+    </dependency>
+
+    <!-- An in-process SMTP server, so this needs nothing running. GreenMail 2.x
+         is the jakarta.mail line; 1.x is javax and would drag the wrong API in. -->
+    <dependency>
+      <groupId>com.icegreen</groupId>
+      <artifactId>greenmail</artifactId>
+      <version>${greenmail.version}</version>
+    </dependency>
+  </dependencies>
+
+  <build>
+    <plugins>
+      <plugin>
+        <groupId>org.codehaus.mojo</groupId>
+        <artifactId>exec-maven-plugin</artifactId>
+        <configuration>
+          <mainClass>org.apache.logging.bench.smtp.SmtpBench</mainClass>
+        </configuration>
+      </plugin>
+    </plugins>
+  </build>
+</project>

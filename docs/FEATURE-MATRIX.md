@@ -328,6 +328,7 @@ Things the configs above turned up, verified against the source clone rather tha
 
 | Finding | Where |
 |---|---|
+| `log4j-jakarta-smtp` contains no appender at all — `SmtpAppender` lives in log4j-core and is written against javax.mail, then selects its implementation with `ServiceLoader.load(MailManagerFactory.class)`. So the jar on the classpath silently replaces the whole mail stack, with nothing in the configuration or the log naming which one won | `apps/smtp` |
 | **log4j-jpa cannot initialise on any JDK 16+ without `--add-opens java.base/java.lang=ALL-UNNAMED`.** `ThrowableAttributeConverter`'s static initialiser calls `Throwable.class.getDeclaredField("cause").setAccessible(true)`, and its `catch` handles only `NoSuchFieldException`, so JDK 16's `InaccessibleObjectException` escapes as `ExceptionInInitializerError`. The JPA provider then reports a deployment failure from a `Class.forName` inside its own code, naming neither Log4j, nor the converter, nor the flag | `apps/jpa` |
 | log4j-jpa's `*Json*AttributeConverter` classes build a Jackson `ObjectMapper` in a static initialiser, but log4j-jpa does not declare Jackson. Without it the failure is the same shapeless `ExceptionInInitializerError` from inside the provider, with nothing naming Jackson | `apps/jpa` |
 | With `exclude-unlisted-classes=true`, Log4j's own attribute converters must each be listed in `persistence.xml` — the provider names only the first one it needed, so the list is best written whole rather than discovered one exception at a time | `apps/jpa` |
