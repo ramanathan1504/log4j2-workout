@@ -28,9 +28,12 @@
         <TimeBasedTriggeringPolicy interval="1" modulate="true"/>
         <SizeBasedTriggeringPolicy size="20KB"/>
       </Policies>
-      <!-- compressionLevel 0-9; maxCompressionDelaySeconds spreads the CPU/IO
-           burst that occurs when many hosts roll at the same instant (midnight). -->
-      <DefaultRolloverStrategy max="20" compressionLevel="9" maxCompressionDelaySeconds="3">
+      <!-- compressionLevel is 0-9 and applies to zip only. There is no attribute
+           for spreading the compression burst that occurs when many hosts roll
+           at the same instant: maxCompressionDelaySeconds appears in neither the
+           2.x nor the 3.x source, so setting it only earns
+           "DefaultRolloverStrategy contains an invalid element or attribute". -->
+      <DefaultRolloverStrategy max="20" compressionLevel="9">
         <Delete basePath="${dir}/composite" maxDepth="2">
           <IfFileName glob="app-*.log.gz">
             <IfAny>

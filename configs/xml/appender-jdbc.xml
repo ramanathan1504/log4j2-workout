@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  JDBC appender against embedded H2 — no container required. Feature matrix §1, §7.
+
+  Three connection sources are shown. Only one can be active per appender, so the
+  other two are on separate appenders you can point the root logger at.
+
+  bufferSize="0" writes each event immediately. Anything above 0 batches, which
+  means a crash loses the buffer and, more relevantly here, that a test asserting
+  on table contents right after logging will find nothing.
+
+  The schema is created by the DbBench application before Log4j initialises, in
+  its static block. The JDBC appender does not create tables.
+-->
+<Configuration status="WARN" name="appender-jdbc">
+
+  <Properties>
+    <!-- AUTO_SERVER lets the app's own connection and the appender's coexist -->
+    <Property name="jdbcUrl">jdbc:h2:./logs/db/log4jdb;AUTO_SERVER=TRUE</Property>
+  </Properties>
+
+  <Appenders>
+    <Console name="Console" target="SYSTEM_OUT">
+      <PatternLayout pattern="%d{HH:mm:ss.SSS} %-5level %logger{1.} - %msg%n"/>
+    </Console>
+
+    <!-- ══ DriverManager: the simplest source, a new connection per batch ══ -->
+    <JDBC name="Jdbc" tableName="LOG_EVENTS" bufferSize="0">
+      <DriverManager connectionString="${jdbcUrl}" username="sa" password=""/>
+      <Column name="EVENT_DATE" isEventTimestamp="true"/>
+      <Column name="LEVEL" pattern="%level"/>
+      <Column name="LOGGER" pattern="%logger"/>
+      <Column name="MESSAGE" pattern="%message"/>
+      <Column name="THREAD" pattern="%thread"/>
+      <Column name="MARKER" pattern="%marker"/>
+      <Column name="TRACE_ID" pattern="%X{traceId}"/>
+      <Column name="THROWABLE" pattern="%ex{full}"/>
+    </JDBC>
+
+    <!-- ══ PoolingDriver: DBCP2 connection pool. Needs log4j-jdbc-dbcp2. ══ -->
+    <JDBC name="JdbcPooled" tableName="LOG_EVENTS" bufferSize="0">
+      <PoolingDriver connectionString="jdbc:apache:commons:dbcp:log4jPool" poolName="log4jPool">
+        <PoolableConnectionFactory maxConnLifetimeMillis="60000"/>
+      </PoolingDriver>
+      <Column name="EVENT_DATE" isEventTimestamp="true"/>
+      <Column name="LEVEL" pattern="%level"/>
+      <Column name="LOGGER" pattern="%logger"/>
+      <Column name="MESSAGE" pattern="%message"/>
+    </JDBC>
+
+    <!-- ══ ColumnMapping: types beyond strings — dates, MDC maps, whole
+         layouts written into a single column. ══ -->
+    <JDBC name="JdbcMapped" tableName="LOG_EVENTS_JSON" bufferSize="0">
+      <DriverManager connectionString="${jdbcUrl}" username="sa" password=""/>
+      <ColumnMapping name="EVENT_DATE" type="java.sql.Timestamp"/>
+      <ColumnMapping name="LEVEL" pattern="%level"/>
+      <ColumnMapping name="MDC_MAP" type="org.apache.logging.log4j.spi.ThreadContextMap"/>
+      <!-- A full layout serialised into one column -->
+      <ColumnMapping name="EVENT_JSON">
+        <JsonTemplateLayout eventTemplateUri="classpath:EcsLayout.json"/>
+      </ColumnMapping>
+    </JDBC>
+  </Appenders>
+
+  <Loggers>
+    <Logger name="org.apache.logging.bench" level="TRACE"/>
+    <Root level="INFO">
+      <AppenderRef ref="Console"/>
+      <AppenderRef ref="Jdbc"/>
+    </Root>
+  </Loggers>
+
+</Configuration>

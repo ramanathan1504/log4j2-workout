@@ -1,0 +1,28 @@
+{
+  "@timestamp":  {"$resolver": "timestamp", "pattern": {"format": "yyyy-MM-dd'T'HH:mm:ss.SSSZ"}},
+  "level":       {"$resolver": "level", "field": "name"},
+  "levelValue":  {"$resolver": "level", "field": "severity", "severity": {"field": "code"}},
+  "logger":      {"$resolver": "logger", "field": "name"},
+  "thread":      {"$resolver": "thread", "field": "name"},
+  "message":     {"$resolver": "message", "stringified": true},
+  "mdc":         {"$resolver": "mdc"},
+  "ndc":         {"$resolver": "ndc"},
+  "marker":      {"$resolver": "marker", "field": "name"},
+  "endOfBatch":  {"$resolver": "endOfBatch"},
+  "counter":     {"$resolver": "counter"},
+  "source":      {
+    "class":  {"$resolver": "source", "field": "className"},
+    "method": {"$resolver": "source", "field": "methodName"},
+    "file":   {"$resolver": "source", "field": "fileName"},
+    "line":   {"$resolver": "source", "field": "lineNumber"}
+  },
+  "error": {
+    "type":       {"$resolver": "exception", "field": "className"},
+    "message":    {"$resolver": "exception", "field": "message"},
+    "stackTrace": {"$resolver": "exception", "field": "stackTrace", "stackTrace": {"stringified": true}}
+  },
+  "rootCause": {
+    "type":    {"$resolver": "exceptionRootCause", "field": "className"},
+    "message": {"$resolver": "exceptionRootCause", "field": "message"}
+  }
+}

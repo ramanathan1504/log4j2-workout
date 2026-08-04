@@ -1,0 +1,67 @@
+{
+  "configuration": {
+    "status": "WARN",
+    "name": "layout-legacy-json-xml-yaml",
+
+    "appenders": {
+      "Console": [
+        {
+          "name": "Json",
+          "target": "SYSTEM_OUT",
+          "JsonLayout": {
+            "compact": "false",
+            "eventEol": "true",
+            "properties": "true",
+            "includeStacktrace": "true",
+            "stacktraceAsString": "false",
+            "includeTimeMillis": "true"
+          }
+        },
+        {
+          "name": "Xml",
+          "target": "SYSTEM_OUT",
+          "XmlLayout": {
+            "compact": "false",
+            "properties": "true",
+            "includeStacktrace": "true"
+          }
+        },
+        {
+          "name": "Yaml",
+          "target": "SYSTEM_OUT",
+          "YamlLayout": {
+            "properties": "true",
+            "includeStacktrace": "true"
+          }
+        }
+      ],
+      "File": {
+        "name": "Html",
+        "fileName": "logs/layout-html/report.html",
+        "append": "false",
+        "HtmlLayout": {
+          "title": "Log4j Bench — HtmlLayout",
+          "contentType": "text/html",
+          "charset": "UTF-8",
+          "locationInfo": "true"
+        }
+      }
+    },
+
+    "loggers": {
+      "logger": [
+        {
+          "name": "org.apache.logging.bench",
+          "level": "TRACE"
+        }
+      ],
+      "root": {
+        "level": "INFO",
+        "AppenderRef": [
+          { "ref": "Json" },
+          { "ref": "Html" }
+        ]
+      }
+    }
+  }
+}

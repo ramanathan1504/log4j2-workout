@@ -1,0 +1,164 @@
+{
+  "configuration": {
+    "status": "WARN",
+    "name": "filter-all",
+
+    "properties": {
+      "property": {
+        "name": "threshold",
+        "value": "DEBUG"
+      }
+    },
+
+    "Filters": {
+      "ThresholdFilter": {
+        "level": "${threshold}",
+        "onMatch": "NEUTRAL",
+        "onMismatch": "DENY"
+      },
+      "TimeFilter": {
+        "start": "00:00:00",
+        "end": "23:59:59",
+        "timezone": "UTC",
+        "onMatch": "NEUTRAL",
+        "onMismatch": "DENY"
+      },
+      "BurstFilter": {
+        "level": "TRACE",
+        "rate": "20",
+        "maxBurst": "100",
+        "onMatch": "NEUTRAL",
+        "onMismatch": "DENY"
+      }
+    },
+
+    "appenders": {
+      "Console": [
+        {
+          "name": "Console",
+          "target": "SYSTEM_OUT",
+          "PatternLayout": {
+            "pattern": "%d{HH:mm:ss.SSS} %-5level %notEmpty{[%marker] }%logger{1.} - %msg%n"
+          },
+
+          "Filters": {
+            "MarkerFilter": {
+              "marker": "SECURITY",
+              "onMatch": "ACCEPT",
+              "onMismatch": "NEUTRAL"
+            },
+            "NoMarkerFilter": {
+              "onMatch": "NEUTRAL",
+              "onMismatch": "NEUTRAL"
+            },
+            "LevelMatchFilter": {
+              "level": "ERROR",
+              "onMatch": "ACCEPT",
+              "onMismatch": "NEUTRAL"
+            },
+            "LevelRangeFilter": {
+              "minLevel": "FATAL",
+              "maxLevel": "TRACE",
+              "onMatch": "NEUTRAL",
+              "onMismatch": "DENY"
+            },
+            "RegexFilter": {
+              "regex": ".*(password|secret|token).*",
+              "useRawMsg": "false",
+              "onMatch": "DENY",
+              "onMismatch": "NEUTRAL"
+            },
+            "StringMatchFilter": {
+              "text": "internal-only",
+              "onMatch": "DENY",
+              "onMismatch": "NEUTRAL"
+            },
+            "ThreadContextMapFilter": {
+              "operator": "or",
+              "onMatch": "NEUTRAL",
+              "onMismatch": "NEUTRAL",
+              "KeyValuePair": [
+                { "key": "tenant", "value": "acme-corp" },
+                { "key": "userId", "value": "alice" }
+              ]
+            },
+            "DynamicThresholdFilter": {
+              "key": "userId",
+              "defaultThreshold": "INFO",
+              "onMatch": "NEUTRAL",
+              "onMismatch": "NEUTRAL",
+              "KeyValuePair": { "key": "alice", "value": "TRACE" }
+            },
+            "MapFilter": {
+              "operator": "or",
+              "onMatch": "NEUTRAL",
+              "onMismatch": "NEUTRAL",
+              "KeyValuePair": { "key": "event", "value": "checkout" }
+            },
+            "StructuredDataFilter": {
+              "operator": "or",
+              "onMatch": "NEUTRAL",
+              "onMismatch": "NEUTRAL",
+              "KeyValuePair": { "key": "type", "value": "audit" }
+            }
+          }
+        },
+        {
+          "name": "Errors",
+          "target": "SYSTEM_ERR",
+          "PatternLayout": {
+            "pattern": "%d{HH:mm:ss.SSS} %-5level %logger{1.} - %msg%n%xEx{5}"
+          },
+          "ThresholdFilter": {
+            "level": "ERROR",
+            "onMatch": "ACCEPT",
+            "onMismatch": "DENY"
+          }
+        }
+      ],
+      "Null": {
+        "name": "Blackhole"
+      }
+    },
+
+    "loggers": {
+      "logger": [
+        {
+          "name": "org.apache.logging.bench",
+          "level": "TRACE",
+          "additivity": "false",
+          "ThresholdFilter": {
+            "level": "TRACE",
+            "onMatch": "NEUTRAL",
+            "onMismatch": "DENY"
+          },
+          "AppenderRef": [
+            {
+              "ref": "Console",
+              "LevelRangeFilter": {
+                "minLevel": "FATAL",
+                "maxLevel": "TRACE",
+                "onMatch": "NEUTRAL",
+                "onMismatch": "DENY"
+              }
+            },
+            {
+              "ref": "Errors",
+              "level": "ERROR"
+            },
+            {
+              "ref": "Blackhole",
+              "DenyAllFilter": {}
+            }
+          ]
+        }
+      ],
+      "root": {
+        "level": "INFO",
+        "AppenderRef": {
+          "ref": "Console"
+        }
+      }
+    }
+  }
+}

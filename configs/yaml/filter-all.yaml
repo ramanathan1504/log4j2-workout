@@ -1,0 +1,151 @@
+# Every filter, at every scope, in YAML. Mirrors configs/xml/filter-all.xml.
+# Feature matrix §3, §11.
+#
+# YAML has the same constraint as JSON: a mapping cannot hold the same key
+# twice, so several filters at one scope go under a "Filters" wrapper keyed by
+# filter type, and several filters of the SAME type must become a list. A
+# duplicated key here is worse than in JSON, because SnakeYAML accepts it
+# silently and the last one wins.
+#
+# Quoting matters more than it looks. Patterns containing %d{...} are fine
+# unquoted, but anything starting with % or containing ": " must be quoted or
+# the YAML parser reads it as a tag or a nested mapping.
+
+Configuration:
+  status: WARN
+  name: filter-all
+
+  Properties:
+    Property:
+      name: threshold
+      value: DEBUG
+
+  # ══ Scope 1: context-wide. Applied before any logger is consulted. ══
+  Filters:
+    ThresholdFilter:
+      level: ${threshold}
+      onMatch: NEUTRAL
+      onMismatch: DENY
+    TimeFilter:
+      start: "00:00:00"
+      end: "23:59:59"
+      timezone: UTC
+      onMatch: NEUTRAL
+      onMismatch: DENY
+    BurstFilter:
+      level: TRACE
+      rate: 20
+      maxBurst: 100
+      onMatch: NEUTRAL
+      onMismatch: DENY
+
+  Appenders:
+    Console:
+      - name: Console
+        target: SYSTEM_OUT
+        PatternLayout:
+          pattern: "%d{HH:mm:ss.SSS} %-5level %notEmpty{[%marker] }%logger{1.} - %msg%n"
+
+        # ══ Scope 4: appender-level ══
+        Filters:
+          MarkerFilter:
+            marker: SECURITY
+            onMatch: ACCEPT
+            onMismatch: NEUTRAL
+          NoMarkerFilter:
+            onMatch: NEUTRAL
+            onMismatch: NEUTRAL
+          LevelMatchFilter:
+            level: ERROR
+            onMatch: ACCEPT
+            onMismatch: NEUTRAL
+          LevelRangeFilter:
+            minLevel: FATAL
+            maxLevel: TRACE
+            onMatch: NEUTRAL
+            onMismatch: DENY
+          RegexFilter:
+            regex: ".*(password|secret|token).*"
+            useRawMsg: false
+            onMatch: DENY
+            onMismatch: NEUTRAL
+          StringMatchFilter:
+            text: internal-only
+            onMatch: DENY
+            onMismatch: NEUTRAL
+          ThreadContextMapFilter:
+            operator: or
+            onMatch: NEUTRAL
+            onMismatch: NEUTRAL
+            KeyValuePair:
+              - key: tenant
+                value: acme-corp
+              - key: userId
+                value: alice
+          DynamicThresholdFilter:
+            key: userId
+            defaultThreshold: INFO
+            onMatch: NEUTRAL
+            onMismatch: NEUTRAL
+            KeyValuePair:
+              key: alice
+              value: TRACE
+          MapFilter:
+            operator: or
+            onMatch: NEUTRAL
+            onMismatch: NEUTRAL
+            KeyValuePair:
+              key: event
+              value: checkout
+          StructuredDataFilter:
+            operator: or
+            onMatch: NEUTRAL
+            onMismatch: NEUTRAL
+            KeyValuePair:
+              key: type
+              value: audit
+
+      - name: Errors
+        target: SYSTEM_ERR
+        PatternLayout:
+          pattern: "%d{HH:mm:ss.SSS} %-5level %logger{1.} - %msg%n%xEx{5}"
+        ThresholdFilter:
+          level: ERROR
+          onMatch: ACCEPT
+          onMismatch: DENY
+
+    # NullAppender's factory takes a name and nothing else — no layout, no
+    # filter. DenyAllFilter is demonstrated at appender-ref scope below, where
+    # it is actually valid.
+    Null:
+      name: Blackhole
+
+  Loggers:
+    # ══ Scope 2: logger-level ══
+    Logger:
+      - name: org.apache.logging.bench
+        level: TRACE
+        additivity: false
+        ThresholdFilter:
+          level: TRACE
+          onMatch: NEUTRAL
+          onMismatch: DENY
+        # ══ Scope 3: appender-ref level — narrows this reference only ══
+        AppenderRef:
+          - ref: Console
+            LevelRangeFilter:
+              minLevel: FATAL
+              maxLevel: TRACE
+              onMatch: NEUTRAL
+              onMismatch: DENY
+          - ref: Errors
+            level: ERROR
+          - ref: Blackhole
+            # An empty mapping, not null: `DenyAllFilter:` alone parses as a
+            # null value and the filter is dropped without a word.
+            DenyAllFilter: {}
+
+    Root:
+      level: INFO
+      AppenderRef:
+        ref: Console

@@ -11,9 +11,12 @@
   <name>Log4j Bench :: Parent</name>
   <description>Complete Log4j feature bench — every appender, layout, filter, lookup and config format across 1.x, 2.x and 3.x</description>
 
+  <!-- Modules buildable on every Log4j line. Modules that depend on artifacts
+       with no 3.x release live in the log4j-2x-only profile below. -->
   <modules>
     <module>apps/core-java</module>
     <module>apps/spring-boot-maven</module>
+    <module>apps/db</module>
   </modules>
 
   <properties>
@@ -111,6 +114,20 @@
   </dependencyManagement>
 
   <profiles>
+    <!-- Modules that cannot build on 3.x, because the Log4j artifacts they need
+         (log4j-1.2-api, log4j-web / log4j-jakarta-web) have no 3.x release.
+         Suppressed by -Dlog4j3=true, which ./bench passes with -Plog4j-3x. -->
+    <profile>
+      <id>log4j-2x-only-modules</id>
+      <activation>
+        <property><name>!log4j3</name></property>
+      </activation>
+      <modules>
+        <module>apps/log4j1-bridge</module>
+        <module>apps/jakarta-web</module>
+      </modules>
+    </profile>
+
     <!-- ══════════ LOG4J VERSION AXIS ══════════ -->
     <profile>
       <id>log4j-2.24</id>

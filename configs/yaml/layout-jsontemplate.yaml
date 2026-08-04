@@ -1,0 +1,64 @@
+# JsonTemplateLayout, in YAML. Mirrors configs/xml/layout-jsontemplate.xml.
+# Feature matrix §5, §11. Requires log4j-layout-template-json.
+#
+# The custom template is loaded from configs/templates/bench-custom.json rather
+# than inlined. YAML could hold it inline in a block scalar quite comfortably —
+# unlike JSON — but keeping all three mirrors on the file form means the
+# template itself is defined exactly once, and the XML still covers the inline
+# EventTemplate element.
+#
+# The URI must be absolute; a relative "file:configs/..." fails to read no
+# matter what the working directory is. ${sys:user.dir} supplies the prefix,
+# since attribute values are run through the StrSubstitutor.
+
+Configuration:
+  status: WARN
+  name: layout-jsontemplate
+
+  Appenders:
+    Console:
+      # Log4j's own JSON shape
+      - name: Default
+        target: SYSTEM_OUT
+        JsonTemplateLayout:
+          eventTemplateUri: classpath:JsonLayout.json
+
+      # Elastic Common Schema, as produced by Log4j itself (not the Elastic jar)
+      - name: Ecs
+        target: SYSTEM_OUT
+        JsonTemplateLayout:
+          eventTemplateUri: classpath:EcsLayout.json
+          EventTemplateAdditionalField:
+            - key: service.name
+              value: log4j-bench
+            - key: service.environment
+              value: bench
+
+      # Graylog GELF
+      - name: Gelf
+        target: SYSTEM_OUT
+        JsonTemplateLayout:
+          eventTemplateUri: classpath:GelfLayout.json
+
+      # Google Cloud Logging
+      - name: Gcp
+        target: SYSTEM_OUT
+        JsonTemplateLayout:
+          eventTemplateUri: classpath:GcpLayout.json
+
+      # The bench's own template: timestamp, level, message, mdc, ndc, marker,
+      # counter, source and both exception resolvers.
+      - name: Custom
+        target: SYSTEM_OUT
+        JsonTemplateLayout:
+          eventTemplateUri: "file:${sys:user.dir}/configs/templates/bench-custom.json"
+
+  Loggers:
+    Logger:
+      - name: org.apache.logging.bench
+        level: TRACE
+    Root:
+      level: INFO
+      # Add the others to see one event in every standard shape at once.
+      AppenderRef:
+        ref: Custom

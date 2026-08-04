@@ -1,0 +1,121 @@
+/*
+ * The same Spring Boot application as apps/spring-boot-maven, built by Gradle.
+ *
+ * It exists because Gradle and Maven do not resolve versions the same way, and
+ * that difference is a recurring source of "I upgraded Log4j but got the old
+ * one" reports:
+ *
+ *   Maven  — the first matching entry in dependencyManagement wins, so putting
+ *            log4j-bom above spring-boot-dependencies pins Log4j outright.
+ *   Gradle — platforms contribute *constraints*, and conflicting constraints are
+ *            resolved by taking the HIGHEST version. Ordering is meaningless.
+ *            Spring Boot's BOM pins log4j2.version, so asking for an older Log4j
+ *            than Boot's pin silently gets you Boot's pin instead.
+ *
+ * So the version axis here needs an explicit force (see resolutionStrategy
+ * below). Without it, `./bench run spring-boot-gradle --log4j 2.24.1` would
+ * quietly run whatever Spring Boot pins and every result would be a lie.
+ */
+plugins {
+    id 'java'
+}
+
+// The Log4j line under test. ./bench passes this; the default matches the
+// Maven parent's <log4j.version>.
+def log4jVersion = findProperty('log4jVersion') ?: '2.27.0-SNAPSHOT'
+def springBootVersion = findProperty('springBootVersion') ?: '3.4.3'
+def benchVersion = '1.0.0-SNAPSHOT'
+
+repositories {
+    // mavenLocal FIRST — the whole bench runs against locally installed
+    // 2.27.0-SNAPSHOT / 3.0.0-SNAPSHOT builds of Log4j, plus the bench's own
+    // core-java artifact. Without this the snapshot axis cannot resolve at all.
+    mavenLocal()
+    mavenCentral()
+}
+
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(17)
+    }
+}
+
+// Same sources as the Maven module, not a copy. A divergence between the two
+// builds should only ever be a build difference, never an application one.
+sourceSets {
+    main {
+        java.srcDirs = ['../spring-boot-maven/src/main/java']
+        resources.srcDirs = ['../spring-boot-maven/src/main/resources']
+    }
+}
+
+dependencies {
+    implementation platform("org.apache.logging.log4j:log4j-bom:${log4jVersion}")
+    implementation platform("org.springframework.boot:spring-boot-dependencies:${springBootVersion}")
+
+    // The scenario library, shared with core-java so both front-ends drive
+    // identical logging code. Installed to ~/.m2 by the Maven build.
+    implementation "org.apache.logging.bench:bench-core-java:${benchVersion}"
+
+    implementation 'org.springframework.boot:spring-boot-starter-web'
+    implementation 'org.springframework.boot:spring-boot-starter-actuator'
+    implementation 'org.springframework.boot:spring-boot-starter-log4j2'
+
+    // SpringProfile arbiter + ${spring:} lookup. No 3.x release exists, which is
+    // why this app is 2.x-only in ./bench.
+    implementation 'org.apache.logging.log4j:log4j-spring-boot'
+}
+
+configurations.configureEach {
+    // Logback must go, or it competes with Log4j for SLF4J and log4j-slf4j2-impl
+    // aborts with "cannot be present with log4j-to-slf4j".
+    //
+    // This has to be configuration-wide, which is the second Maven/Gradle
+    // divergence this module demonstrates. The Maven POM excludes
+    // spring-boot-starter-logging from spring-boot-starter-web alone and that is
+    // sufficient: Maven resolves the shared spring-boot-starter node once and
+    // the winning path carries its exclusions, so the actuator's path to
+    // starter-logging disappears with it. Gradle unions every path instead, so
+    // a per-dependency exclusion leaves the actuator's copy of Logback in place.
+    exclude group: 'org.springframework.boot', module: 'spring-boot-starter-logging'
+
+    resolutionStrategy {
+        // Pin every Log4j artifact to the requested line. `force` rather than a
+        // constraint because a constraint would still lose to Spring Boot's
+        // higher pin — see the header comment.
+        eachDependency { details ->
+            if (details.requested.group == 'org.apache.logging.log4j'
+                    && details.requested.name != 'log4j-bom') {
+                details.useVersion log4jVersion
+                details.because "bench version axis: --log4j ${log4jVersion}"
+            }
+        }
+    }
+}
+
+/**
+ * Writes the runtime classpath to a file so ./bench can fork a real JVM with it,
+ * exactly as it does for the Maven modules. Declared as a typed task with
+ * explicit inputs/outputs so it stays configuration-cache compatible.
+ */
+abstract class BenchClasspath extends DefaultTask {
+    @InputFiles
+    abstract ConfigurableFileCollection getClasspath()
+
+    @OutputFile
+    abstract RegularFileProperty getOutputFile()
+
+    @TaskAction
+    void write() {
+        def file = outputFile.get().asFile
+        file.parentFile.mkdirs()
+        file.text = classpath.files.join(File.pathSeparator)
+    }
+}
+
+tasks.register('benchClasspath', BenchClasspath) {
+    dependsOn tasks.named('classes')
+    classpath.from(configurations.named('runtimeClasspath'), sourceSets.main.output)
+    outputFile.set(file(findProperty('benchClasspathFile')
+            ?: layout.buildDirectory.file('bench-classpath.txt').get().asFile))
+}

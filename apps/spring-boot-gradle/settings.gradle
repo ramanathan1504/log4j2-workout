@@ -1,0 +1,5 @@
+// Standalone build. This module is deliberately NOT in the Maven reactor: the
+// whole point of it is to resolve the same application's dependencies through
+// Gradle instead, so a Maven-side fix that happens to depend on Maven's
+// resolution semantics shows up here as a difference.
+rootProject.name = 'bench-spring-boot-gradle'

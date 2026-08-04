@@ -1,0 +1,30 @@
+# Baseline, in YAML. Mirrors configs/xml/baseline-console.xml.
+# Feature matrix §11 — YamlConfigurationFactory.
+#
+# Requires jackson-databind AND jackson-dataformat-yaml on the classpath. If
+# either is missing, Log4j silently skips this factory and falls back to the
+# default configuration — a missing dependency looks identical to a config that
+# was never found, which is worth remembering when triaging "my config is ignored".
+#
+# Element names match the XML ones exactly. Where XML allows repeated elements
+# (several Loggers, several AppenderRefs), YAML uses a list.
+
+Configuration:
+  status: WARN
+  name: baseline-console
+
+  Appenders:
+    Console:
+      name: Console
+      target: SYSTEM_OUT
+      PatternLayout:
+        pattern: "%d{HH:mm:ss.SSS} [%t] %-5level %logger{36} - %msg%n%throwable"
+
+  Loggers:
+    Logger:
+      - name: org.apache.logging.bench
+        level: TRACE
+    Root:
+      level: INFO
+      AppenderRef:
+        ref: Console

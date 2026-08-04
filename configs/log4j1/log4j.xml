@@ -1,0 +1,140 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE log4j:configuration SYSTEM "log4j.dtd">
+<!--
+  Log4j 1.x XML format, consumed through the log4j-1.2-api bridge.
+  Feature matrix §11, §12 — Log4j1XmlConfigurationFactory.
+
+  This is NOT the Log4j 2 XML format. The differences are structural, not
+  cosmetic: the root element is log4j:configuration in the log4j namespace,
+  appenders are <appender class="..."> referring to 1.x implementation classes
+  by name rather than to plugins, options are <param name= value=/> children,
+  and loggers are <category>/<logger> with a nested <priority>/<level>.
+
+  Selecting it needs the bridge's factory, which is off by default:
+
+    -Dlog4j1.compatibility=true
+    -Dlog4j.configuration=file:/abs/path/to/configs/log4j1/log4j.xml
+
+  Note the 1.x system property is log4j.configuration (no "File" suffix) and it
+  takes a URL, not a path. ./bench passes both automatically for any config
+  under configs/log4j1/.
+
+  The DOCTYPE above is what a real 1.x file carries. log4j.dtd is not resolved
+  from the network — the parser is configured not to — so it is inert here, but
+  it is kept because removing it would make this file unlike the ones you will
+  actually be handed in a bug report.
+-->
+<log4j:configuration xmlns:log4j="http://jakarta.apache.org/log4j/" debug="false">
+
+  <!-- ══ ConsoleAppender + PatternLayout ══
+       1.x conversion characters differ from 2.x: %p not %level, and there is
+       no equivalent of %marker or of MDC-as-a-map. -->
+  <appender name="CONSOLE" class="org.apache.log4j.ConsoleAppender">
+    <param name="Target" value="System.out"/>
+    <layout class="org.apache.log4j.PatternLayout">
+      <param name="ConversionPattern" value="%d{ISO8601} [%t] %-5p %c{1} - %m%n"/>
+    </layout>
+  </appender>
+
+  <!-- ══ RollingFileAppender: 1.x size-based rolling ══
+       MaxFileSize/MaxBackupIndex are the whole vocabulary — there is no
+       equivalent of triggering policies or rollover strategies. -->
+  <appender name="FILE" class="org.apache.log4j.RollingFileAppender">
+    <param name="File" value="logs/log4j1/app-xml.log"/>
+    <param name="MaxFileSize" value="64KB"/>
+    <param name="MaxBackupIndex" value="5"/>
+    <layout class="org.apache.log4j.PatternLayout">
+      <param name="ConversionPattern" value="%d{ISO8601} %-5p [%t] %C{1}.%M(%L) - %m%n"/>
+    </layout>
+  </appender>
+
+  <!-- ══ DailyRollingFileAppender: time-based rolling, 1.x style ══
+       DatePattern is both the schedule and the suffix, which is why 1.x cannot
+       express "roll hourly, keep 10". -->
+  <appender name="DAILY" class="org.apache.log4j.DailyRollingFileAppender">
+    <param name="File" value="logs/log4j1/daily.log"/>
+    <param name="DatePattern" value="'.'yyyy-MM-dd-HH-mm"/>
+    <layout class="org.apache.log4j.PatternLayout">
+      <param name="ConversionPattern" value="%d{ISO8601} %-5p %c - %m%n"/>
+    </layout>
+  </appender>
+
+  <!-- ══ The 1.x-only layouts, kept to prove the bridge maps them ══ -->
+  <appender name="TTCC" class="org.apache.log4j.ConsoleAppender">
+    <layout class="org.apache.log4j.TTCCLayout">
+      <param name="DateFormat" value="ISO8601"/>
+      <param name="ThreadPrinting" value="true"/>
+      <param name="CategoryPrefixing" value="true"/>
+      <param name="ContextPrinting" value="true"/>
+    </layout>
+  </appender>
+
+  <appender name="SIMPLE" class="org.apache.log4j.ConsoleAppender">
+    <layout class="org.apache.log4j.SimpleLayout"/>
+  </appender>
+
+  <appender name="HTML" class="org.apache.log4j.FileAppender">
+    <param name="File" value="logs/log4j1/report.html"/>
+    <param name="Append" value="false"/>
+    <layout class="org.apache.log4j.HTMLLayout">
+      <param name="Title" value="Log4j Bench — 1.x HTMLLayout"/>
+      <param name="LocationInfo" value="true"/>
+    </layout>
+  </appender>
+
+  <appender name="XMLFILE" class="org.apache.log4j.FileAppender">
+    <param name="File" value="logs/log4j1/events.xml"/>
+    <param name="Append" value="false"/>
+    <layout class="org.apache.log4j.xml.XMLLayout">
+      <param name="LocationInfo" value="true"/>
+      <param name="Properties" value="true"/>
+    </layout>
+  </appender>
+
+  <!-- ══ AsyncAppender: 1.x's queue-backed wrapper ══ -->
+  <appender name="ASYNC" class="org.apache.log4j.AsyncAppender">
+    <param name="BufferSize" value="128"/>
+    <param name="Blocking" value="true"/>
+    <appender-ref ref="FILE"/>
+  </appender>
+
+  <!-- ══ NullAppender: the 1.x no-op ══ -->
+  <appender name="NULL" class="org.apache.log4j.varia.NullAppender"/>
+
+  <!-- ══ 1.x filters. Unlike 2.x these attach to an appender only — there is
+       no context, logger or appender-ref scope. ══ -->
+  <appender name="FILTERED" class="org.apache.log4j.ConsoleAppender">
+    <layout class="org.apache.log4j.PatternLayout">
+      <param name="ConversionPattern" value="[filtered] %-5p %c{1} - %m%n"/>
+    </layout>
+    <filter class="org.apache.log4j.varia.LevelRangeFilter">
+      <param name="LevelMin" value="WARN"/>
+      <param name="LevelMax" value="FATAL"/>
+      <param name="AcceptOnMatch" value="true"/>
+    </filter>
+    <filter class="org.apache.log4j.varia.StringMatchFilter">
+      <param name="StringToMatch" value="internal-only"/>
+      <param name="AcceptOnMatch" value="false"/>
+    </filter>
+    <!-- DenyAllFilter must come last: it terminates the chain. -->
+    <filter class="org.apache.log4j.varia.DenyAllFilter"/>
+  </appender>
+
+  <!-- ══ Per-category levels. "category" is the 1.x name for a logger; both
+       spellings are accepted, <logger> being the later one. ══ -->
+  <logger name="org.apache.logging.bench">
+    <level value="TRACE"/>
+  </logger>
+
+  <category name="org.apache.logging.bench.noisy" additivity="false">
+    <priority value="WARN"/>
+    <appender-ref ref="CONSOLE"/>
+  </category>
+
+  <root>
+    <priority value="INFO"/>
+    <appender-ref ref="CONSOLE"/>
+    <appender-ref ref="FILE"/>
+  </root>
+
+</log4j:configuration>

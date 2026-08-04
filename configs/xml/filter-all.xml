@@ -83,10 +83,13 @@
       <ThresholdFilter level="ERROR" onMatch="ACCEPT" onMismatch="DENY"/>
     </Console>
 
-    <Null name="Blackhole">
-      <!-- DenyAllFilter: the explicit way to say "nothing reaches this appender" -->
-      <DenyAllFilter/>
-    </Null>
+    <!-- NullAppender's factory takes a name and nothing else — no layout, no
+         filter. Nesting <DenyAllFilter/> here is accepted by the parser and then
+         rejected at plugin binding with "appender Null has no parameter that
+         matches element DenyAllFilter", which is only visible if you are reading
+         the status logger. DenyAllFilter is demonstrated at appender-ref scope
+         below instead, where it is actually valid. -->
+    <Null name="Blackhole"/>
   </Appenders>
 
   <Loggers>
@@ -100,6 +103,12 @@
                           onMatch="NEUTRAL" onMismatch="DENY"/>
       </AppenderRef>
       <AppenderRef ref="Errors" level="ERROR"/>
+
+      <!-- DenyAllFilter: the explicit way to say "nothing reaches this
+           reference". Valid here because AppenderRef does take a filter. -->
+      <AppenderRef ref="Blackhole">
+        <DenyAllFilter/>
+      </AppenderRef>
     </Logger>
 
     <Root level="INFO">

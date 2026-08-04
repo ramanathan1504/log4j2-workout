@@ -1,0 +1,137 @@
+# Rollover: every triggering policy, both strategies, compression and the full
+# Delete vocabulary, in YAML. Mirrors configs/xml/rollover-full.xml.
+# Feature matrix §6, §11.
+#
+# Thresholds are deliberately tiny so a short run produces many rollovers. Do
+# not copy these numbers into anything real.
+#
+# One YAML trap shows up repeatedly below: sizes and schedules must be quoted.
+# `size: 20KB` is fine, but a bare `0/30 * * * * ?` is not valid YAML scalar
+# syntax, and `age: P7D` would be fine while a bare `5 MB` parses as a string
+# only by luck. Quoting every such value is cheaper than remembering which.
+
+Configuration:
+  status: WARN
+  name: rollover-full
+
+  Properties:
+    Property:
+      - name: dir
+        value: ${sys:bench.log.dir:-logs}/rollover
+      - name: pattern
+        value: "%d{HH:mm:ss.SSS} %-5level %logger{1.} - %msg%n"
+
+  Appenders:
+    RollingFile:
+      # ══ Size + time + onStartup, default strategy, gzip ══
+      - name: Composite
+        fileName: ${dir}/composite/app.log
+        filePattern: ${dir}/composite/app-%d{yyyy-MM-dd-HH-mm}-%i.log.gz
+        PatternLayout:
+          pattern: ${pattern}
+        Policies:
+          OnStartupTriggeringPolicy:
+            minSize: 1
+          TimeBasedTriggeringPolicy:
+            interval: 1
+            modulate: true
+          SizeBasedTriggeringPolicy:
+            size: 20KB
+        # compressionLevel is 0-9 and applies to zip only. maxCompressionDelaySeconds
+        # is NOT an attribute of this strategy — it exists in neither the 2.x nor
+        # the 3.x source, and setting it only logs an invalid-attribute error.
+        DefaultRolloverStrategy:
+          max: 20
+          compressionLevel: 9
+          Delete:
+            basePath: ${dir}/composite
+            maxDepth: 2
+            IfFileName:
+              glob: "app-*.log.gz"
+              IfAny:
+                IfAccumulatedFileCount:
+                  exceeds: 15
+                IfAccumulatedFileSize:
+                  exceeds: "5 MB"
+                IfLastModified:
+                  age: P7D
+
+      # ══ Cron-triggered: every 30 seconds ══
+      - name: Cron
+        fileName: ${dir}/cron/app.log
+        filePattern: ${dir}/cron/app-%d{yyyy-MM-dd-HH-mm-ss}.log.gz
+        PatternLayout:
+          pattern: ${pattern}
+        # evaluateOnStartup rolls immediately if the previous scheduled time
+        # has already passed.
+        CronTriggeringPolicy:
+          schedule: "0/30 * * * * ?"
+          evaluateOnStartup: true
+        DefaultRolloverStrategy:
+          max: 10
+
+      # ══ Direct write: no active "app.log", events go straight to the rolled
+      # name. Avoids the rename step entirely. ══
+      - name: DirectWrite
+        filePattern: ${dir}/direct/app-%d{yyyy-MM-dd-HH-mm}-%i.log.gz
+        PatternLayout:
+          pattern: ${pattern}
+        Policies:
+          TimeBasedTriggeringPolicy:
+            interval: 1
+            modulate: true
+          SizeBasedTriggeringPolicy:
+            size: 20KB
+        DirectWriteRolloverStrategy:
+          maxFiles: 10
+          compressionLevel: 6
+
+      # ══ Compression formats: the filePattern suffix selects the codec ══
+      - name: Zip
+        fileName: ${dir}/zip/app.log
+        filePattern: ${dir}/zip/app-%i.log.zip
+        PatternLayout:
+          pattern: ${pattern}
+        SizeBasedTriggeringPolicy:
+          size: 20KB
+        DefaultRolloverStrategy:
+          max: 5
+
+      # .zst/.xz/.bz2 need commons-compress (plus zstd-jni / xz)
+      - name: Zstd
+        fileName: ${dir}/zstd/app.log
+        filePattern: ${dir}/zstd/app-%i.log.zst
+        PatternLayout:
+          pattern: ${pattern}
+        SizeBasedTriggeringPolicy:
+          size: 20KB
+        DefaultRolloverStrategy:
+          max: 5
+
+    # ══ RollingRandomAccessFile: same policies, ByteBuffer-backed IO ══
+    RollingRandomAccessFile:
+      name: RandomAccess
+      fileName: ${dir}/random-access/app.log
+      filePattern: ${dir}/random-access/app-%i.log.gz
+      immediateFlush: false
+      bufferSize: 262144
+      PatternLayout:
+        pattern: ${pattern}
+      SizeBasedTriggeringPolicy:
+        size: 20KB
+      DefaultRolloverStrategy:
+        max: 5
+
+  Loggers:
+    Logger:
+      - name: org.apache.logging.bench
+        level: TRACE
+    Root:
+      level: INFO
+      AppenderRef:
+        - ref: Composite
+        - ref: Cron
+        - ref: DirectWrite
+        - ref: Zip
+        - ref: Zstd
+        - ref: RandomAccess

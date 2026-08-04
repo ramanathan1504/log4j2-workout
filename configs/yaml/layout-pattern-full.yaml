@@ -1,0 +1,80 @@
+# PatternLayout with (nearly) every converter switched on, in YAML.
+# Mirrors configs/xml/layout-pattern-full.xml. Feature matrix §4, §11.
+#
+# This is the one place YAML is genuinely nicer than the XML: a block scalar
+# holds the multi-line pattern literally, with no CDATA and no \n escapes.
+#
+# `|` keeps every newline and adds one at the end. Use `|-` to strip that final
+# newline, or `>` to fold lines into spaces — folding would quietly destroy this
+# pattern by joining all the labelled lines into one.
+#
+# Indentation inside the block is relative to the block's first line, so the two
+# leading spaces on each label line survive into the output, exactly as the
+# CDATA version's do.
+
+Configuration:
+  status: WARN
+  name: layout-pattern-full
+
+  Appenders:
+    Console:
+      name: Console
+      target: SYSTEM_OUT
+      PatternLayout:
+        pattern: |
+          %n== event ======================================================%n
+            date             %d{yyyy-MM-dd HH:mm:ss.SSS}
+            date(ISO8601)    %d{ISO8601}
+            date(UNIX)       %d{UNIX_MILLIS}
+            date(tz+locale)  %d{EEEE dd MMMM yyyy}{UTC}{de-DE}
+            relative         %r ms since JVM start
+            level            %p / %-5level / %highlight{%level}
+            logger           %c
+            logger{36}       %c{36}
+            logger{1.}       %c{1.}
+            class            %C
+            method           %M
+            file:line        %F:%L
+            location         %l
+            fqcn             %fqcn
+            thread           %t (id %T, priority %tp)
+            processId        %pid{-}
+            sequenceNumber   %sn
+            nanoTime         %N
+            uuid(time)       %u{TIME}
+            uuid(random)     %u{RANDOM}
+            marker           %marker
+            markerSimple     %markerSimpleName
+            endOfBatch       %endOfBatch
+            MDC(all)         %X
+            MDC(traceId)     %X{traceId}
+            NDC              %x
+            map              %K{event}
+            traceId (otel)   %traceId
+            spanId  (otel)   %spanId
+            traceFlags       %traceFlags
+            message          %m
+            message(nolook)  %m{nolookups}
+            --- transforms ---
+            encode(HTML)     %encode{%m}{HTML}
+            encode(JSON)     %encode{%m}{JSON}
+            maxLength(24)    %maxLen{%m}{24}
+            replace          %replace{%m}{\s+}{_}
+            repeat           %repeat{=}{20}
+            notEmpty         %notEmpty{[%marker] }
+            equals           %equals{%level}{INFO}{<-- it was INFO>}
+            style            %style{styled text}{bold,magenta}
+            --- throwable ---
+            throwable        %throwable{short}
+            extended         %xEx{3}
+            rootFirst        %rEx{3}
+          == end ========================================================
+
+  Loggers:
+    Logger:
+      - name: org.apache.logging.bench
+        level: TRACE
+    Root:
+      level: INFO
+      AppenderRef:
+        ref: Console

@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <parent>
+    <groupId>org.apache.logging.bench</groupId>
+    <artifactId>log4j-bench-parent</artifactId>
+    <version>1.0.0-SNAPSHOT</version>
+    <relativePath>../../pom.xml</relativePath>
+  </parent>
+
+  <artifactId>bench-log4j1-bridge</artifactId>
+  <name>Log4j Bench :: Log4j 1.x Bridge</name>
+  <description>Application written against the Log4j 1.x API, running on Log4j 2 core via log4j-1.2-api</description>
+
+  <!--
+    2.x ONLY. log4j-1.2-api has no 3.x release, so this module is skipped under
+    -Plog4j-3x. Building it against 3.x would fail at dependency resolution,
+    which is itself a fact worth knowing: applications still on the 1.x API
+    cannot move to Log4j 3 without rewriting their logging calls.
+  -->
+
+  <dependencies>
+    <!-- The 1.x API surface: org.apache.log4j.* -->
+    <dependency>
+      <groupId>org.apache.logging.log4j</groupId>
+      <artifactId>log4j-1.2-api</artifactId>
+    </dependency>
+    <!-- The 2.x implementation underneath it -->
+    <dependency>
+      <groupId>org.apache.logging.log4j</groupId>
+      <artifactId>log4j-core</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.logging.log4j</groupId>
+      <artifactId>log4j-api</artifactId>
+      <version>${log4j.api.version}</version>
+    </dependency>
+  </dependencies>
+
+  <build>
+    <plugins>
+      <plugin>
+        <groupId>org.codehaus.mojo</groupId>
+        <artifactId>exec-maven-plugin</artifactId>
+        <configuration>
+          <mainClass>org.apache.logging.bench.log4j1.Log4j1Bench</mainClass>
+        </configuration>
+      </plugin>
+    </plugins>
+  </build>
+</project>

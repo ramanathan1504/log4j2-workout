@@ -195,7 +195,8 @@ Plus built-in event templates: `EcsLayout.json`, `GelfLayout.json`, `LogstashJso
 | XML | `XmlConfigurationFactory` | log4j-core |
 | JSON | `JsonConfigurationFactory` | log4j-core (needs Jackson) |
 | YAML | `YamlConfigurationFactory` | log4j-core (needs Jackson YAML) |
-| Properties | `PropertiesConfigurationFactory` | log4j-core |
+| Properties (2.x) | `PropertiesConfigurationFactory` | log4j-core — **removed in 3.x** |
+| Properties (3.x) | `JavaPropsConfigurationFactory` | log4j-config-properties — Jackson java-properties, different key layout |
 | Log4j 1.x properties | `Log4j1PropertiesConfigurationFactory` | log4j-1.2-api |
 | Log4j 1.x XML | `Log4j1XmlConfigurationFactory` | log4j-1.2-api |
 
@@ -265,14 +266,43 @@ Also: composite configuration (comma-separated files), `ConfigurationBuilder` pr
 
 ## 16. Coverage gaps in the current workspace
 
-Currently exercised: `Console`, `RollingFile`, `JsonTemplateLayout`, `PatternLayout`, MDC,
-markers, `${docker:}`, JDBC, MongoDB, async, SLF4J bridge, OTel converters.
+**Exercised:** `Console` · `File` · `RollingFile` · `RollingRandomAccessFile` · `Null` ·
+`JDBC` (DriverManager, PoolingDriver, Column, ColumnMapping) · `PatternLayout` (nearly every
+converter) · `JsonTemplateLayout` (4 built-in templates, inline template, file: template URI) ·
+`JsonLayout` · `XmlLayout` · `YamlLayout` · `HtmlLayout` · all 16 filters at all 4 scopes ·
+every triggering policy and both rollover strategies · Delete/IfFileName/IfAny/IfAccumulated\* ·
+gz/zip/zstd compression · MDC/NDC · markers · `${docker:}` · async · SLF4J bridge ·
+OTel converters · **all four Log4j 2 config formats** · **both Log4j 1.x config formats** ·
+the 1.x bridge app · servlet container integration (per-webapp `LoggerContext`, `${web:}`) ·
+Spring Boot under both Maven and Gradle.
 
 **Not yet exercised (the work list):** Syslog · Socket · SMTP · JMS · Kafka · JeroMQ · Http ·
-Cassandra · CouchDB · JPA · MemoryMappedFile · RandomAccessFile · Failover · Routing · Rewrite ·
-AppenderSet · ScriptAppenderSelector · Servlet(jakarta) · GelfLayout · HtmlLayout · XmlLayout ·
-YamlLayout · CsvLayouts · Rfc5424Layout · **EcsLayout** · 13 of 16 filters · all 7 arbiters ·
-15 of 18 lookups · JSON/YAML/Properties config formats · Log4j 1.x bridge (all 23 plugins) ·
-BlockingQueueFactories · Delete/IfAll/IfAny actions · PosixViewAttribute · custom levels ·
-Ssl/KeyStore · composite configuration · programmatic ConfigurationBuilder · `log4j-iostreams` ·
-`log4j-jul` · `log4j-jcl` · `log4j-jpl` · `log4j-taglib` · custom plugin authoring
+MongoDB · Cassandra · CouchDB · JPA (wired in `apps/db`, but each needs its container up) ·
+MemoryMappedFile · Failover · Routing · Rewrite · AppenderSet · ScriptAppenderSelector ·
+GelfLayout · CsvLayouts · Rfc5424Layout · **EcsLayout** (the Elastic jar; Log4j's own
+`EcsLayout.json` template is covered) · all 7 arbiters · 15 of 18 lookups ·
+BlockingQueueFactories · PosixViewAttribute · custom levels · Ssl/KeyStore ·
+composite configuration · `log4j-iostreams` · `log4j-jul` · `log4j-jcl` · `log4j-jpl` ·
+`log4j-taglib` · custom plugin authoring
+
+`programmatic` (ConfigurationBuilder) is covered by the scenario of that name rather than by a
+config file, since by definition it has none.
+
+---
+
+## 17. Findings from building the bench
+
+Things the configs above turned up, verified against the source clone rather than the docs.
+
+| Finding | Where |
+|---|---|
+| Log4j 2's `JsonConfiguration` enables `ALLOW_COMMENTS`; Log4j 3's does not, and does not report a parse error either — `root` is left null and the first logger call dies with an NPE inside `JsonConfiguration.setup`, surfacing as `ExceptionInInitializerError`. A commented JSON config works on every 2.x line and hard-fails on 3.x | `configs/json/` (see its README) |
+| **The Log4j 2 properties config format does not exist in 3.x.** `PropertiesConfigurationFactory` is absent from the 3.x source entirely; `log4j-config-properties` ships `JavaPropsConfigurationFactory` instead, a Jackson java-properties reader that maps onto the same tree as JSON/YAML and so uses completely different keys. The module is on the bench's 3.x classpath and still cannot read these files — Log4j falls back to `DefaultConfiguration` without a word | `configs/properties/` |
+| Log4j 3 reads `log4j.configuration.location`, not `log4j.configurationFile`. Passing the 2.x name against 3.x does not fail — Log4j falls back to `DefaultConfiguration` and logs to the console, so a 3.x run can look healthy while testing nothing but the default config | `bench` `cmd_run` |
+| `NullAppender`'s factory takes only a name — nesting any filter under it fails plugin binding with "no parameter that matches element", visible only in the status logger | `configs/*/filter-all.*` |
+| The properties format cannot express a `Filters` composite: `PropertiesConfigurationBuilder.createFilter` always passes `onMatch`/`onMismatch`, which `CompositeFilter` does not declare, so every such config logs an invalid-attribute error. Appender/logger/appender-ref scopes are therefore limited to one filter each | `configs/properties/filter-all.properties` |
+| `maxCompressionDelaySeconds` is not an attribute of `DefaultRolloverStrategy` — it appears nowhere in the 2.x or 3.x source | `configs/*/rollover-full.*` |
+| `RollingFileManager` builds its async executor with `Log4jThreadFactory.createThreadFactory()`, i.e. **non-daemon** threads, started lazily on the first compressing rollover. The JVM then cannot begin shutdown, and the shutdown hook that would stop Log4j only runs once shutdown has begun — so a short-lived app with a compressing rolling appender hangs on exit unless it calls `LogManager.shutdown()` itself | `apps/core-java` `Bench.main` |
+| `ClassLoaderContextSelector.locateContext` returns a parent classloader's context without applying the `Map.Entry` it was given. When log4j-core sits on a shared/parent classloader and a context already exists there, `log4j-jakarta-web`'s SCI silently fails to bind the `ServletContext`: every `${web:}` lookup goes unresolved and the shared context is renamed to the webapp's path | `apps/jakarta-web` |
+| Maven resolves a shared transitive dependency once and keeps the winning path's exclusions; Gradle unions all paths. So excluding `spring-boot-starter-logging` from `spring-boot-starter-web` alone suffices in Maven but leaves Logback on the Gradle classpath via the actuator | `apps/spring-boot-gradle` |
+| Gradle platforms contribute constraints resolved by highest-version-wins, so Spring Boot's `log4j2.version` pin silently overrides a request for an older Log4j unless forced | `apps/spring-boot-gradle` |

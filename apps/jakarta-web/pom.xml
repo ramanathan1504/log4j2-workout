@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <parent>
+    <groupId>org.apache.logging.bench</groupId>
+    <artifactId>log4j-bench-parent</artifactId>
+    <version>1.0.0-SNAPSHOT</version>
+    <relativePath>../../pom.xml</relativePath>
+  </parent>
+
+  <artifactId>bench-jakarta-web</artifactId>
+  <name>Log4j Bench :: Jakarta Web</name>
+  <description>Servlet container integration — per-webapp LoggerContext, ${web:} lookup, Log4jServletFilter</description>
+
+  <!--
+    2.x ONLY: log4j-jakarta-web has no 3.x release.
+
+    Packaged as a jar with an embedded Tomcat launcher rather than as a war, so
+    the bench can run it without an external container. The servlet integration
+    is still genuinely exercised: log4j-jakarta-web registers itself through the
+    ServletContainerInitializer SPI, which embedded Tomcat honours exactly as a
+    standalone one does.
+  -->
+
+  <dependencies>
+    <dependency>
+      <groupId>org.apache.logging.log4j</groupId>
+      <artifactId>log4j-api</artifactId>
+      <version>${log4j.api.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.logging.log4j</groupId>
+      <artifactId>log4j-core</artifactId>
+    </dependency>
+    <!-- The integration under test: Log4jServletContextListener,
+         Log4jServletFilter, the ${web:} lookup, per-webapp LoggerContext -->
+    <dependency>
+      <groupId>org.apache.logging.log4j</groupId>
+      <artifactId>log4j-jakarta-web</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.logging.log4j</groupId>
+      <artifactId>log4j-layout-template-json</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>jakarta.servlet</groupId>
+      <artifactId>jakarta.servlet-api</artifactId>
+      <version>6.0.0</version>
+      <scope>provided</scope>
+    </dependency>
+
+    <!-- Embedded container. Version managed by the Spring Boot BOM. -->
+    <dependency>
+      <groupId>org.apache.tomcat.embed</groupId>
+      <artifactId>tomcat-embed-core</artifactId>
+    </dependency>
+  </dependencies>
+
+  <build>
+    <plugins>
+      <plugin>
+        <groupId>org.codehaus.mojo</groupId>
+        <artifactId>exec-maven-plugin</artifactId>
+        <configuration>
+          <mainClass>org.apache.logging.bench.web.WebBench</mainClass>
+        </configuration>
+      </plugin>
+    </plugins>
+  </build>
+</project>

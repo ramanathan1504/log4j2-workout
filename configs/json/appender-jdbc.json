@@ -1,0 +1,101 @@
+{
+  "configuration": {
+    "status": "WARN",
+    "name": "appender-jdbc",
+
+    "properties": {
+      "property": {
+        "name": "jdbcUrl",
+        "value": "jdbc:h2:./logs/db/log4jdb;AUTO_SERVER=TRUE"
+      }
+    },
+
+    "appenders": {
+      "Console": {
+        "name": "Console",
+        "target": "SYSTEM_OUT",
+        "PatternLayout": {
+          "pattern": "%d{HH:mm:ss.SSS} %-5level %logger{1.} - %msg%n"
+        }
+      },
+
+      "JDBC": [
+        {
+          "name": "Jdbc",
+          "tableName": "LOG_EVENTS",
+          "bufferSize": "0",
+          "DriverManager": {
+            "connectionString": "${jdbcUrl}",
+            "username": "sa",
+            "password": ""
+          },
+          "Column": [
+            { "name": "EVENT_DATE", "isEventTimestamp": "true" },
+            { "name": "LEVEL", "pattern": "%level" },
+            { "name": "LOGGER", "pattern": "%logger" },
+            { "name": "MESSAGE", "pattern": "%message" },
+            { "name": "THREAD", "pattern": "%thread" },
+            { "name": "MARKER", "pattern": "%marker" },
+            { "name": "TRACE_ID", "pattern": "%X{traceId}" },
+            { "name": "THROWABLE", "pattern": "%ex{full}" }
+          ]
+        },
+        {
+          "name": "JdbcPooled",
+          "tableName": "LOG_EVENTS",
+          "bufferSize": "0",
+          "PoolingDriver": {
+            "connectionString": "jdbc:apache:commons:dbcp:log4jPool",
+            "poolName": "log4jPool",
+            "PoolableConnectionFactory": {
+              "maxConnLifetimeMillis": "60000"
+            }
+          },
+          "Column": [
+            { "name": "EVENT_DATE", "isEventTimestamp": "true" },
+            { "name": "LEVEL", "pattern": "%level" },
+            { "name": "LOGGER", "pattern": "%logger" },
+            { "name": "MESSAGE", "pattern": "%message" }
+          ]
+        },
+        {
+          "name": "JdbcMapped",
+          "tableName": "LOG_EVENTS_JSON",
+          "bufferSize": "0",
+          "DriverManager": {
+            "connectionString": "${jdbcUrl}",
+            "username": "sa",
+            "password": ""
+          },
+          "ColumnMapping": [
+            { "name": "EVENT_DATE", "type": "java.sql.Timestamp" },
+            { "name": "LEVEL", "pattern": "%level" },
+            { "name": "MDC_MAP", "type": "org.apache.logging.log4j.spi.ThreadContextMap" },
+            {
+              "name": "EVENT_JSON",
+              "JsonTemplateLayout": {
+                "eventTemplateUri": "classpath:EcsLayout.json"
+              }
+            }
+          ]
+        }
+      ]
+    },
+
+    "loggers": {
+      "logger": [
+        {
+          "name": "org.apache.logging.bench",
+          "level": "TRACE"
+        }
+      ],
+      "root": {
+        "level": "INFO",
+        "AppenderRef": [
+          { "ref": "Console" },
+          { "ref": "Jdbc" }
+        ]
+      }
+    }
+  }
+}

@@ -1,0 +1,113 @@
+{
+  "configuration": {
+    "status": "WARN",
+    "name": "rollover-full",
+
+    "properties": {
+      "property": [
+        { "name": "dir", "value": "${sys:bench.log.dir:-logs}/rollover" },
+        { "name": "pattern", "value": "%d{HH:mm:ss.SSS} %-5level %logger{1.} - %msg%n" }
+      ]
+    },
+
+    "appenders": {
+      "RollingFile": [
+        {
+          "name": "Composite",
+          "fileName": "${dir}/composite/app.log",
+          "filePattern": "${dir}/composite/app-%d{yyyy-MM-dd-HH-mm}-%i.log.gz",
+          "PatternLayout": { "pattern": "${pattern}" },
+          "Policies": {
+            "OnStartupTriggeringPolicy": { "minSize": "1" },
+            "TimeBasedTriggeringPolicy": { "interval": "1", "modulate": "true" },
+            "SizeBasedTriggeringPolicy": { "size": "20KB" }
+          },
+          "DefaultRolloverStrategy": {
+            "max": "20",
+            "compressionLevel": "9",
+            "Delete": {
+              "basePath": "${dir}/composite",
+              "maxDepth": "2",
+              "IfFileName": {
+                "glob": "app-*.log.gz",
+                "IfAny": {
+                  "IfAccumulatedFileCount": { "exceeds": "15" },
+                  "IfAccumulatedFileSize": { "exceeds": "5 MB" },
+                  "IfLastModified": { "age": "P7D" }
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Cron",
+          "fileName": "${dir}/cron/app.log",
+          "filePattern": "${dir}/cron/app-%d{yyyy-MM-dd-HH-mm-ss}.log.gz",
+          "PatternLayout": { "pattern": "${pattern}" },
+          "CronTriggeringPolicy": {
+            "schedule": "0/30 * * * * ?",
+            "evaluateOnStartup": "true"
+          },
+          "DefaultRolloverStrategy": { "max": "10" }
+        },
+        {
+          "name": "DirectWrite",
+          "filePattern": "${dir}/direct/app-%d{yyyy-MM-dd-HH-mm}-%i.log.gz",
+          "PatternLayout": { "pattern": "${pattern}" },
+          "Policies": {
+            "TimeBasedTriggeringPolicy": { "interval": "1", "modulate": "true" },
+            "SizeBasedTriggeringPolicy": { "size": "20KB" }
+          },
+          "DirectWriteRolloverStrategy": { "maxFiles": "10", "compressionLevel": "6" }
+        },
+        {
+          "name": "Zip",
+          "fileName": "${dir}/zip/app.log",
+          "filePattern": "${dir}/zip/app-%i.log.zip",
+          "PatternLayout": { "pattern": "${pattern}" },
+          "SizeBasedTriggeringPolicy": { "size": "20KB" },
+          "DefaultRolloverStrategy": { "max": "5" }
+        },
+        {
+          "name": "Zstd",
+          "fileName": "${dir}/zstd/app.log",
+          "filePattern": "${dir}/zstd/app-%i.log.zst",
+          "PatternLayout": { "pattern": "${pattern}" },
+          "SizeBasedTriggeringPolicy": { "size": "20KB" },
+          "DefaultRolloverStrategy": { "max": "5" }
+        }
+      ],
+
+      "RollingRandomAccessFile": {
+        "name": "RandomAccess",
+        "fileName": "${dir}/random-access/app.log",
+        "filePattern": "${dir}/random-access/app-%i.log.gz",
+        "immediateFlush": "false",
+        "bufferSize": "262144",
+        "PatternLayout": { "pattern": "${pattern}" },
+        "SizeBasedTriggeringPolicy": { "size": "20KB" },
+        "DefaultRolloverStrategy": { "max": "5" }
+      }
+    },
+
+    "loggers": {
+      "logger": [
+        {
+          "name": "org.apache.logging.bench",
+          "level": "TRACE"
+        }
+      ],
+      "root": {
+        "level": "INFO",
+        "AppenderRef": [
+          { "ref": "Composite" },
+          { "ref": "Cron" },
+          { "ref": "DirectWrite" },
+          { "ref": "Zip" },
+          { "ref": "Zstd" },
+          { "ref": "RandomAccess" }
+        ]
+      }
+    }
+  }
+}

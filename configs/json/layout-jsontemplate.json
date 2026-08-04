@@ -1,0 +1,65 @@
+{
+  "configuration": {
+    "status": "WARN",
+    "name": "layout-jsontemplate",
+
+    "appenders": {
+      "Console": [
+        {
+          "name": "Default",
+          "target": "SYSTEM_OUT",
+          "JsonTemplateLayout": {
+            "eventTemplateUri": "classpath:JsonLayout.json"
+          }
+        },
+        {
+          "name": "Ecs",
+          "target": "SYSTEM_OUT",
+          "JsonTemplateLayout": {
+            "eventTemplateUri": "classpath:EcsLayout.json",
+            "EventTemplateAdditionalField": [
+              { "key": "service.name", "value": "log4j-bench" },
+              { "key": "service.environment", "value": "bench" }
+            ]
+          }
+        },
+        {
+          "name": "Gelf",
+          "target": "SYSTEM_OUT",
+          "JsonTemplateLayout": {
+            "eventTemplateUri": "classpath:GelfLayout.json"
+          }
+        },
+        {
+          "name": "Gcp",
+          "target": "SYSTEM_OUT",
+          "JsonTemplateLayout": {
+            "eventTemplateUri": "classpath:GcpLayout.json"
+          }
+        },
+        {
+          "name": "Custom",
+          "target": "SYSTEM_OUT",
+          "JsonTemplateLayout": {
+            "eventTemplateUri": "file:${sys:user.dir}/configs/templates/bench-custom.json"
+          }
+        }
+      ]
+    },
+
+    "loggers": {
+      "logger": [
+        {
+          "name": "org.apache.logging.bench",
+          "level": "TRACE"
+        }
+      ],
+      "root": {
+        "level": "INFO",
+        "AppenderRef": {
+          "ref": "Custom"
+        }
+      }
+    }
+  }
+}

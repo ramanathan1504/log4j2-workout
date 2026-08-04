@@ -1,0 +1,110 @@
+# JDBC appender against embedded H2, in YAML. Mirrors configs/xml/appender-jdbc.xml.
+# Feature matrix §1, §7, §11. No container required.
+#
+# Three connection sources are shown. Only one can be active per appender, so
+# the other two are on separate appenders you can point the root logger at.
+#
+# bufferSize=0 writes each event immediately. Anything above 0 batches, which
+# means a crash loses the buffer and — more relevantly here — that a test
+# asserting on table contents right after logging will find nothing.
+#
+# The schema is created by the DbBench application before Log4j initialises, in
+# its static block. The JDBC appender does not create tables.
+#
+# The JDBC URL must be quoted: it contains a colon-space-free `;AUTO_SERVER`
+# suffix but also `jdbc:h2:` — leave it bare and YAML reads the first colon as a
+# mapping separator.
+
+Configuration:
+  status: WARN
+  name: appender-jdbc
+
+  Properties:
+    Property:
+      # AUTO_SERVER lets the app's own connection and the appender's coexist
+      name: jdbcUrl
+      value: "jdbc:h2:./logs/db/log4jdb;AUTO_SERVER=TRUE"
+
+  Appenders:
+    Console:
+      name: Console
+      target: SYSTEM_OUT
+      PatternLayout:
+        pattern: "%d{HH:mm:ss.SSS} %-5level %logger{1.} - %msg%n"
+
+    JDBC:
+      # ══ DriverManager: the simplest source, a new connection per batch ══
+      - name: Jdbc
+        tableName: LOG_EVENTS
+        bufferSize: 0
+        DriverManager:
+          connectionString: ${jdbcUrl}
+          username: sa
+          password: ""
+        Column:
+          - name: EVENT_DATE
+            isEventTimestamp: true
+          - name: LEVEL
+            pattern: "%level"
+          - name: LOGGER
+            pattern: "%logger"
+          - name: MESSAGE
+            pattern: "%message"
+          - name: THREAD
+            pattern: "%thread"
+          - name: MARKER
+            pattern: "%marker"
+          - name: TRACE_ID
+            pattern: "%X{traceId}"
+          - name: THROWABLE
+            pattern: "%ex{full}"
+
+      # ══ PoolingDriver: DBCP2 connection pool. Needs log4j-jdbc-dbcp2. ══
+      - name: JdbcPooled
+        tableName: LOG_EVENTS
+        bufferSize: 0
+        PoolingDriver:
+          connectionString: "jdbc:apache:commons:dbcp:log4jPool"
+          poolName: log4jPool
+          PoolableConnectionFactory:
+            maxConnLifetimeMillis: 60000
+        Column:
+          - name: EVENT_DATE
+            isEventTimestamp: true
+          - name: LEVEL
+            pattern: "%level"
+          - name: LOGGER
+            pattern: "%logger"
+          - name: MESSAGE
+            pattern: "%message"
+
+      # ══ ColumnMapping: types beyond strings — dates, MDC maps, whole layouts
+      # written into a single column. ══
+      - name: JdbcMapped
+        tableName: LOG_EVENTS_JSON
+        bufferSize: 0
+        DriverManager:
+          connectionString: ${jdbcUrl}
+          username: sa
+          password: ""
+        ColumnMapping:
+          - name: EVENT_DATE
+            type: java.sql.Timestamp
+          - name: LEVEL
+            pattern: "%level"
+          - name: MDC_MAP
+            type: org.apache.logging.log4j.spi.ThreadContextMap
+          # A full layout serialised into one column
+          - name: EVENT_JSON
+            JsonTemplateLayout:
+              eventTemplateUri: classpath:EcsLayout.json
+
+  Loggers:
+    Logger:
+      - name: org.apache.logging.bench
+        level: TRACE
+    Root:
+      level: INFO
+      AppenderRef:
+        - ref: Console
+        - ref: Jdbc

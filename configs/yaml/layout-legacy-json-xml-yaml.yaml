@@ -1,0 +1,57 @@
+# The Jackson-backed legacy layouts, in YAML.
+# Mirrors configs/xml/layout-legacy-json-xml-yaml.xml. Feature matrix §2, §11.
+#
+# Worth being precise about what needs what here: reading THIS FILE needs
+# jackson-databind and jackson-dataformat-yaml, and YamlLayout below needs the
+# same two. So a classpath missing the YAML dataformat does not produce a YAML
+# error — the configuration is skipped entirely, the default config takes over,
+# and the layout you were testing never runs at all.
+
+Configuration:
+  status: WARN
+  name: layout-legacy-json-xml-yaml
+
+  Appenders:
+    Console:
+      - name: Json
+        target: SYSTEM_OUT
+        JsonLayout:
+          compact: false
+          eventEol: true
+          properties: true
+          includeStacktrace: true
+          stacktraceAsString: false
+          includeTimeMillis: true
+
+      - name: Xml
+        target: SYSTEM_OUT
+        XmlLayout:
+          compact: false
+          properties: true
+          includeStacktrace: true
+
+      - name: Yaml
+        target: SYSTEM_OUT
+        YamlLayout:
+          properties: true
+          includeStacktrace: true
+
+    File:
+      name: Html
+      fileName: logs/layout-html/report.html
+      append: false
+      HtmlLayout:
+        title: "Log4j Bench — HtmlLayout"
+        contentType: text/html
+        charset: UTF-8
+        locationInfo: true
+
+  Loggers:
+    Logger:
+      - name: org.apache.logging.bench
+        level: TRACE
+    Root:
+      level: INFO
+      AppenderRef:
+        - ref: Json
+        - ref: Html

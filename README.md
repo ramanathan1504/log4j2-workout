@@ -24,19 +24,55 @@ zip to attach to the issue.
 ├── docs/FEATURE-MATRIX.md   the complete coverage catalog (293 plugins)
 ├── configs/                 the config library, shared by every app
 │   ├── xml/  json/  yaml/  properties/   the same configs in all four formats
-│   └── log4j1/              log4j.properties + log4j.xml for the 1.x bridge
+│   ├── log4j1/              log4j.properties + log4j.xml for the 1.x bridge
+│   └── templates/           JsonTemplateLayout event templates
 ├── apps/
 │   ├── core-java/           no framework — scenarios, custom plugins
-│   └── spring-boot-maven/   real Spring Boot app, HTTP-triggered
+│   ├── spring-boot-maven/   real Spring Boot app, HTTP-triggered
+│   ├── spring-boot-gradle/  the same app, built by Gradle
+│   ├── jakarta-web/         servlet container, per-webapp LoggerContext
+│   ├── log4j1-bridge/       1.x API on 2.x core via log4j-1.2-api
+│   └── db/                  JDBC / Mongo / Cassandra / CouchDB appenders
 ├── infra/docker-compose.yml Kafka, Mongo, Cassandra, CouchDB, Postgres, MySQL,
 │                            syslog-ng, MailHog, Elasticsearch, Kibana
 ├── repros/                  generated reproductions, one folder per issue/PR
 └── scripts/repro.sh         reproduction generator
 ```
 
+**Three apps are 2.x-only** — `log4j1-bridge`, `jakarta-web` and
+`spring-boot-gradle` — because `log4j-1.2-api`, `log4j-jakarta-web` and
+`log4j-spring-boot` have no 3.x release. `./bench matrix` reports them as SKIP
+on 3.x rather than FAIL, and the Maven build drops them from the reactor.
+
 **Configs are a shared library, not per-module.** Any app can load any config via
 `-Dlog4j.configurationFile`, which is what makes the version × config × app
 matrix work without duplicating a single XML file.
+
+Every config exists in all four Log4j 2 formats under the same name, so the
+format is just a directory and switching between them is a one-word change:
+
+```bash
+./bench run core-java --config xml/filter-all
+./bench run core-java --config properties/filter-all
+```
+
+The extension is inferred from the directory; a bare name (`--config filter-all`)
+means the XML one. The mirrors are not mechanical translations — where a format
+genuinely cannot express what the XML does, the file says so and takes the
+nearest honest route. See the header comment of
+`configs/properties/filter-all.properties` for the clearest example, and
+`docs/FEATURE-MATRIX.md` §17 for the full list of what building them turned up.
+
+Format support is not uniform across the version axis. XML, JSON and YAML load
+on both 2.x and 3.x; **the properties format is 2.x-only**, because 3.x dropped
+`PropertiesConfigurationFactory` and replaced it with a Jackson java-properties
+reader that uses entirely different keys. A properties config on 3.x falls back
+to the default configuration without complaint.
+
+The 1.x formats live in `configs/log4j1/` and need the bridge's factory, which
+is off by default. `./bench` recognises the directory and passes
+`-Dlog4j1.compatibility=true` plus `-Dlog4j.configuration` (the 1.x property
+name, which takes a URL) automatically.
 
 ---
 
@@ -53,7 +89,14 @@ inside Maven's own classpath, so what executes is exactly what a repro zip ships
 | `--log4j 2.26.1` / `2.27.0` | current releases |
 | `--log4j 3.0.0-SNAPSHOT` | your local `main` build |
 
-Three facts about 3.x that the build encodes, because they surprise people:
+Four facts about 3.x that the bench encodes, because they surprise people:
+
+0. **3.x reads a different system property for the config location.** It is
+   `log4j.configuration.location`; `log4j.configurationFile` is not read at all.
+   Nothing fails when you pass the 2.x name — Log4j quietly uses
+   `DefaultConfiguration` — so the run looks fine and tests nothing. `./bench`
+   picks the right property per version, and the banner prints the one actually
+   set alongside the configuration Log4j really loaded.
 
 1. **3.x pins `log4j-api` to `2.24.3`.** The API is versioned separately; there is
    no `log4j-api:3.0.0-SNAPSHOT`.

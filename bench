@@ -31,7 +31,17 @@ VERSIONS=(
 )
 DEFAULT_VERSION=2.27.0-SNAPSHOT
 
-APPS=(core-java spring-boot-maven)
+APPS=(core-java spring-boot-maven db log4j1-bridge jakarta-web spring-boot-gradle)
+
+# Apps that cannot build on 3.x, because the Log4j artifacts they need have no
+# 3.x release. `matrix` skips these rather than reporting a spurious failure.
+APPS_2X_ONLY=(log4j1-bridge jakarta-web spring-boot-gradle)
+
+is_2x_only() {
+  local app="$1" a
+  for a in "${APPS_2X_ONLY[@]}"; do [[ "$a" == "$app" ]] && return 0; done
+  return 1
+}
 
 die()  { printf '\033[31merror:\033[0m %s\n' "$*" >&2; exit 1; }
 info() { printf '\033[36m▸\033[0m %s\n' "$*" >&2; }
@@ -61,16 +71,45 @@ set_mvn_flags() {
 
 module_path_for() {
   case "$1" in
-    core-java)         echo "apps/core-java" ;;
-    spring-boot-maven) echo "apps/spring-boot-maven" ;;
+    core-java)          echo "apps/core-java" ;;
+    spring-boot-maven)  echo "apps/spring-boot-maven" ;;
+    spring-boot-gradle) echo "apps/spring-boot-gradle" ;;
+    db)                 echo "apps/db" ;;
+    log4j1-bridge)      echo "apps/log4j1-bridge" ;;
+    jakarta-web)        echo "apps/jakarta-web" ;;
     *) die "unknown app '$1' (known: ${APPS[*]})" ;;
   esac
 }
 
+# Apps built by Gradle rather than Maven.
+is_gradle() { [[ "$1" == spring-boot-gradle ]]; }
+
 main_class_for() {
   case "$1" in
-    core-java)         echo "org.apache.logging.bench.Bench" ;;
-    spring-boot-maven) echo "org.apache.logging.bench.spring.BenchApplication" ;;
+    core-java)          echo "org.apache.logging.bench.Bench" ;;
+    spring-boot-maven)  echo "org.apache.logging.bench.spring.BenchApplication" ;;
+    spring-boot-gradle) echo "org.apache.logging.bench.spring.BenchApplication" ;;
+    db)                 echo "org.apache.logging.bench.db.DbBench" ;;
+    log4j1-bridge)      echo "org.apache.logging.bench.log4j1.Log4j1Bench" ;;
+    jakarta-web)        echo "org.apache.logging.bench.web.WebBench" ;;
+  esac
+}
+
+# JVM flags an app needs regardless of config. Sets the global EXTRA_JVM_ARGS
+# array (bash 3.2 again — no way to return an array).
+EXTRA_JVM_ARGS=()
+extra_jvm_args_for() {
+  EXTRA_JVM_ARGS=()
+  case "$1" in
+    jakarta-web)
+      # Tomcat 10.1.34+ refuses to start a DirResourceSet unless it can confirm
+      # the JDK's canonical file name cache is off (the CVE-2024-56337 fix). It
+      # confirms by reflectively writing a static final field in java.io, so it
+      # needs both the property and the add-opens — this is exactly what
+      # Tomcat's own catalina.sh exports. Without them the app dies at startup.
+      EXTRA_JVM_ARGS+=(--add-opens=java.base/java.io=ALL-UNNAMED
+                       -Dsun.io.useCanonCaches=false)
+      ;;
   esac
 }
 
@@ -80,16 +119,36 @@ classpath_for() {
   local module; module="$(module_path_for "$app")"
   local key="$CACHE/cp-${app}-${version}.txt"
 
-  # Rebuild the cached classpath whenever any POM is newer than it.
-  if [[ ! -s "$key" ]] || [[ -n "$(find "$ROOT" -name pom.xml -newer "$key" -not -path '*/target/*' 2>/dev/null)" ]]; then
-    info "resolving classpath: $app @ log4j $version"
-    set_mvn_flags "$version"
-    ( cd "$ROOT" && mvn -q -pl "$module" -am \
-        "${MVN_FLAGS[@]}" \
-        -DskipTests install \
-        org.apache.maven.plugins:maven-dependency-plugin:3.8.1:build-classpath \
-        -Dmdep.outputFile="$key" >&2 ) || die "classpath resolution failed for $app @ $version"
+  # Always build. The build tools are incremental, so this is cheap when nothing
+  # changed, and skipping it on a source-only edit would silently run stale
+  # classes — the worst possible failure mode for a bench you are using to judge
+  # whether a Log4j change altered behaviour.
+  set_mvn_flags "$version"
+  info "building: $app @ log4j $version"
+
+  if is_gradle "$app"; then
+    # The Gradle app consumes bench-core-java from ~/.m2, so the Maven side has
+    # to be installed first — Gradle has no view of the reactor.
+    ( cd "$ROOT" && mvn -q -pl apps/core-java -am \
+        "${MVN_FLAGS[@]}" -DskipTests install >&2 ) \
+      || die "installing bench-core-java failed (needed by $app)"
+
+    command -v gradle >/dev/null || die "gradle not on PATH (needed by $app)"
+    ( cd "$ROOT/$module" && gradle -q --console=plain \
+        -Plog4jVersion="$version" \
+        -PbenchClasspathFile="$key" \
+        benchClasspath >&2 ) || die "gradle build failed for $app @ $version"
+
+    # Gradle's task already put the module's own classes on the list.
+    cat "$key"
+    return
   fi
+
+  ( cd "$ROOT" && mvn -q -pl "$module" -am \
+      "${MVN_FLAGS[@]}" \
+      -DskipTests install \
+      org.apache.maven.plugins:maven-dependency-plugin:3.8.1:build-classpath \
+      -Dmdep.outputFile="$key" >&2 ) || die "build failed for $app @ $version"
 
   printf '%s:%s/%s/target/classes' "$(cat "$key")" "$ROOT" "$module"
 }
@@ -101,12 +160,18 @@ resolve_config() {
   local cfg="$1"
   [[ -z "$cfg" ]] && return 0
 
+  # The extension is inferred from the directory, so the same config name works
+  # across formats: `--config json/filter-all` and `--config yaml/filter-all`
+  # both resolve, and a bare `filter-all` still means the XML one.
   local candidate
   for candidate in \
       "$cfg" \
       "$ROOT/$cfg" \
       "$ROOT/configs/$cfg" \
       "$ROOT/configs/$cfg.xml" \
+      "$ROOT/configs/$cfg.json" \
+      "$ROOT/configs/$cfg.yaml" \
+      "$ROOT/configs/$cfg.properties" \
       "$ROOT/configs/xml/$cfg.xml"; do
     if [[ -f "$candidate" ]]; then
       [[ "$candidate" = /* ]] && printf '%s\n' "$candidate" || printf '%s/%s\n' "$PWD" "$candidate"
@@ -153,22 +218,45 @@ cmd_run() {
 
   local cp;   cp="$(classpath_for "$app" "$version")"
   local jhome; jhome="$(java_home_for "$javaver")"
-  local jvm_args=()
+  extra_jvm_args_for "$app"
+  local jvm_args=(${EXTRA_JVM_ARGS[@]+"${EXTRA_JVM_ARGS[@]}"})
 
   if [[ -n "$config" ]]; then
     local resolved; resolved="$(resolve_config "$config")"
+
+    if [[ "$resolved" == */configs/log4j1/* ]]; then
+      # Log4j 1.x config formats need the bridge's factories, which are off by
+      # default. They are also selected by a different system property: the 1.x
+      # name is log4j.configuration (no "File"), and it takes a URL.
+      jvm_args+=("-Dlog4j1.compatibility=true" "-Dlog4j.configuration=file:$resolved")
+    elif [[ "$version" == 3.* ]]; then
+      # Log4j 3 rebuilt its property system: the location of the configuration
+      # is log4j.configuration.location (CoreProperties.ConfigurationProperties),
+      # and log4j.configurationFile is simply not read. Passing the 2.x name
+      # against 3.x does not fail — Log4j falls back to DefaultConfiguration and
+      # logs to the console, which looks enough like success that an entire 3.x
+      # matrix column can pass while testing nothing but the default config.
+      jvm_args+=("-Dlog4j.configuration.location=$resolved")
+    else
+      jvm_args+=("-Dlog4j.configurationFile=$resolved")
+    fi
+
     # Spring Boot's Log4J2LoggingSystem reconfigures Log4j during startup and
-    # ignores log4j.configurationFile — it honours `logging.config` instead.
-    # Set both so the same --config flag works for every app.
-    jvm_args+=("-Dlog4j.configurationFile=$resolved")
-    if [[ "$app" == spring-boot-* ]]; then
+    # ignores Log4j's own property — it honours `logging.config` instead.
+    if [[ "$app" == spring-boot-* && "$resolved" != */configs/log4j1/* ]]; then
       jvm_args+=("-Dlogging.config=$resolved")
     fi
   fi
 
   # Run from the repo root so relative log paths in configs land in ./logs
   cd "$ROOT"
-  exec "$jhome/bin/java" "${jvm_args[@]}" -cp "$cp" "$(main_class_for "$app")" "${args[@]}"
+  # ${arr[@]+"${arr[@]}"} rather than "${arr[@]}": under `set -u`, bash 3.2
+  # (which is what macOS ships) treats an empty array as an unbound variable.
+  exec "$jhome/bin/java" \
+    ${jvm_args[@]+"${jvm_args[@]}"} \
+    -cp "$cp" \
+    "$(main_class_for "$app")" \
+    ${args[@]+"${args[@]}"}
 }
 
 cmd_matrix() {
@@ -188,6 +276,16 @@ cmd_matrix() {
 
   for version in "${VERSIONS[@]}"; do
     printf '\n═══ log4j %s ═══\n' "$version" | tee -a "$results"
+
+    # A 2.x-only app on 3.x is not a failure, it is an absent artifact. Reporting
+    # FAIL there would train you to ignore a red cell in the one column where a
+    # real regression is most likely to appear.
+    if [[ "$version" == 3.* ]] && is_2x_only "$app"; then
+      printf '  \033[33mSKIP\033[0m  %s (%s has no 3.x release path)\n' "$version" "$app" \
+        | tee -a "$results"
+      continue
+    fi
+
     local run_args=("$app" --log4j "$version")
     [[ -n "$config"   ]] && run_args+=(--config "$config")
     [[ -n "$scenario" ]] && run_args+=("$scenario")
