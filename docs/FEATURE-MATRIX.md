@@ -280,12 +280,16 @@ Spring Boot under both Maven and Gradle.
 `./bench coverage` recomputes this from the source clone and the resolved classpaths, so it
 does not go stale as either moves.
 
-**No classpath yet (9):** `log4j-appserver` · `log4j-jakarta-jms` · `log4j-jakarta-smtp` ·
+**No classpath yet (8):** `log4j-appserver` · `log4j-jakarta-jms` · `log4j-jakarta-smtp` ·
 `log4j-jdbc-jndi` · `log4j-jpa` · `log4j-spring-cloud-config-client` · `log4j-taglib` ·
-`log4j-web` (javax) · `log4j-plugin-processor` (build-time — needs a compile test, not a run).
-Each of the first eight needs either a javax servlet container, a broker, a mail server, a JPA
-provider or a config server, which is why they are grouped rather than bolted onto an
+`log4j-web` (javax). Each needs either a javax servlet container, a broker, a mail server, a
+JPA provider or a config server, which is why they are grouped rather than bolted onto an
 existing app.
+
+`log4j-plugin-processor` is covered by `apps/custom-plugins`, which is the one of these that
+needed no infrastructure: a custom appender, filter, lookup and pattern converter, discovered
+through the `Log4j2Plugins.dat` the processor generates. It checks the build-time and run-time
+halves separately, since either can fail while the other passes.
 
 **On a classpath but not yet driven by a config or scenario:** Syslog · Http ·
 Kafka · JeroMQ · SMTP · MongoDB · Cassandra · CouchDB — every one of them a
@@ -324,6 +328,8 @@ Things the configs above turned up, verified against the source clone rather tha
 
 | Finding | Where |
 |---|---|
+| log4j-plugin-processor refuses to compile a `@PluginBuilderAttribute` field with no public setter, naming the field and the `@SuppressWarnings("log4j.public.setter")` escape. One of the few plugin-authoring mistakes caught at build time rather than as a runtime surprise — worth knowing before writing one | `apps/custom-plugins` |
+| The `packages` configuration attribute is now deprecated on 2.x (`WARN The use of package scanning to locate Log4j plugins is deprecated`) and gone on 3.x, where discovery is descriptor-only. Setting it also masks a build where the annotation processor never ran, since scanning finds the plugins anyway | `configs/xml/custom-plugins.xml` |
 | **`Delete`'s sibling conditions are order-sensitive, and the properties format cannot express order.** `IfAccumulatedFileCount` is stateful — it counts every file it is asked about — so placing it before `IfFileName` makes it count the active `app.log` too and the identical policy keeps 3 files instead of 4. Measured: XML `IfFileName`-first keeps 4, `IfAll`-first keeps 3, and the properties build produced `{IfAll[...], IfFileName}` regardless of file order, because `java.util.Properties` is a `Hashtable`. Nesting the conditions inside `IfFileName` removes the dependence and is the only portable formulation | `configs/*/rollover-advanced.*` |
 | `SortByModificationTime`'s attribute is `recentFirst`, not `ascending`. The wrong name is rejected as an invalid attribute while the sorter still builds with its default, so the retention order silently stays whatever the default is | `configs/*/rollover-advanced.*` |
 | `AsyncWaitStrategyFactory`'s attribute is `class`, not the builder field name `factoryClassName`. Using the field name fails `@Required` with "cannot be configured without a factory class name", which reads as a missing attribute rather than a misspelled one | `configs/*/async-queues.*` |

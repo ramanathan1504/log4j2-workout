@@ -35,7 +35,7 @@ VERSIONS=(
 DEFAULT_VERSION=2.27.0-SNAPSHOT
 
 APPS=(core-java spring-boot-maven db log4j1-bridge jakarta-web spring-boot-gradle
-      java8-baseline bridges-in bridges-out bridges-to-jul)
+      java8-baseline bridges-in bridges-out bridges-to-jul custom-plugins)
 
 # Apps that cannot build on 3.x, because the Log4j artifacts they need have no
 # 3.x release. `matrix` skips these rather than reporting a spurious failure.
@@ -136,6 +136,7 @@ module_path_for() {
     log4j1-bridge)      echo "apps/log4j1-bridge" ;;
     jakarta-web)        echo "apps/jakarta-web" ;;
     java8-baseline)     echo "apps/java8-baseline" ;;
+    custom-plugins)     echo "apps/custom-plugins" ;;
     bridges-in)         echo "apps/bridges-in" ;;
     bridges-out)        echo "apps/bridges-out" ;;
     bridges-to-jul)     echo "apps/bridges-to-jul" ;;
@@ -155,6 +156,7 @@ main_class_for() {
     log4j1-bridge)      echo "org.apache.logging.bench.log4j1.Log4j1Bench" ;;
     jakarta-web)        echo "org.apache.logging.bench.web.WebBench" ;;
     java8-baseline)     echo "org.apache.logging.bench.java8.Java8Bench" ;;
+    custom-plugins)     echo "org.apache.logging.bench.plugins.CustomPluginBench" ;;
     bridges-in)         echo "org.apache.logging.bench.bridges.BridgesInBench" ;;
     bridges-out)        echo "org.apache.logging.bench.bridges.BridgesOutBench" ;;
     bridges-to-jul)     echo "org.apache.logging.bench.bridges.ToJulBench" ;;

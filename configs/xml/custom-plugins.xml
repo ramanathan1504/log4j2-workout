@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  A configuration made entirely of third-party plugins. Feature matrix §13.
+
+  Every element here except PatternLayout comes from apps/custom-plugins, which
+  is the point: if the annotation processor did not run, or a plugin registered
+  under the wrong category, this configuration fails to build and says which
+  piece is missing.
+
+  Only usable with the custom-plugins app — the plugins live in that module, so
+  running any other app against this file reports "Unable to locate plugin".
+-->
+<Configuration status="WARN" name="custom-plugins">
+
+  <!--
+    There is deliberately NO `packages` attribute.
+
+    It would name org.apache.logging.bench.plugins as a package to scan, which
+    is the fallback discovery mechanism and would mask exactly the failure this
+    module exists to detect: with `packages` set, a build where the annotation
+    processor never ran still works, so the descriptor could be missing and
+    nothing would say so.
+
+    It is also deprecated on the 2.x line now — setting it earns
+
+      WARN The use of package scanning to locate Log4j plugins is deprecated.
+      Please remove the `packages` attribute from your configuration file.
+
+    and removed entirely on 3.x, where discovery is descriptor-only. So its
+    absence here is both the stronger test and the forward-looking answer: if
+    this configuration builds, Log4j2Plugins.dat was generated and read.
+  -->
+
+  <Appenders>
+    <!-- A custom appender, with a custom filter inside it. The filter accepts
+         one event in two, so the count reported at shutdown should be half the
+         events logged, rounded up. -->
+    <Counting name="Counted" echo="true">
+      <PatternLayout>
+        <!-- %elapsed is the custom converter; ${bench:} the custom lookup.
+             The doubled $ defers the lookup to each event, which is what lets
+             ${bench:eventLevel} see the event at all. -->
+        <Pattern>%d{HH:mm:ss.SSS} %-5level [%elapsed] [$${bench:eventLevel}] %logger{1.} - %msg%n</Pattern>
+      </PatternLayout>
+      <EveryNthFilter interval="2" onMatch="ACCEPT" onMismatch="DENY"/>
+    </Counting>
+
+    <!-- The same custom plugins on a second appender with no filter, so the
+         difference between filtered and unfiltered counts is visible. -->
+    <Counting name="Unfiltered" echo="false">
+      <PatternLayout pattern="%msg%n"/>
+    </Counting>
+  </Appenders>
+
+  <Loggers>
+    <Logger name="org.apache.logging.bench" level="TRACE"/>
+    <Root level="INFO">
+      <AppenderRef ref="Counted"/>
+      <AppenderRef ref="Unfiltered"/>
+    </Root>
+  </Loggers>
+
+</Configuration>

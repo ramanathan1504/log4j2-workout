@@ -1,0 +1,96 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <parent>
+    <groupId>org.apache.logging.bench</groupId>
+    <artifactId>log4j-bench-parent</artifactId>
+    <version>1.0.0-SNAPSHOT</version>
+    <relativePath>../../pom.xml</relativePath>
+  </parent>
+
+  <artifactId>bench-custom-plugins</artifactId>
+  <name>Log4j Bench :: Custom Plugins</name>
+  <description>Plugin authoring: a custom appender, layout, lookup, filter and converter, discovered via log4j-plugin-processor</description>
+
+  <!--
+    Custom plugin authoring — feature matrix §13.
+
+    This is the only module whose interesting artifact is produced at COMPILE
+    time: log4j-plugin-processor is an annotation processor that scans for
+    @Plugin and writes META-INF/org/apache/logging/log4j/core/config/plugins/
+    Log4j2Plugins.dat. Without that file Log4j falls back to scanning the
+    classpath by package name, which is slower and, in a shaded or modular jar,
+    frequently finds nothing — the classic "my plugin works in the IDE and not
+    in production".
+
+    So the check here is twofold: the .dat must be generated at build time, and
+    the plugins must resolve from a configuration at run time. Either can fail
+    without the other.
+  -->
+
+  <dependencies>
+    <dependency>
+      <groupId>org.apache.logging.log4j</groupId>
+      <artifactId>log4j-api</artifactId>
+      <version>${log4j.api.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.logging.log4j</groupId>
+      <artifactId>log4j-core</artifactId>
+    </dependency>
+
+    <!--
+      The annotation processor itself.
+
+      On the 2.x line it ships inside log4j-core, so nothing extra is needed and
+      javac picks it up from the classpath. 3.x split it into log4j-plugins /
+      log4j-plugin-processor, which the log4j-3x profile below adds explicitly:
+      with the processor absent the build still succeeds, silently, and only the
+      run-time plugin lookup fails.
+    -->
+  </dependencies>
+
+  <profiles>
+    <profile>
+      <id>log4j-3x</id>
+      <dependencies>
+        <dependency>
+          <groupId>org.apache.logging.log4j</groupId>
+          <artifactId>log4j-plugins</artifactId>
+        </dependency>
+      </dependencies>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-compiler-plugin</artifactId>
+            <configuration>
+              <annotationProcessorPaths>
+                <path>
+                  <groupId>org.apache.logging.log4j</groupId>
+                  <artifactId>log4j-plugin-processor</artifactId>
+                  <version>${log4j.version}</version>
+                </path>
+              </annotationProcessorPaths>
+            </configuration>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+  </profiles>
+
+  <build>
+    <plugins>
+      <plugin>
+        <groupId>org.codehaus.mojo</groupId>
+        <artifactId>exec-maven-plugin</artifactId>
+        <configuration>
+          <mainClass>org.apache.logging.bench.plugins.CustomPluginBench</mainClass>
+        </configuration>
+      </plugin>
+    </plugins>
+  </build>
+</project>

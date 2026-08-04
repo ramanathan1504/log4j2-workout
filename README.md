@@ -38,6 +38,7 @@ zip to attach to the issue.
 │   ├── bridges-in/          SLF4J 1.7, JUL, JCL, JPL, iostreams → Log4j
 │   ├── bridges-out/         Log4j API → SLF4J → Logback
 │   ├── bridges-to-jul/      Log4j API → java.util.logging
+│   ├── custom-plugins/      plugin authoring, via log4j-plugin-processor
 │   └── db/                  JDBC / Mongo / Cassandra / CouchDB appenders
 ├── infra/docker-compose.yml Kafka, Mongo, Cassandra, CouchDB, Postgres, MySQL,
 │                            syslog-ng, MailHog, Elasticsearch, Kibana
