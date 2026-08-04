@@ -294,6 +294,13 @@ cmd_run() {
   extra_jvm_args_for "$app"
   local jvm_args=(${EXTRA_JVM_ARGS[@]+"${EXTRA_JVM_ARGS[@]}"})
 
+  # Script support is off by default — ScriptFilter, ScriptPatternSelector,
+  # ScriptCondition and ScriptAppenderSelector all refuse to run without this,
+  # reporting only "Script support is not enabled". The bench enables it because
+  # exercising those plugins is the point; a real deployment should not, since
+  # it lets anyone who can write the configuration run code.
+  jvm_args+=(-Dlog4j2.Script.enableLanguages=groovy,js,javascript)
+
   if [[ -n "$config" ]]; then
     local resolved; resolved="$(resolve_config "$config")"
 

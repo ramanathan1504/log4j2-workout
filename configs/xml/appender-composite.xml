@@ -1,0 +1,207 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  The appenders that wrap other appenders: Failover, Routing, Rewrite,
+  AppenderSet and ScriptAppenderSelector. Feature matrix §1, §7.
+
+  Nothing here needs a container or a network — every destination is a local
+  file — which makes this the config to reach for when triaging a composition
+  bug rather than a destination bug.
+
+  The distinction that matters: these five decide *which* appender handles an
+  event, or *what* the event looks like before it gets there. A bug in one of
+  them looks exactly like a bug in the appender underneath, so the layouts below
+  all tag their output with the route it took.
+
+  ── THIS CONFIG EMITS STATUS-LOGGER ERRORS ON PURPOSE ───────────────────────
+
+  It is the only one in the bench that does. Failover cannot be demonstrated
+  without a primary that fails, and a failing appender reports itself. Expect
+  exactly these, all naming BrokenPrimary:
+
+    ERROR TcpSocketManager (TCP:127.0.0.1:9) caught exception and will continue
+    ERROR Unable to write to stream TCP:127.0.0.1:9 for appender BrokenPrimary
+    ERROR An exception occurred processing Appender BrokenPrimary
+
+  The bench treats status-logger errors as failures (README, "Failure
+  detection"), so when triaging with this config, judge it by whether
+  logs/composite/failover.log filled up — errors that do NOT name BrokenPrimary
+  are the ones worth reading.
+-->
+<Configuration status="WARN" name="appender-composite">
+
+  <Properties>
+    <Property name="dir">${sys:bench.log.dir:-logs}/composite</Property>
+    <Property name="pattern">%d{HH:mm:ss.SSS} %-5level %logger{1.} %notEmpty{[%marker] }- %msg%n</Property>
+  </Properties>
+
+  <Appenders>
+    <Console name="Console" target="SYSTEM_OUT">
+      <PatternLayout pattern="${pattern}"/>
+    </Console>
+
+    <!-- ══ Failover ══════════════════════════════════════════════════════════
+         Primary first, then the Failovers list in order. The interesting part
+         is retryIntervalSeconds: after the primary fails, Failover stops trying
+         it for that long, so a flapping destination does not cost a failed
+         write per event. Set it to 0 and every event retries the dead primary.
+
+         The primary here is a file under a path that cannot be created, which
+         is a reliable way to make an appender fail on this machine without
+         needing anything external to be down. -->
+    <!-- A primary that constructs cleanly and fails on write, which is what a
+         destination going down actually looks like.
+
+         It cannot be a File appender. FileManager resolves and creates the
+         parent directory while the manager is built, before createOnDemand has
+         any say, so every bad path fails at *construction*: the appender comes
+         back null and Failover reports "Unable to locate primary" — a
+         configuration error, not a failover. Both "/dev/null/impossible/app.log"
+         and "/dev/null/app.log" fail that way.
+
+         A TCP socket to a closed port on this machine does the right thing:
+         reconnectionDelayMillis lets it construct without a listener,
+         immediateFail makes each append fail at once rather than block, and
+         ignoreExceptions="false" lets the exception reach Failover — the
+         default swallows it and the primary never appears to be down.
+         Port 9 is discard, which nothing listens on by default. -->
+    <Socket name="BrokenPrimary" host="127.0.0.1" port="9" protocol="TCP"
+            reconnectionDelayMillis="600000" immediateFail="true"
+            ignoreExceptions="false">
+      <PatternLayout pattern="${pattern}"/>
+    </Socket>
+    <File name="FailoverTarget" fileName="${dir}/failover.log" append="false">
+      <PatternLayout pattern="[failover] ${pattern}"/>
+    </File>
+    <Failover name="Failover" primary="BrokenPrimary" retryIntervalSeconds="600">
+      <Failovers>
+        <AppenderRef ref="FailoverTarget"/>
+      </Failovers>
+    </Failover>
+
+    <!-- ══ Routing ═══════════════════════════════════════════════════════════
+         One appender per distinct value of the routing key, created on demand.
+         ${ctx:tenant} is evaluated per event, and the Route without a key is
+         the default — omit it and events with no tenant are simply dropped.
+
+         IdlePurgePolicy closes appenders that have gone quiet, which is what
+         keeps a high-cardinality key from holding every file open forever. -->
+    <!-- Routed on userId, because that is a key the `context` scenario actually
+         sets. Routing on a key no scenario populates sends everything down the
+         default route and the config looks like it works. -->
+    <Routing name="Routing">
+      <Routes pattern="$${ctx:userId}">
+        <!-- Named route: matched literally against the pattern's value -->
+        <Route key="alice">
+          <File name="RouteAlice" fileName="${dir}/user-alice.log" append="false">
+            <PatternLayout pattern="[route:alice] ${pattern}"/>
+          </File>
+        </Route>
+        <!-- Default route: one file per unmatched user, named after it. The
+             single $ here is deliberate — the double $ above defers evaluation
+             to each event, while these are resolved once per route key, which
+             is what gives each key its own appender instead of one shared one. -->
+        <Route>
+          <File name="RouteOther-${ctx:userId:-anonymous}"
+                fileName="${dir}/user-${ctx:userId:-anonymous}.log" append="false">
+            <PatternLayout pattern="[route:default] ${pattern}"/>
+          </File>
+        </Route>
+      </Routes>
+      <IdlePurgePolicy timeToLive="15" timeUnit="MINUTES"/>
+    </Routing>
+
+    <!-- ══ Rewrite ═══════════════════════════════════════════════════════════
+         Modifies events before they reach the appender underneath. All three
+         policies are shown; only one can be active per Rewrite appender, so
+         each gets its own. -->
+
+    <!-- MapRewritePolicy: Add merges into a MapMessage, Update only replaces
+         keys that already exist. Non-MapMessage events pass through untouched,
+         which is the usual surprise. -->
+    <Rewrite name="RewriteMap">
+      <AppenderRef ref="RewriteTarget"/>
+      <MapRewritePolicy mode="Add">
+        <KeyValuePair key="environment" value="bench"/>
+        <KeyValuePair key="rewritten" value="true"/>
+      </MapRewritePolicy>
+    </Rewrite>
+
+    <!-- PropertiesRewritePolicy: adds to the event's context data (MDC), not to
+         the message. Values go through the substitutor, so lookups work. -->
+    <Rewrite name="RewriteProperties">
+      <AppenderRef ref="RewriteTarget"/>
+      <PropertiesRewritePolicy>
+        <Property name="hostname">${hostName}</Property>
+        <Property name="pid">${sys:java.version}</Property>
+      </PropertiesRewritePolicy>
+    </Rewrite>
+
+    <!-- LoggerNameLevelRewritePolicy: demotes or promotes levels for one logger
+         prefix. The classic use is silencing a third-party library that logs at
+         the wrong level, without losing the events entirely. -->
+    <Rewrite name="RewriteLevel">
+      <AppenderRef ref="RewriteTarget"/>
+      <LoggerNameLevelRewritePolicy logger="org.apache.logging.bench">
+        <KeyValuePair key="INFO" value="DEBUG"/>
+        <KeyValuePair key="WARN" value="INFO"/>
+      </LoggerNameLevelRewritePolicy>
+    </Rewrite>
+
+    <File name="RewriteTarget" fileName="${dir}/rewrite.log" append="false">
+      <!-- %K renders the MapMessage, %X the context data, so both rewrite
+           targets are visible in one line. -->
+      <PatternLayout pattern="[rewrite] %-5level %K %X - %msg%n"/>
+    </File>
+
+    <!-- ══ AppenderSet + ScriptAppenderSelector ══════════════════════════════
+         AppenderSet is NOT a top-level appender and takes no name: its builder
+         binds the raw configuration node, and the appenders inside it are held
+         unbuilt until something selects one. Declaring it alongside the others
+         with a name earns "AppenderSet contains an invalid element or attribute
+         name" and then a null appender. It belongs inside the selector.
+
+         The script runs ONCE, at configuration time, and its return value names
+         one appender in the set. Not per event — the choice is fixed for the
+         life of the configuration, which is the thing people expect wrongly.
+
+         Needs a JSR-223 engine (groovy-jsr223 on 2.x, plus log4j-script on 3.x)
+         AND log4j2.Script.enableLanguages, since script support is off by
+         default. Without the property the only symptom is one line, "Script
+         support is not enabled", and an appender that never appears. -->
+    <ScriptAppenderSelector name="Selected">
+      <Script name="ChooseAppender" language="groovy"><![CDATA[
+        // Anything the script returns names an appender inside the set.
+        System.getProperty("bench.appender", "SetAlpha")
+      ]]></Script>
+      <AppenderSet>
+        <File name="SetAlpha" fileName="${dir}/set-alpha.log" append="false">
+          <PatternLayout pattern="[set:alpha] ${pattern}"/>
+        </File>
+        <File name="SetBeta" fileName="${dir}/set-beta.log" append="false">
+          <PatternLayout pattern="[set:beta] ${pattern}"/>
+        </File>
+      </AppenderSet>
+    </ScriptAppenderSelector>
+
+    <!-- ══ Async ═════════════════════════════════════════════════════════════
+         Queue-backed, wrapping the composite appenders above so the queue and
+         the composition interact — which is where ordering bugs live. -->
+    <Async name="Async" bufferSize="256" blocking="true">
+      <AppenderRef ref="Routing"/>
+      <AppenderRef ref="Failover"/>
+    </Async>
+  </Appenders>
+
+  <Loggers>
+    <Logger name="org.apache.logging.bench" level="TRACE"/>
+    <Root level="INFO">
+      <AppenderRef ref="Console"/>
+      <AppenderRef ref="Async"/>
+      <AppenderRef ref="RewriteMap"/>
+      <AppenderRef ref="RewriteProperties"/>
+      <AppenderRef ref="RewriteLevel"/>
+      <AppenderRef ref="Selected"/>
+    </Root>
+  </Loggers>
+
+</Configuration>

@@ -177,6 +177,11 @@ Pass `--pr` for a pull request instead of an issue.
 The matrix scans for that as well as for a non-zero exit — checking only the exit
 code would mark almost every layout bug as PASS.
 
+One config breaks that rule deliberately: `appender-composite` cannot demonstrate
+`Failover` without a primary that fails, and a failing appender reports itself.
+It emits exactly three errors, all naming `BrokenPrimary`, and its header says so.
+Judge that config by whether `logs/composite/failover.log` filled up.
+
 The bench itself is never mutated; generation writes only to `repros/`, so there
 is nothing to revert afterwards.
 

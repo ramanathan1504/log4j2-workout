@@ -1,0 +1,205 @@
+# The appenders that wrap other appenders, in YAML.
+# Mirrors configs/xml/appender-composite.xml. Feature matrix §1, §7, §11.
+#
+# Nothing here needs a container or a network — every destination is a local
+# file — which makes this the config to reach for when triaging a composition
+# bug rather than a destination bug.
+#
+# ── THIS CONFIG EMITS STATUS-LOGGER ERRORS ON PURPOSE ────────────────────────
+#
+# Failover cannot be demonstrated without a primary that fails, and a failing
+# appender reports itself. Expect three errors naming BrokenPrimary. Judge a run
+# by whether logs/composite/failover.log filled up; errors that do NOT name
+# BrokenPrimary are the ones worth reading.
+#
+# YAML note: the Routes pattern must be quoted. A bare $${ctx:userId} starts
+# with a character YAML treats as plain-scalar-unsafe in some positions, and the
+# doubled $ is load-bearing — see the comment on Routes below.
+
+Configuration:
+  status: WARN
+  name: appender-composite
+
+  Properties:
+    Property:
+      - name: dir
+        value: ${sys:bench.log.dir:-logs}/composite
+      - name: pattern
+        value: "%d{HH:mm:ss.SSS} %-5level %logger{1.} %notEmpty{[%marker] }- %msg%n"
+
+  Appenders:
+    Console:
+      name: Console
+      target: SYSTEM_OUT
+      PatternLayout:
+        pattern: ${pattern}
+
+    # A primary that constructs cleanly and fails on write. It cannot be a File
+    # appender: FileManager creates the parent directory while the manager is
+    # built, so a bad path fails at construction and Failover reports "Unable to
+    # locate primary" instead of failing over. A TCP socket to a closed local
+    # port constructs, then fails every append.
+    Socket:
+      name: BrokenPrimary
+      host: 127.0.0.1
+      port: 9
+      protocol: TCP
+      reconnectionDelayMillis: 600000
+      immediateFail: true
+      ignoreExceptions: false
+      PatternLayout:
+        pattern: ${pattern}
+
+    File:
+      - name: FailoverTarget
+        fileName: ${dir}/failover.log
+        append: false
+        PatternLayout:
+          pattern: "[failover] ${pattern}"
+
+      - name: RewriteTarget
+        fileName: ${dir}/rewrite.log
+        append: false
+        # %K renders the MapMessage, %X the context data, so both rewrite
+        # targets are visible in one line.
+        PatternLayout:
+          pattern: "[rewrite] %-5level %K %X - %msg%n"
+
+    # ══ Failover ══
+    # Primary first, then the Failovers list. retryIntervalSeconds is the
+    # interesting part: after a failure the primary is left alone for that long,
+    # so a flapping destination does not cost a failed write per event.
+    Failover:
+      name: Failover
+      primary: BrokenPrimary
+      retryIntervalSeconds: 600
+      Failovers:
+        AppenderRef:
+          ref: FailoverTarget
+
+    # ══ Routing ══
+    # Routed on userId, because that is a key the `context` scenario actually
+    # sets. Routing on a key no scenario populates sends everything down the
+    # default route and the config looks like it works.
+    Routing:
+      name: Routing
+      Routes:
+        # $$ defers evaluation to each event. A single $ here would resolve once,
+        # at configuration time, and every event would share one route.
+        pattern: "$${ctx:userId}"
+        Route:
+          - key: alice
+            File:
+              name: RouteAlice
+              fileName: ${dir}/user-alice.log
+              append: false
+              PatternLayout:
+                pattern: "[route:alice] ${pattern}"
+          # Default route: no key. Omit it and events whose key matches nothing
+          # are dropped. The single $ below is resolved once per route key,
+          # which is what gives each key its own file.
+          - File:
+              name: RouteOther-${ctx:userId:-anonymous}
+              fileName: ${dir}/user-${ctx:userId:-anonymous}.log
+              append: false
+              PatternLayout:
+                pattern: "[route:default] ${pattern}"
+      IdlePurgePolicy:
+        timeToLive: 15
+        timeUnit: MINUTES
+
+    # ══ Rewrite ══
+    # Modifies events before they reach the appender underneath. Only one policy
+    # can be active per Rewrite appender, so each gets its own.
+    Rewrite:
+      # Add merges into a MapMessage, Update only replaces existing keys.
+      # Non-MapMessage events pass through untouched, which is the usual surprise.
+      - name: RewriteMap
+        AppenderRef:
+          ref: RewriteTarget
+        MapRewritePolicy:
+          mode: Add
+          KeyValuePair:
+            - key: environment
+              value: bench
+            - key: rewritten
+              value: "true"
+
+      # Adds to the event's context data (MDC), not to the message. Values go
+      # through the substitutor, so lookups work.
+      - name: RewriteProperties
+        AppenderRef:
+          ref: RewriteTarget
+        PropertiesRewritePolicy:
+          Property:
+            - name: hostname
+              value: ${hostName}
+            - name: pid
+              value: ${sys:java.version}
+
+      # Demotes or promotes levels for one logger prefix — the way to silence a
+      # library that logs at the wrong level without losing the events.
+      - name: RewriteLevel
+        AppenderRef:
+          ref: RewriteTarget
+        LoggerNameLevelRewritePolicy:
+          logger: org.apache.logging.bench
+          KeyValuePair:
+            - key: INFO
+              value: DEBUG
+            - key: WARN
+              value: INFO
+
+    # ══ AppenderSet + ScriptAppenderSelector ══
+    # AppenderSet is not a top-level appender and takes no name — it belongs
+    # inside the selector, holding appenders unbuilt until one is chosen. The
+    # script runs ONCE, at configuration time; the choice is then fixed for the
+    # life of the configuration.
+    #
+    # Needs a JSR-223 engine AND log4j2.Script.enableLanguages, which ./bench
+    # passes. Without the property the only symptom is "Script support is not
+    # enabled" and an appender that never appears.
+    ScriptAppenderSelector:
+      name: Selected
+      Script:
+        name: ChooseAppender
+        language: groovy
+        scriptText: |
+          System.getProperty("bench.appender", "SetAlpha")
+      AppenderSet:
+        File:
+          - name: SetAlpha
+            fileName: ${dir}/set-alpha.log
+            append: false
+            PatternLayout:
+              pattern: "[set:alpha] ${pattern}"
+          - name: SetBeta
+            fileName: ${dir}/set-beta.log
+            append: false
+            PatternLayout:
+              pattern: "[set:beta] ${pattern}"
+
+    # ══ Async ══
+    # Queue-backed, wrapping the composite appenders so the queue and the
+    # composition interact — which is where ordering bugs live.
+    Async:
+      name: Async
+      bufferSize: 256
+      blocking: true
+      AppenderRef:
+        - ref: Routing
+        - ref: Failover
+
+  Loggers:
+    Logger:
+      - name: org.apache.logging.bench
+        level: TRACE
+    Root:
+      level: INFO
+      AppenderRef:
+        - ref: Console
+        - ref: Async
+        - ref: RewriteMap
+        - ref: RewriteProperties
+        - ref: RewriteLevel
+        - ref: Selected

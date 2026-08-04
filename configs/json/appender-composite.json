@@ -1,0 +1,170 @@
+{
+  "configuration": {
+    "status": "WARN",
+    "name": "appender-composite",
+
+    "properties": {
+      "property": [
+        { "name": "dir", "value": "${sys:bench.log.dir:-logs}/composite" },
+        { "name": "pattern", "value": "%d{HH:mm:ss.SSS} %-5level %logger{1.} %notEmpty{[%marker] }- %msg%n" }
+      ]
+    },
+
+    "appenders": {
+      "Console": {
+        "name": "Console",
+        "target": "SYSTEM_OUT",
+        "PatternLayout": { "pattern": "${pattern}" }
+      },
+
+      "Socket": {
+        "name": "BrokenPrimary",
+        "host": "127.0.0.1",
+        "port": "9",
+        "protocol": "TCP",
+        "reconnectionDelayMillis": "600000",
+        "immediateFail": "true",
+        "ignoreExceptions": "false",
+        "PatternLayout": { "pattern": "${pattern}" }
+      },
+
+      "File": [
+        {
+          "name": "FailoverTarget",
+          "fileName": "${dir}/failover.log",
+          "append": "false",
+          "PatternLayout": { "pattern": "[failover] ${pattern}" }
+        },
+        {
+          "name": "RewriteTarget",
+          "fileName": "${dir}/rewrite.log",
+          "append": "false",
+          "PatternLayout": { "pattern": "[rewrite] %-5level %K %X - %msg%n" }
+        }
+      ],
+
+      "Failover": {
+        "name": "Failover",
+        "primary": "BrokenPrimary",
+        "retryIntervalSeconds": "600",
+        "Failovers": {
+          "AppenderRef": { "ref": "FailoverTarget" }
+        }
+      },
+
+      "Routing": {
+        "name": "Routing",
+        "Routes": {
+          "pattern": "$${ctx:userId}",
+          "Route": [
+            {
+              "key": "alice",
+              "File": {
+                "name": "RouteAlice",
+                "fileName": "${dir}/user-alice.log",
+                "append": "false",
+                "PatternLayout": { "pattern": "[route:alice] ${pattern}" }
+              }
+            },
+            {
+              "File": {
+                "name": "RouteOther-${ctx:userId:-anonymous}",
+                "fileName": "${dir}/user-${ctx:userId:-anonymous}.log",
+                "append": "false",
+                "PatternLayout": { "pattern": "[route:default] ${pattern}" }
+              }
+            }
+          ]
+        },
+        "IdlePurgePolicy": { "timeToLive": "15", "timeUnit": "MINUTES" }
+      },
+
+      "Rewrite": [
+        {
+          "name": "RewriteMap",
+          "AppenderRef": { "ref": "RewriteTarget" },
+          "MapRewritePolicy": {
+            "mode": "Add",
+            "KeyValuePair": [
+              { "key": "environment", "value": "bench" },
+              { "key": "rewritten", "value": "true" }
+            ]
+          }
+        },
+        {
+          "name": "RewriteProperties",
+          "AppenderRef": { "ref": "RewriteTarget" },
+          "PropertiesRewritePolicy": {
+            "Property": [
+              { "name": "hostname", "value": "${hostName}" },
+              { "name": "pid", "value": "${sys:java.version}" }
+            ]
+          }
+        },
+        {
+          "name": "RewriteLevel",
+          "AppenderRef": { "ref": "RewriteTarget" },
+          "LoggerNameLevelRewritePolicy": {
+            "logger": "org.apache.logging.bench",
+            "KeyValuePair": [
+              { "key": "INFO", "value": "DEBUG" },
+              { "key": "WARN", "value": "INFO" }
+            ]
+          }
+        }
+      ],
+
+      "ScriptAppenderSelector": {
+        "name": "Selected",
+        "Script": {
+          "name": "ChooseAppender",
+          "language": "groovy",
+          "scriptText": "System.getProperty(\"bench.appender\", \"SetAlpha\")"
+        },
+        "AppenderSet": {
+          "File": [
+            {
+              "name": "SetAlpha",
+              "fileName": "${dir}/set-alpha.log",
+              "append": "false",
+              "PatternLayout": { "pattern": "[set:alpha] ${pattern}" }
+            },
+            {
+              "name": "SetBeta",
+              "fileName": "${dir}/set-beta.log",
+              "append": "false",
+              "PatternLayout": { "pattern": "[set:beta] ${pattern}" }
+            }
+          ]
+        }
+      },
+
+      "Async": {
+        "name": "Async",
+        "bufferSize": "256",
+        "blocking": "true",
+        "AppenderRef": [
+          { "ref": "Routing" },
+          { "ref": "Failover" }
+        ]
+      }
+    },
+
+    "loggers": {
+      "logger": [
+        { "name": "org.apache.logging.bench", "level": "TRACE" }
+      ],
+      "root": {
+        "level": "INFO",
+        "AppenderRef": [
+          { "ref": "Console" },
+          { "ref": "Async" },
+          { "ref": "RewriteMap" },
+          { "ref": "RewriteProperties" },
+          { "ref": "RewriteLevel" },
+          { "ref": "Selected" }
+        ]
+      }
+    }
+  }
+}

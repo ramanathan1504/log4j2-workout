@@ -287,13 +287,18 @@ Each of the first eight needs either a javax servlet container, a broker, a mail
 provider or a config server, which is why they are grouped rather than bolted onto an
 existing app.
 
-**On a classpath but not yet driven by a config or scenario:** Syslog · Socket · Http ·
+**On a classpath but not yet driven by a config or scenario:** Syslog · Http ·
 Kafka · JeroMQ · MongoDB · Cassandra · CouchDB (each needs its container from
-`infra/docker-compose.yml`) · MemoryMappedFile · Failover · Routing · Rewrite · AppenderSet ·
-ScriptAppenderSelector · GelfLayout · CsvLayouts · Rfc5424Layout · **EcsLayout** (the Elastic
-jar; Log4j's own `EcsLayout.json` template is covered) · all 7 arbiters · 15 of 18 lookups ·
-BlockingQueueFactories · PosixViewAttribute · custom levels · Ssl/KeyStore ·
-composite configuration · custom plugin authoring.
+`infra/docker-compose.yml`) · MemoryMappedFile · GelfLayout · CsvLayouts · Rfc5424Layout ·
+SyslogLayout · MessageLayout · **EcsLayout** (the Elastic jar; Log4j's own `EcsLayout.json`
+template is covered) · all 7 arbiters · 15 of 18 lookups · BlockingQueueFactories ·
+PosixViewAttribute · custom levels · Ssl/KeyStore · composite configuration ·
+custom plugin authoring.
+
+Newly driven by `configs/*/appender-composite.*` (all four formats, verified identical):
+`Failover` + `Failovers` · `Routing` + `Routes`/`Route`/`IdlePurgePolicy` · `Rewrite` with all
+three policies (`MapRewritePolicy`, `PropertiesRewritePolicy`, `LoggerNameLevelRewritePolicy`) ·
+`AppenderSet` · `ScriptAppenderSelector` · `Async` · `Socket` (as a deliberately dead primary).
 
 The distinction matters: the first list is what the bench *cannot* reach however it is
 invoked; the second is what it could reach today with a config nobody has written yet.
