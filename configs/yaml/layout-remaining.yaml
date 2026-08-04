@@ -1,0 +1,180 @@
+# The layouts not covered by the other configs, in YAML.
+# Mirrors configs/xml/layout-remaining.xml. Feature matrix §2, §11.
+#
+# Between this file, layout-pattern-full, layout-jsontemplate and
+# layout-legacy-json-xml-yaml, every layout Log4j ships is exercised except
+# SerializedLayout, which is deprecated and refuses to build without
+# log4j2.enableSerialization.
+#
+# Each appender writes to its own file: several of these emit one long line per
+# event and interleaving them on the console makes each unreadable.
+
+Configuration:
+  status: WARN
+  name: layout-remaining
+
+  Properties:
+    Property:
+      name: dir
+      value: ${sys:bench.log.dir:-logs}/layout-remaining
+
+  Appenders:
+    Console:
+      name: Console
+      target: SYSTEM_OUT
+      PatternLayout:
+        pattern: "%d{HH:mm:ss.SSS} %-5level %logger{1.} - %msg%n"
+
+    File:
+      # ══ GelfLayout ══
+      # Graylog Extended Log Format: JSON with reserved keys (version, host,
+      # short_message, timestamp, level) plus underscore-prefixed custom fields.
+      # compressionType GZIP/ZLIB emits binary — right for a UDP socket, useless
+      # for reading. GELF levels are syslog severities, so TRACE and DEBUG both
+      # collapse to 7.
+      - name: Gelf
+        fileName: ${dir}/gelf.json
+        append: false
+        GelfLayout:
+          host: log4j-bench
+          compressionType: "OFF"
+          includeStacktrace: true
+          includeThreadContext: true
+          includeNullDelimiter: false
+          includeNewLineDelimiter: true
+          includeMapMessage: true
+          KeyValuePair:
+            - key: _environment
+              value: bench
+            - key: _service
+              value: log4j-bench
+
+      # ══ CsvLogEventLayout ══
+      # One row per event, columns fixed by the layout. Needs commons-csv.
+      # `format` names a CSVFormat preset, and the quoting rules differ enough
+      # between presets that a consumer written against one mis-parses another.
+      - name: CsvEvents
+        fileName: ${dir}/events.csv
+        append: false
+        CsvLogEventLayout:
+          format: RFC4180
+          delimiter: ","
+          quoteMode: MINIMAL
+          nullString: "\\N"
+
+      # ══ CsvParameterLayout ══
+      # Despite the name, unrelated to the above: it writes only the message
+      # PARAMETERS and ignores everything else about the event.
+      #
+      # ── IT NPEs ON ANY EVENT WITH NO PARAMETERS ──
+      # Message.getParameters() is null for SimpleMessage and for the plain
+      # logger.info("text") form, and toSerializable hands that straight to
+      # CSVFormat.printRecord:
+      #   NullPointerException: Cannot read the array length because "values" is null
+      #     at CsvParameterLayout.toSerializable(CsvParameterLayout.java:98)
+      # One per event, forever. Hence its own logger below rather than the root;
+      # add an AppenderRef to Root to reproduce.
+      - name: CsvParams
+        fileName: ${dir}/parameters.csv
+        append: false
+        CsvParameterLayout:
+          format: Default
+          delimiter: ";"
+          quoteMode: ALL
+
+      # ══ Rfc5424Layout ══
+      # Structured syslog. mdcId and sdId must NOT be written as
+      # name@enterprise even though that is what appears on the wire — Log4j
+      # appends the enterprise number itself, and an '@' fails the layout with
+      # "Structured id name cannot contain an '@'". The layout then does not
+      # build and the appender falls back to its default, which looks like a
+      # plain-text log rather than a broken one.
+      - name: Rfc5424
+        fileName: ${dir}/rfc5424.log
+        append: false
+        Rfc5424Layout:
+          facility: LOCAL0
+          enterpriseNumber: 32473
+          appName: log4j-bench
+          messageId: bench
+          includeMDC: true
+          mdcId: bench
+          mdcPrefix: "mdc:"
+          newLine: true
+          LoggerFields:
+            sdId: context
+            enterpriseId: 32473
+            discardIfAllFieldsAreEmpty: true
+            # The doubled $ defers these to each event. With the MDC key absent
+            # the expression renders LITERALLY rather than as an empty string,
+            # and discardIfAllFieldsAreEmpty does not drop the element either,
+            # because an unresolved lookup is not an empty value.
+            KeyValuePair:
+              - key: trace
+                value: "$${ctx:traceId}"
+              - key: user
+                value: "$${ctx:userId}"
+
+      # ══ SyslogLayout ══
+      # The older BSD format (RFC 3164): priority, a timestamp with no year, a
+      # host, free text. No structured data, so MDC is simply absent.
+      - name: Syslog
+        fileName: ${dir}/syslog-bsd.log
+        append: false
+        SyslogLayout:
+          facility: LOCAL0
+          newLine: true
+          charset: UTF-8
+
+      # ══ MessageLayout ══
+      # ── CANNOT BE USED WITH A BYTE-ORIENTED APPENDER ──
+      # MessageLayout.toByteArray() is `return null;`. toSerializable returns
+      # the Message object, which JMS can use and File/Console/Socket cannot.
+      # Attached to a File appender it yields one "An exception occurred
+      # processing Appender" per event and an empty file. Declared to cover the
+      # plugin, deliberately left unreferenced.
+      - name: MessageOnly
+        fileName: ${dir}/message-only.txt
+        append: false
+        MessageLayout: {}
+
+      # ══ EcsLayout — Elastic's, not Log4j's ══
+      # co.elastic.logging:log4j2-ecs-layout. Worth having because Log4j ALSO
+      # ships an ECS template for JsonTemplateLayout: the two produce similar
+      # but not identical documents. Being third-party, it is also the canary
+      # for plugin-API breakage.
+      - name: EcsElastic
+        fileName: ${dir}/ecs-elastic.json
+        append: false
+        EcsLayout:
+          serviceName: log4j-bench
+          serviceNodeName: bench-node
+          eventDataset: log4j-bench.log
+          includeMarkers: true
+          includeOrigin: true
+          stackTraceAsArray: false
+          KeyValuePair:
+            key: service.environment
+            value: bench
+
+  Loggers:
+    Logger:
+      - name: org.apache.logging.bench
+        level: TRACE
+      # CsvParameterLayout gets its own logger because it NPEs on parameterless
+      # events. Nothing logs to this name, so the plugin is built and validated
+      # without a stack trace per event.
+      - name: org.apache.logging.bench.csvparams
+        level: TRACE
+        additivity: false
+        AppenderRef:
+          ref: CsvParams
+    Root:
+      level: INFO
+      AppenderRef:
+        - ref: Console
+        - ref: Gelf
+        - ref: CsvEvents
+        - ref: Rfc5424
+        - ref: Syslog
+        - ref: EcsElastic

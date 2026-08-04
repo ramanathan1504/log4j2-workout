@@ -289,16 +289,20 @@ existing app.
 
 **On a classpath but not yet driven by a config or scenario:** Syslog · Http ·
 Kafka · JeroMQ · MongoDB · Cassandra · CouchDB (each needs its container from
-`infra/docker-compose.yml`) · MemoryMappedFile · GelfLayout · CsvLayouts · Rfc5424Layout ·
-SyslogLayout · MessageLayout · **EcsLayout** (the Elastic jar; Log4j's own `EcsLayout.json`
-template is covered) · all 7 arbiters · 15 of 18 lookups · BlockingQueueFactories ·
-PosixViewAttribute · custom levels · Ssl/KeyStore · composite configuration ·
-custom plugin authoring.
+`infra/docker-compose.yml`) · MemoryMappedFile · 15 of 18 lookups ·
+BlockingQueueFactories · PosixViewAttribute · custom levels · Ssl/KeyStore ·
+composite configuration · custom plugin authoring.
 
-Newly driven by `configs/*/appender-composite.*` (all four formats, verified identical):
-`Failover` + `Failovers` · `Routing` + `Routes`/`Route`/`IdlePurgePolicy` · `Rewrite` with all
-three policies (`MapRewritePolicy`, `PropertiesRewritePolicy`, `LoggerNameLevelRewritePolicy`) ·
-`AppenderSet` · `ScriptAppenderSelector` · `Async` · `Socket` (as a deliberately dead primary).
+Newly driven, each in every format that can express it, verified identical across formats:
+
+| Config | Covers |
+|---|---|
+| `appender-composite` | `Failover` + `Failovers` · `Routing` + `Routes`/`Route`/`IdlePurgePolicy` · `Rewrite` with all three policies (`MapRewritePolicy`, `PropertiesRewritePolicy`, `LoggerNameLevelRewritePolicy`) · `AppenderSet` · `ScriptAppenderSelector` · `Async` · `Socket` (as a deliberately dead primary) |
+| `arbiters` | `SystemPropertyArbiter` · `EnvironmentArbiter` · `ClassArbiter` · `ScriptArbiter` · `Select` · `DefaultArbiter`. **XML/JSON/YAML only** — the properties format has no arbiter support at all. `SpringProfile` needs a Spring Environment and belongs with the Spring Boot app |
+| `layout-remaining` | `GelfLayout` · `CsvLogEventLayout` · `CsvParameterLayout` · `Rfc5424Layout` + `LoggerFields` · `SyslogLayout` · `MessageLayout` · Elastic's `EcsLayout` |
+
+Every layout Log4j ships is now exercised except `SerializedLayout`, which is deprecated and
+refuses to build without `log4j2.enableSerialization`.
 
 The distinction matters: the first list is what the bench *cannot* reach however it is
 invoked; the second is what it could reach today with a config nobody has written yet.
@@ -314,12 +318,16 @@ Things the configs above turned up, verified against the source clone rather tha
 
 | Finding | Where |
 |---|---|
+| **`CsvParameterLayout` throws NPE on any event with no parameters.** `Message.getParameters()` is null for `SimpleMessage` and for the plain `logger.info("text")` form, and `toSerializable` passes it straight to `CSVFormat.printRecord` → `NullPointerException: Cannot read the array length because "values" is null`. One per event, with no recovery, so the layout is unusable against ordinary traffic | `configs/*/layout-remaining.*` |
+| `MessageLayout.toByteArray()` is `return null;` — it only implements `toSerializable`, returning the `Message` object. So it works with appenders that consume messages (JMS) and fails on every event with File, Console, Socket or any other stream appender, producing an empty file and one error per event | `configs/*/layout-remaining.*` |
+| `Rfc5424Layout`'s `mdcId`/`sdId` must not be written as `name@enterprise`, even though that is exactly what appears on the wire — Log4j appends the enterprise number itself, and an `@` fails the layout with "Structured id name cannot contain an '@'". The appender then falls back to its default layout, so the output looks like a plain-text log rather than a broken one | `configs/*/layout-remaining.*` |
 | Under `log4j-to-jul`, `ThreadContext` is a no-op on the Log4j side as well as the JUL side: `JULProvider` registers `NoOpThreadContextMap.INSTANCE`, so `ThreadContext.put()` discards the value and reading it back returns nothing. Code that stores a trace id and later reads its own MDC gets null, not merely unrendered output | `apps/bridges-to-jul` |
 | `SimpleMessage` and `MapMessage` implement both `Message` and `CharSequence`, and `Logger` overloads for each, so `logger.info(new SimpleMessage(...))` does not compile — it is ambiguous and needs a cast | `apps/java8-baseline` |
 | Log4j 2's `JsonConfiguration` enables `ALLOW_COMMENTS`; Log4j 3's does not, and does not report a parse error either — `root` is left null and the first logger call dies with an NPE inside `JsonConfiguration.setup`, surfacing as `ExceptionInInitializerError`. A commented JSON config works on every 2.x line and hard-fails on 3.x | `configs/json/` (see its README) |
 | **The Log4j 2 properties config format does not exist in 3.x.** `PropertiesConfigurationFactory` is absent from the 3.x source entirely; `log4j-config-properties` ships `JavaPropsConfigurationFactory` instead, a Jackson java-properties reader that maps onto the same tree as JSON/YAML and so uses completely different keys. The module is on the bench's 3.x classpath and still cannot read these files — Log4j falls back to `DefaultConfiguration` without a word | `configs/properties/` |
 | Log4j 3 reads `log4j.configuration.location`, not `log4j.configurationFile`. Passing the 2.x name against 3.x does not fail — Log4j falls back to `DefaultConfiguration` and logs to the console, so a 3.x run can look healthy while testing nothing but the default config | `bench` `cmd_run` |
 | `NullAppender`'s factory takes only a name — nesting any filter under it fails plugin binding with "no parameter that matches element", visible only in the status logger | `configs/*/filter-all.*` |
+| The properties format cannot express **arbiters at all**. `PropertiesConfigurationBuilder` recognises only `property`, `script`, `customLevel`, `filter`, `appender`, `logger`, `rootLogger`, and filing an arbiter under `appender.` throws `ConfigurationException: No name attribute provided for Appender` — which escapes configuration into `LogManager.getLogger`, killing the application with `ExceptionInInitializerError`. Not survivable and not silent, unlike most config mistakes | `configs/properties/` (see its README) |
 | The properties format cannot express a `Filters` composite: `PropertiesConfigurationBuilder.createFilter` always passes `onMatch`/`onMismatch`, which `CompositeFilter` does not declare, so every such config logs an invalid-attribute error. Appender/logger/appender-ref scopes are therefore limited to one filter each | `configs/properties/filter-all.properties` |
 | `maxCompressionDelaySeconds` is not an attribute of `DefaultRolloverStrategy` — it appears nowhere in the 2.x or 3.x source | `configs/*/rollover-full.*` |
 | `RollingFileManager` builds its async executor with `Log4jThreadFactory.createThreadFactory()`, i.e. **non-daemon** threads, started lazily on the first compressing rollover. The JVM then cannot begin shutdown, and the shutdown hook that would stop Log4j only runs once shutdown has begun — so a short-lived app with a compressing rolling appender hangs on exit unless it calls `LogManager.shutdown()` itself | `apps/core-java` `Bench.main` |

@@ -1,0 +1,137 @@
+{
+  "configuration": {
+    "status": "WARN",
+    "name": "layout-remaining",
+
+    "properties": {
+      "property": { "name": "dir", "value": "${sys:bench.log.dir:-logs}/layout-remaining" }
+    },
+
+    "appenders": {
+      "Console": {
+        "name": "Console",
+        "target": "SYSTEM_OUT",
+        "PatternLayout": { "pattern": "%d{HH:mm:ss.SSS} %-5level %logger{1.} - %msg%n" }
+      },
+
+      "File": [
+        {
+          "name": "Gelf",
+          "fileName": "${dir}/gelf.json",
+          "append": "false",
+          "GelfLayout": {
+            "host": "log4j-bench",
+            "compressionType": "OFF",
+            "includeStacktrace": "true",
+            "includeThreadContext": "true",
+            "includeNullDelimiter": "false",
+            "includeNewLineDelimiter": "true",
+            "includeMapMessage": "true",
+            "KeyValuePair": [
+              { "key": "_environment", "value": "bench" },
+              { "key": "_service", "value": "log4j-bench" }
+            ]
+          }
+        },
+        {
+          "name": "CsvEvents",
+          "fileName": "${dir}/events.csv",
+          "append": "false",
+          "CsvLogEventLayout": {
+            "format": "RFC4180",
+            "delimiter": ",",
+            "quoteMode": "MINIMAL",
+            "nullString": "\\N"
+          }
+        },
+        {
+          "name": "CsvParams",
+          "fileName": "${dir}/parameters.csv",
+          "append": "false",
+          "CsvParameterLayout": {
+            "format": "Default",
+            "delimiter": ";",
+            "quoteMode": "ALL"
+          }
+        },
+        {
+          "name": "Rfc5424",
+          "fileName": "${dir}/rfc5424.log",
+          "append": "false",
+          "Rfc5424Layout": {
+            "facility": "LOCAL0",
+            "enterpriseNumber": "32473",
+            "appName": "log4j-bench",
+            "messageId": "bench",
+            "includeMDC": "true",
+            "mdcId": "bench",
+            "mdcPrefix": "mdc:",
+            "newLine": "true",
+            "LoggerFields": {
+              "sdId": "context",
+              "enterpriseId": "32473",
+              "discardIfAllFieldsAreEmpty": "true",
+              "KeyValuePair": [
+                { "key": "trace", "value": "$${ctx:traceId}" },
+                { "key": "user", "value": "$${ctx:userId}" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Syslog",
+          "fileName": "${dir}/syslog-bsd.log",
+          "append": "false",
+          "SyslogLayout": {
+            "facility": "LOCAL0",
+            "newLine": "true",
+            "charset": "UTF-8"
+          }
+        },
+        {
+          "name": "MessageOnly",
+          "fileName": "${dir}/message-only.txt",
+          "append": "false",
+          "MessageLayout": {}
+        },
+        {
+          "name": "EcsElastic",
+          "fileName": "${dir}/ecs-elastic.json",
+          "append": "false",
+          "EcsLayout": {
+            "serviceName": "log4j-bench",
+            "serviceNodeName": "bench-node",
+            "eventDataset": "log4j-bench.log",
+            "includeMarkers": "true",
+            "includeOrigin": "true",
+            "stackTraceAsArray": "false",
+            "KeyValuePair": { "key": "service.environment", "value": "bench" }
+          }
+        }
+      ]
+    },
+
+    "loggers": {
+      "logger": [
+        { "name": "org.apache.logging.bench", "level": "TRACE" },
+        {
+          "name": "org.apache.logging.bench.csvparams",
+          "level": "TRACE",
+          "additivity": "false",
+          "AppenderRef": { "ref": "CsvParams" }
+        }
+      ],
+      "root": {
+        "level": "INFO",
+        "AppenderRef": [
+          { "ref": "Console" },
+          { "ref": "Gelf" },
+          { "ref": "CsvEvents" },
+          { "ref": "Rfc5424" },
+          { "ref": "Syslog" },
+          { "ref": "EcsElastic" }
+        ]
+      }
+    }
+  }
+}

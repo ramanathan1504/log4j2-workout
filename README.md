@@ -65,9 +65,14 @@ format is just a directory and switching between them is a one-word change:
 The extension is inferred from the directory; a bare name (`--config filter-all`)
 means the XML one. The mirrors are not mechanical translations — where a format
 genuinely cannot express what the XML does, the file says so and takes the
-nearest honest route. See the header comment of
-`configs/properties/filter-all.properties` for the clearest example, and
-`docs/FEATURE-MATRIX.md` §17 for the full list of what building them turned up.
+nearest honest route. See `configs/properties/README.md` and
+`configs/json/README.md`, and `docs/FEATURE-MATRIX.md` §17 for the full list of
+what building them turned up.
+
+**One config is not in all four formats.** `arbiters` has no properties version,
+because that format has no arbiter support whatsoever and the nearest spelling
+throws a fatal `ConfigurationException` rather than degrading. It exists in XML,
+JSON and YAML.
 
 Format support is not uniform across the version axis. XML, JSON and YAML load
 on both 2.x and 3.x; **the properties format is 2.x-only**, because 3.x dropped

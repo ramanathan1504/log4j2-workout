@@ -1,0 +1,146 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Arbiters — conditional configuration. Feature matrix §10.
+
+  An arbiter wraps configuration elements and decides, ONCE at configuration
+  time, whether its children exist at all. This is not filtering: a rejected
+  arbiter's appenders are never built, so there is nothing to see at runtime and
+  nothing in the status log either. That silence is the whole difficulty in
+  debugging them, which is why every branch below writes to a differently named
+  file — the file that appears tells you which branch won.
+
+  Drive the choices from outside, selecting this file as the config:
+
+    plain run                    both branches fall through to the defaults
+    BENCH_ENV=prod before it     the EnvironmentArbiter branches match
+    JAVA_TOOL_OPTIONS=-Denv=prod the SystemPropertyArbiter branches match
+
+  (The usage examples avoid writing the CLI flags out in full: a double hyphen
+  is illegal inside an XML comment, and the parser rejects the whole file with
+  "Error parsing" rather than pointing at the line.)
+
+  All seven arbiters exist; six are here. SpringProfile needs a Spring
+  Environment and so lives with the Spring Boot app — an arbiter is resolved
+  while the configuration is being built, and outside Spring there is no profile
+  to resolve against.
+-->
+<Configuration status="WARN" name="arbiters">
+
+  <Properties>
+    <Property name="dir">${sys:bench.log.dir:-logs}/arbiters</Property>
+    <Property name="pattern">%d{HH:mm:ss.SSS} %-5level %logger{1.} - %msg%n</Property>
+  </Properties>
+
+  <Appenders>
+    <!-- Always present, so a run that picks nothing still shows output -->
+    <Console name="Console" target="SYSTEM_OUT">
+      <PatternLayout pattern="[always] ${pattern}"/>
+    </Console>
+
+    <!-- ══ SystemPropertyArbiter ═════════════════════════════════════════════
+         Matches a -D system property. Two of them with the same child appender
+         name is the idiom: whichever matches supplies "ByProperty", and the
+         rest of the configuration refers to that one name without caring which
+         branch built it.
+
+         propertyValue is optional — omit it and the arbiter matches whenever
+         the property is set to anything at all. -->
+    <SystemPropertyArbiter propertyName="env" propertyValue="prod">
+      <File name="ByProperty" fileName="${dir}/env-prod.log" append="false">
+        <PatternLayout pattern="[sysprop:prod] ${pattern}"/>
+      </File>
+    </SystemPropertyArbiter>
+    <SystemPropertyArbiter propertyName="env" propertyValue="dev">
+      <File name="ByProperty" fileName="${dir}/env-dev.log" append="false">
+        <PatternLayout pattern="[sysprop:dev] ${pattern}"/>
+      </File>
+    </SystemPropertyArbiter>
+
+    <!-- ══ EnvironmentArbiter ════════════════════════════════════════════════
+         The same idea against an environment variable. Note that neither
+         arbiter falls back to the other: if `env` is unset AND BENCH_ENV is
+         unset, no appender named ByProperty or ByEnvironment is built, and any
+         AppenderRef to them logs "Unable to locate appender". That is why the
+         Select block below exists. -->
+    <EnvironmentArbiter propertyName="BENCH_ENV" propertyValue="prod">
+      <File name="ByEnvironment" fileName="${dir}/bench-env-prod.log" append="false">
+        <PatternLayout pattern="[env:prod] ${pattern}"/>
+      </File>
+    </EnvironmentArbiter>
+
+    <!-- ══ ClassArbiter ══════════════════════════════════════════════════════
+         Present only if the named class is loadable. The honest use is
+         "configure this appender only when the optional dependency that backs
+         it is on the classpath", which otherwise means a config that cannot be
+         shared between deployments. -->
+    <ClassArbiter className="org.apache.logging.log4j.core.layout.JsonLayout">
+      <File name="ByClassPresent" fileName="${dir}/class-present.log" append="false">
+        <PatternLayout pattern="[class:present] ${pattern}"/>
+      </File>
+    </ClassArbiter>
+    <ClassArbiter className="com.example.definitely.NotOnTheClasspath">
+      <File name="ByClassAbsent" fileName="${dir}/class-absent.log" append="false">
+        <PatternLayout pattern="[class:absent] ${pattern}"/>
+      </File>
+    </ClassArbiter>
+
+    <!-- ══ ScriptArbiter ═════════════════════════════════════════════════════
+         Arbitrary logic. The script sets `result`, and only its truthiness
+         matters. Needs a JSR-223 engine and log4j2.Script.enableLanguages,
+         which ./bench passes; without the property the arbiter is skipped and
+         its children silently do not exist. -->
+    <ScriptArbiter>
+      <Script name="IsWeekday" language="groovy"><![CDATA[
+        // Anything can decide here — the host, the time, a file on disk.
+        result = !(Calendar.instance.get(Calendar.DAY_OF_WEEK) in
+                   [Calendar.SATURDAY, Calendar.SUNDAY])
+      ]]></Script>
+      <File name="ByScript" fileName="${dir}/script-weekday.log" append="false">
+        <PatternLayout pattern="[script:weekday] ${pattern}"/>
+      </File>
+    </ScriptArbiter>
+
+    <!-- ══ Select + DefaultArbiter ═══════════════════════════════════════════
+         Select is first-match-wins with a fallback, which is what the bare
+         arbiters above lack. DefaultArbiter matches unconditionally and so must
+         come last; put it first and nothing after it can ever win.
+
+         This is the pattern to use in practice: one appender name, guaranteed
+         to be built exactly once whatever the environment says. -->
+    <Select>
+      <SystemPropertyArbiter propertyName="env" propertyValue="prod">
+        <File name="Selected" fileName="${dir}/selected-prod.log" append="false">
+          <PatternLayout pattern="[select:prod] ${pattern}"/>
+        </File>
+      </SystemPropertyArbiter>
+      <EnvironmentArbiter propertyName="BENCH_ENV" propertyValue="prod">
+        <File name="Selected" fileName="${dir}/selected-env-prod.log" append="false">
+          <PatternLayout pattern="[select:env-prod] ${pattern}"/>
+        </File>
+      </EnvironmentArbiter>
+      <DefaultArbiter>
+        <File name="Selected" fileName="${dir}/selected-default.log" append="false">
+          <PatternLayout pattern="[select:default] ${pattern}"/>
+        </File>
+      </DefaultArbiter>
+    </Select>
+  </Appenders>
+
+  <Loggers>
+    <Logger name="org.apache.logging.bench" level="TRACE"/>
+    <Root level="INFO">
+      <AppenderRef ref="Console"/>
+      <!-- Selected always exists — the DefaultArbiter guarantees it. The others
+           are referenced only from the arbiter-specific logger below, so that a
+           branch that did not win costs a single "Unable to locate appender"
+           line rather than breaking the root logger. -->
+      <AppenderRef ref="Selected"/>
+    </Root>
+
+    <Logger name="org.apache.logging.bench.arbiters" level="TRACE" additivity="false">
+      <AppenderRef ref="ByClassPresent"/>
+      <AppenderRef ref="ByScript"/>
+    </Logger>
+  </Loggers>
+
+</Configuration>

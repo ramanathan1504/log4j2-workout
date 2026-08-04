@@ -1,0 +1,158 @@
+# Arbiters — conditional configuration, in YAML.
+# Mirrors configs/xml/arbiters.xml. Feature matrix §10, §11.
+#
+# An arbiter decides ONCE, at configuration time, whether its children exist at
+# all. A rejected branch leaves nothing at runtime and nothing in the status log,
+# so every branch writes to a differently named file — the file that appears
+# tells you which branch won.
+#
+# The YAML-specific problem: XML expresses "two SystemPropertyArbiters" by
+# repeating the element, and a YAML mapping cannot repeat a key. Each arbiter
+# type that appears more than once therefore becomes a list. Duplicate the key
+# instead and SnakeYAML keeps the last silently, so one branch vanishes without
+# a word — the same trap as repeated filters.
+
+Configuration:
+  status: WARN
+  name: arbiters
+
+  Properties:
+    Property:
+      - name: dir
+        value: ${sys:bench.log.dir:-logs}/arbiters
+      - name: pattern
+        value: "%d{HH:mm:ss.SSS} %-5level %logger{1.} - %msg%n"
+
+  Appenders:
+    # Always present, so a run that picks nothing still shows output
+    Console:
+      name: Console
+      target: SYSTEM_OUT
+      PatternLayout:
+        pattern: "[always] ${pattern}"
+
+    # ══ SystemPropertyArbiter ══
+    # Two branches supplying the SAME appender name is the idiom: whichever
+    # matches provides "ByProperty", and the rest of the config refers to that
+    # one name without caring which branch built it. propertyValue is optional —
+    # omit it to match whenever the property is set to anything at all.
+    SystemPropertyArbiter:
+      - propertyName: env
+        propertyValue: prod
+        File:
+          name: ByProperty
+          fileName: ${dir}/env-prod.log
+          append: false
+          PatternLayout:
+            pattern: "[sysprop:prod] ${pattern}"
+      - propertyName: env
+        propertyValue: dev
+        File:
+          name: ByProperty
+          fileName: ${dir}/env-dev.log
+          append: false
+          PatternLayout:
+            pattern: "[sysprop:dev] ${pattern}"
+
+    # ══ EnvironmentArbiter ══
+    # Neither arbiter falls back to the other: with env and BENCH_ENV both
+    # unset, no appender named ByProperty or ByEnvironment is built at all, and
+    # any AppenderRef to them logs "Unable to locate appender". That is what the
+    # Select block below fixes.
+    EnvironmentArbiter:
+      propertyName: BENCH_ENV
+      propertyValue: prod
+      File:
+        name: ByEnvironment
+        fileName: ${dir}/bench-env-prod.log
+        append: false
+        PatternLayout:
+          pattern: "[env:prod] ${pattern}"
+
+    # ══ ClassArbiter ══
+    # Present only if the named class is loadable — "configure this appender
+    # only where the optional dependency backing it exists".
+    ClassArbiter:
+      - className: org.apache.logging.log4j.core.layout.JsonLayout
+        File:
+          name: ByClassPresent
+          fileName: ${dir}/class-present.log
+          append: false
+          PatternLayout:
+            pattern: "[class:present] ${pattern}"
+      - className: com.example.definitely.NotOnTheClasspath
+        File:
+          name: ByClassAbsent
+          fileName: ${dir}/class-absent.log
+          append: false
+          PatternLayout:
+            pattern: "[class:absent] ${pattern}"
+
+    # ══ ScriptArbiter ══
+    # The script sets `result`; only its truthiness matters. Needs a JSR-223
+    # engine and log4j2.Script.enableLanguages, which ./bench passes — without
+    # the property the arbiter is skipped and its children silently do not exist.
+    ScriptArbiter:
+      Script:
+        name: IsWeekday
+        language: groovy
+        scriptText: |
+          result = !(Calendar.instance.get(Calendar.DAY_OF_WEEK) in
+                     [Calendar.SATURDAY, Calendar.SUNDAY])
+      File:
+        name: ByScript
+        fileName: ${dir}/script-weekday.log
+        append: false
+        PatternLayout:
+          pattern: "[script:weekday] ${pattern}"
+
+    # ══ Select + DefaultArbiter ══
+    # First match wins, with a guaranteed fallback — what the bare arbiters
+    # above lack. DefaultArbiter matches unconditionally and must come last;
+    # first, and nothing after it can ever win.
+    Select:
+      SystemPropertyArbiter:
+        propertyName: env
+        propertyValue: prod
+        File:
+          name: Selected
+          fileName: ${dir}/selected-prod.log
+          append: false
+          PatternLayout:
+            pattern: "[select:prod] ${pattern}"
+      EnvironmentArbiter:
+        propertyName: BENCH_ENV
+        propertyValue: prod
+        File:
+          name: Selected
+          fileName: ${dir}/selected-env-prod.log
+          append: false
+          PatternLayout:
+            pattern: "[select:env-prod] ${pattern}"
+      DefaultArbiter:
+        File:
+          name: Selected
+          fileName: ${dir}/selected-default.log
+          append: false
+          PatternLayout:
+            pattern: "[select:default] ${pattern}"
+
+  Loggers:
+    Logger:
+      - name: org.apache.logging.bench
+        level: TRACE
+      # Branches that may not exist are referenced only from here, so a losing
+      # branch costs one "Unable to locate appender" line instead of breaking
+      # the root logger.
+      - name: org.apache.logging.bench.arbiters
+        level: TRACE
+        additivity: false
+        AppenderRef:
+          - ref: ByClassPresent
+          - ref: ByScript
+    Root:
+      level: INFO
+      AppenderRef:
+        - ref: Console
+        # Selected always exists — the DefaultArbiter guarantees it.
+        - ref: Selected
