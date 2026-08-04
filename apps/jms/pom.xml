@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <parent>
+    <groupId>org.apache.logging.bench</groupId>
+    <artifactId>log4j-bench-parent</artifactId>
+    <version>1.0.0-SNAPSHOT</version>
+    <relativePath>../../pom.xml</relativePath>
+  </parent>
+
+  <artifactId>bench-jms</artifactId>
+  <name>Log4j Bench :: JMS Appender</name>
+  <description>The JMS-Jakarta appender against an embedded ActiveMQ Artemis broker</description>
+
+  <!--
+    2.x ONLY: log4j-jakarta-jms has no 3.x release.
+
+    The plugin is named JMS-Jakarta, not JMS — log4j-core still ships a javax
+    JMS appender under the plain name, and the two are separate plugins rather
+    than one implementation chosen by ServiceLoader (which is how the SMTP
+    modules do it; see apps/smtp). So unlike SMTP, here the CONFIGURATION says
+    which flavour is in use.
+
+    No container: Artemis runs an in-VM broker, reached over the vm://0
+    transport, so nothing listens on a port and nothing has to be started first.
+
+    Like apps/jdbc-jndi, the appender resolves its ConnectionFactory and
+    Destination through JNDI, so this needs log4j2.enableJndiJms=true — passed
+    by ./bench for this app alone. The provider here is Artemis's own
+    ActiveMQInitialContextFactory, which resolves connection factories and
+    queues from its environment rather than over a network.
+  -->
+
+  <properties>
+    <artemis.version>2.37.0</artemis.version>
+  </properties>
+
+  <dependencies>
+    <dependency>
+      <groupId>org.apache.logging.log4j</groupId>
+      <artifactId>log4j-api</artifactId>
+      <version>${log4j.api.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.logging.log4j</groupId>
+      <artifactId>log4j-core</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.logging.log4j</groupId>
+      <artifactId>log4j-jakarta-jms</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>jakarta.jms</groupId>
+      <artifactId>jakarta.jms-api</artifactId>
+      <version>3.1.0</version>
+    </dependency>
+
+    <!-- The embedded broker. artemis-jakarta-server brings the broker itself;
+         artemis-jakarta-client the JMS client and the JNDI context factory. -->
+    <dependency>
+      <groupId>org.apache.activemq</groupId>
+      <artifactId>artemis-jakarta-server</artifactId>
+      <version>${artemis.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.activemq</groupId>
+      <artifactId>artemis-jakarta-client</artifactId>
+      <version>${artemis.version}</version>
+    </dependency>
+  </dependencies>
+
+  <build>
+    <plugins>
+      <plugin>
+        <groupId>org.codehaus.mojo</groupId>
+        <artifactId>exec-maven-plugin</artifactId>
+        <configuration>
+          <mainClass>org.apache.logging.bench.jms.JmsBench</mainClass>
+        </configuration>
+      </plugin>
+    </plugins>
+  </build>
+</project>

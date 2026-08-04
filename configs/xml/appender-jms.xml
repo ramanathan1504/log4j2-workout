@@ -1,0 +1,86 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  The JMS appender. Feature matrix §1, §12.
+
+  The plugin is JMS-Jakarta, not JMS. log4j-core still ships a javax JMS
+  appender under the plain name, and unlike the SMTP modules — where
+  log4j-jakarta-smtp replaces the implementation invisibly through ServiceLoader
+  — these are two separate plugins. So here the configuration states which
+  flavour is in use, and a config written for one does not silently run on the
+  other: it fails to resolve the plugin.
+
+  A layout is REQUIRED — both the jakarta and the javax appender refuse to build
+  without one, reporting "No layout provided for JmsAppender" and then a null
+  appender. Which layout decides what a consumer receives, and the difference is
+  total:
+
+    MessageLayout   the event's Message object is handed to JMS, so a
+                    MapMessage arrives as a JMS MapMessage and a consumer reads
+                    fields without parsing. This is the one appender
+                    MessageLayout is FOR: its toByteArray() returns null, so it
+                    is useless to every stream appender (see layout-remaining).
+    PatternLayout   a TextMessage containing the formatted string, with every
+                    field boundary gone
+
+  Both are configured below, against the same queue, so one run shows both.
+
+  Needs log4j2.enableJndiJms=true, which ./bench passes for the jms app, plus a
+  JNDI provider — Artemis's own, configured by apps/jms's jndi.properties rather
+  than over a network. System properties cannot do that job: InitialContext
+  copies only the standard java.naming.* keys, so connectionFactory.* and
+  queue.* entries passed as -D are ignored and Artemis silently falls back to
+  tcp://localhost:61616, failing with "JMS message producer not available".
+
+  Usable only with the jms app, which runs the embedded broker.
+-->
+<Configuration status="WARN" name="appender-jms">
+
+  <Appenders>
+    <Console name="Console" target="SYSTEM_OUT">
+      <PatternLayout pattern="%d{HH:mm:ss.SSS} %-5level %logger{1.} - %msg%n"/>
+    </Console>
+
+    <!-- ══ MessageLayout: the Message object itself ══════════════════════════
+         factoryBindingName and destinationBindingName are JNDI names, not URLs
+         — nothing here says where the broker is. providerUrl and factoryName are
+         omitted because the appender builds a default InitialContext, which
+         reads jndi.properties from the classpath (apps/jms supplies it). Set
+         them here instead when the appender must reach a broker the application
+         itself does not know about.
+
+         MessageLayout hands JMS the event's Message OBJECT, so the event's own
+         type decides what arrives: a StringMapMessage becomes a JMS MapMessage,
+         anything else an ObjectMessage. -->
+    <JMS-Jakarta name="JmsMap"
+                 factoryBindingName="ConnectionFactory"
+                 destinationBindingName="queue/log4jBenchQueue"
+                 reconnectIntervalMillis="2000"
+                 immediateFail="false"
+                 ignoreExceptions="false">
+      <MessageLayout/>
+    </JMS-Jakarta>
+
+    <!-- ══ PatternLayout: the same queue, formatted ═════════════════════════
+         Swapping the layout changes the message TYPE, which is easy to do by
+         accident when copying a config from a file appender. A consumer written
+         against MapMessage then receives TextMessage and fails on a cast. -->
+    <JMS-Jakarta name="JmsText"
+                 factoryBindingName="ConnectionFactory"
+                 destinationBindingName="queue/log4jBenchQueue"
+                 reconnectIntervalMillis="2000"
+                 immediateFail="false"
+                 ignoreExceptions="false">
+      <PatternLayout pattern="[text] %d{HH:mm:ss.SSS} %-5level %logger{1.} %X - %msg%n"/>
+    </JMS-Jakarta>
+  </Appenders>
+
+  <Loggers>
+    <Logger name="org.apache.logging.bench" level="TRACE"/>
+    <Root level="INFO">
+      <AppenderRef ref="Console"/>
+      <AppenderRef ref="JmsMap"/>
+      <AppenderRef ref="JmsText"/>
+    </Root>
+  </Loggers>
+
+</Configuration>

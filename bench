@@ -35,12 +35,12 @@ VERSIONS=(
 DEFAULT_VERSION=2.27.0-SNAPSHOT
 
 APPS=(core-java spring-boot-maven db log4j1-bridge jakarta-web spring-boot-gradle
-      java8-baseline bridges-in bridges-out bridges-to-jul custom-plugins jpa smtp javax-web jdbc-jndi)
+      java8-baseline bridges-in bridges-out bridges-to-jul custom-plugins jpa smtp javax-web jdbc-jndi jms)
 
 # Apps that cannot build on 3.x, because the Log4j artifacts they need have no
 # 3.x release. `matrix` skips these rather than reporting a spurious failure.
 APPS_2X_ONLY=(log4j1-bridge jakarta-web spring-boot-gradle
-              bridges-in bridges-out bridges-to-jul jpa smtp javax-web)
+              bridges-in bridges-out bridges-to-jul jpa smtp javax-web jms)
 
 is_2x_only() {
   local app="$1" a
@@ -141,6 +141,7 @@ module_path_for() {
     smtp)               echo "apps/smtp" ;;
     javax-web)          echo "apps/javax-web" ;;
     jdbc-jndi)          echo "apps/jdbc-jndi" ;;
+    jms)                echo "apps/jms" ;;
     bridges-in)         echo "apps/bridges-in" ;;
     bridges-out)        echo "apps/bridges-out" ;;
     bridges-to-jul)     echo "apps/bridges-to-jul" ;;
@@ -165,6 +166,7 @@ main_class_for() {
     smtp)               echo "org.apache.logging.bench.smtp.SmtpBench" ;;
     javax-web)          echo "org.apache.logging.bench.javaxweb.JavaxWebBench" ;;
     jdbc-jndi)          echo "org.apache.logging.bench.jndi.JdbcJndiBench" ;;
+    jms)                echo "org.apache.logging.bench.jms.JmsBench" ;;
     bridges-in)         echo "org.apache.logging.bench.bridges.BridgesInBench" ;;
     bridges-out)        echo "org.apache.logging.bench.bridges.BridgesOutBench" ;;
     bridges-to-jul)     echo "org.apache.logging.bench.bridges.ToJulBench" ;;
@@ -219,6 +221,18 @@ extra_jvm_args_for() {
       # renders unresolved.
       EXTRA_JVM_ARGS+=(-Djava.naming.factory.initial=org.apache.logging.bench.jndi.BenchInitialContextFactory
                        -Dlog4j2.enableJndiJdbc=true)
+      ;;
+    jms)
+      # Same shape as jdbc-jndi: a JNDI provider plus the per-subsystem flag.
+      # The provider is Artemis's own, resolving the connection factory and queue
+      # from jndi.properties rather than over a network — the broker is in-VM, on
+      # the vm://0 transport. enableJndiJms is scoped to this app, and the bench
+      # still never sets enableJndiLookup.
+      # The JNDI environment comes from jndi.properties on this app's classpath,
+      # not from here: InitialContext copies only java.naming.* out of the system
+      # properties, so connectionFactory.* and queue.* entries passed as -D are
+      # silently ignored and Artemis falls back to tcp://localhost:61616.
+      EXTRA_JVM_ARGS+=(-Dlog4j2.enableJndiJms=true)
       ;;
     bridges-in)
       # log4j-jul only takes effect if the JUL LogManager is replaced before any

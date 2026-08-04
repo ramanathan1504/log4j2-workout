@@ -134,6 +134,7 @@
         <module>apps/jpa</module>
         <module>apps/smtp</module>
         <module>apps/javax-web</module>
+        <module>apps/jms</module>
       </modules>
     </profile>
 
