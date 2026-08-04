@@ -1,0 +1,128 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Every built-in lookup, used from a CONFIGURATION. Feature matrix §9.
+
+  The `lookups` scenario already resolves these through a live StrSubstitutor.
+  This file exercises the other path, which behaves differently in ways that
+  matter:
+
+    $  resolved ONCE, while the configuration is built. Correct for anything
+       fixed for the life of the process — a file name, a service name.
+    $$ deferred, resolved per event. Required for anything that varies with the
+       event — MDC, markers, structured data. Use $ where $$ was meant and every
+       event silently gets the value the first one had.
+
+  An unresolvable lookup does NOT become empty: the expression is left in place
+  verbatim, so ${ctx:missing} appears literally in the output. That is the
+  single most useful thing to know when triaging "my lookup does not work" —
+  literal text means unresolved, empty means resolved-to-empty, and they are
+  different failures.
+
+  Three resolve to nothing here by design, and are kept precisely so their
+  absence is visible rather than assumed:
+    ${docker:}  needs the Docker API socket
+    ${web:}     needs a ServletContext   (see apps/jakarta-web)
+    ${spring:}  needs a Spring Environment (see apps/spring-boot-maven)
+    ${jndi:}    disabled since 2.17.0 unless log4j2.enableJndiLookup is set,
+                which this bench deliberately does not set
+-->
+<Configuration status="WARN" name="lookups">
+
+  <Properties>
+    <Property name="dir">${sys:bench.log.dir:-logs}/lookups</Property>
+
+    <!-- ══ Config-time lookups ═══════════════════════════════════════════════
+         Each resolves once, here. Anything that varies per event must NOT be
+         written this way. -->
+
+    <!-- ${sys:} — system properties, with a default after :- -->
+    <Property name="javaVersion">${sys:java.version}</Property>
+    <Property name="userName">${sys:user.name:-unknown}</Property>
+
+    <!-- ${env:} — environment variables, same default syntax -->
+    <Property name="home">${env:HOME:-no-home}</Property>
+    <Property name="benchEnv">${env:BENCH_ENV:-unset}</Property>
+
+    <!-- ${java:} — a small set of fixed keys, not arbitrary properties -->
+    <Property name="javaRuntime">${java:runtime}</Property>
+    <Property name="javaVm">${java:vm}</Property>
+    <Property name="javaOs">${java:os}</Property>
+    <Property name="javaLocale">${java:locale}</Property>
+    <Property name="javaHw">${java:hw}</Property>
+
+    <!-- ${date:} — the configuration's build time, formatted. Not the event
+         time: this is why a file name built from ${date:} does not roll. -->
+    <Property name="startDate">${date:yyyy-MM-dd}</Property>
+
+    <!-- ${bundle:} — a ResourceBundle on the classpath. See
+         apps/core-java/src/main/resources/bench-messages.properties -->
+    <Property name="appName">${bundle:bench-messages:app.name}</Property>
+    <Property name="appTier">${bundle:bench-messages:app.tier}</Property>
+
+    <!-- ${lower:} / ${upper:} — case conversion, usually wrapped around
+         another lookup rather than a literal -->
+    <Property name="tierUpper">${upper:${bundle:bench-messages:app.tier}}</Property>
+    <Property name="hostLower">${lower:${env:HOSTNAME:-LOCALHOST}}</Property>
+
+    <!-- ${log4j:} — where the configuration itself came from. Useful in a
+         banner when several configs are in play. -->
+    <Property name="configLocation">${log4j:configLocation}</Property>
+    <Property name="configParent">${log4j:configParentLocation}</Property>
+
+    <!-- ${main:} — the argv the application was started with, by index or by
+         flag name. Empty here because the bench passes scenario names, but the
+         lookup itself still resolves. -->
+    <Property name="firstArg">${main:0:-none}</Property>
+
+    <!-- ${docker:} — resolves only inside a container with the Docker API
+         reachable. Left in so its absence shows up as literal text. -->
+    <Property name="containerId">${docker:containerId:-not-in-docker}</Property>
+
+    <!-- ${jndi:} — OFF by default since 2.17.0. This bench does not set
+         log4j2.enableJndiLookup, so the expression stays literal. That is the
+         correct, safe outcome; enabling it is what CVE-2021-44228 abused. -->
+    <Property name="jndiValue">${jndi:java:comp/env/benchName}</Property>
+
+    <!-- ${spring:} — needs a Spring Environment; see the Spring Boot apps -->
+    <Property name="springProfile">${spring:spring.profiles.active:-no-spring}</Property>
+  </Properties>
+
+  <Appenders>
+    <!-- A file name built from config-time lookups: resolved once, which is
+         exactly what is wanted for a path. -->
+    <File name="Resolved" fileName="${dir}/${startDate}-${appTier}.log" append="false">
+      <PatternLayout>
+        <Pattern>%d{HH:mm:ss.SSS} %-5level %logger{1.} - %msg%n</Pattern>
+      </PatternLayout>
+    </File>
+
+    <!-- Config-time values printed once, as a header, so a run records exactly
+         what each lookup produced on this machine. -->
+    <Console name="Console" target="SYSTEM_OUT">
+      <PatternLayout>
+        <Pattern>%d{HH:mm:ss.SSS} %-5level %logger{1.} - %msg%n</Pattern>
+        <Header>== config-time lookups ==============================%n  app          ${appName} (${appTier} / ${tierUpper})%n  java         ${javaVersion} ${javaVm}%n  runtime      ${javaRuntime}%n  os           ${javaOs}%n  hw           ${javaHw}%n  locale       ${javaLocale}%n  user         ${userName}%n  home         ${home}%n  BENCH_ENV    ${benchEnv}%n  host(lower)  ${hostLower}%n  date         ${startDate}%n  config       ${configLocation}%n  config dir   ${configParent}%n  argv[0]      ${firstArg}%n  docker       ${containerId}%n  jndi         ${jndiValue}%n  spring       ${springProfile}%n=====================================================%n</Header>
+      </PatternLayout>
+    </Console>
+
+    <!-- ══ Event-time lookups ════════════════════════════════════════════════
+         The doubled $ is what defers these to each event. Written with a single
+         $ they would resolve once, against whatever context the configuration
+         happened to be built in — which for MDC means empty, forever. -->
+    <File name="PerEvent" fileName="${dir}/per-event.log" append="false">
+      <PatternLayout>
+        <Pattern>%d{HH:mm:ss.SSS} %-5level ctx=$${ctx:traceId:-none} map=$${map:event:-none} marker=$${marker:name:-none} sd=$${sd:type:-none} event=$${event:Level} - %msg%n</Pattern>
+      </PatternLayout>
+    </File>
+  </Appenders>
+
+  <Loggers>
+    <Logger name="org.apache.logging.bench" level="TRACE"/>
+    <Root level="INFO">
+      <AppenderRef ref="Console"/>
+      <AppenderRef ref="Resolved"/>
+      <AppenderRef ref="PerEvent"/>
+    </Root>
+  </Loggers>
+
+</Configuration>

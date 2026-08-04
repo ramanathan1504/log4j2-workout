@@ -289,8 +289,8 @@ existing app.
 
 **On a classpath but not yet driven by a config or scenario:** Syslog · Http ·
 Kafka · JeroMQ · MongoDB · Cassandra · CouchDB (each needs its container from
-`infra/docker-compose.yml`) · MemoryMappedFile · 15 of 18 lookups ·
-BlockingQueueFactories · PosixViewAttribute · custom levels · Ssl/KeyStore ·
+`infra/docker-compose.yml`) · MemoryMappedFile · PosixViewAttribute ·
+`ScriptCondition`/`IfAll`/`IfNot`/`SortByModificationTime` · Ssl/KeyStore ·
 composite configuration · custom plugin authoring.
 
 Newly driven, each in every format that can express it, verified identical across formats:
@@ -300,6 +300,9 @@ Newly driven, each in every format that can express it, verified identical acros
 | `appender-composite` | `Failover` + `Failovers` · `Routing` + `Routes`/`Route`/`IdlePurgePolicy` · `Rewrite` with all three policies (`MapRewritePolicy`, `PropertiesRewritePolicy`, `LoggerNameLevelRewritePolicy`) · `AppenderSet` · `ScriptAppenderSelector` · `Async` · `Socket` (as a deliberately dead primary) |
 | `arbiters` | `SystemPropertyArbiter` · `EnvironmentArbiter` · `ClassArbiter` · `ScriptArbiter` · `Select` · `DefaultArbiter`. **XML/JSON/YAML only** — the properties format has no arbiter support at all. `SpringProfile` needs a Spring Environment and belongs with the Spring Boot app |
 | `layout-remaining` | `GelfLayout` · `CsvLogEventLayout` · `CsvParameterLayout` · `Rfc5424Layout` + `LoggerFields` · `SyslogLayout` · `MessageLayout` · Elastic's `EcsLayout` |
+| `async-queues` | `AsyncLogger` · `AsyncAppender` · all four `BlockingQueueFactories` (`ArrayBlockingQueue`, `DisruptorBlockingQueue`, `JCToolsBlockingQueue`, `LinkedTransferQueue`) · `AsyncWaitStrategyFactory` · mixed sync/async in one context |
+| `custom-levels` | `CustomLevels`/`CustomLevel`, custom levels in `ThresholdFilter`/`LevelMatchFilter`/`LevelRangeFilter`, and a `LevelPatternSelector` keyed on one. Driven by the `custom-levels` scenario, since the API has no `audit()` method |
+| `lookups` | All 18 built-in lookups **from a configuration** — the config-time (`$`) and per-event (`$$`) paths, which the `lookups` scenario does not exercise. `${docker:}`, `${web:}`, `${spring:}` and `${jndi:}` are present and deliberately unresolved |
 
 Every layout Log4j ships is now exercised except `SerializedLayout`, which is deprecated and
 refuses to build without `log4j2.enableSerialization`.

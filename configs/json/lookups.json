@@ -1,0 +1,142 @@
+{
+  "configuration": {
+    "status": "WARN",
+    "name": "lookups",
+    "properties": {
+      "property": [
+        {
+          "name": "dir",
+          "value": "${sys:bench.log.dir:-logs}/lookups"
+        },
+        {
+          "name": "javaVersion",
+          "value": "${sys:java.version}"
+        },
+        {
+          "name": "userName",
+          "value": "${sys:user.name:-unknown}"
+        },
+        {
+          "name": "home",
+          "value": "${env:HOME:-no-home}"
+        },
+        {
+          "name": "benchEnv",
+          "value": "${env:BENCH_ENV:-unset}"
+        },
+        {
+          "name": "javaRuntime",
+          "value": "${java:runtime}"
+        },
+        {
+          "name": "javaVm",
+          "value": "${java:vm}"
+        },
+        {
+          "name": "javaOs",
+          "value": "${java:os}"
+        },
+        {
+          "name": "javaLocale",
+          "value": "${java:locale}"
+        },
+        {
+          "name": "javaHw",
+          "value": "${java:hw}"
+        },
+        {
+          "name": "startDate",
+          "value": "${date:yyyy-MM-dd}"
+        },
+        {
+          "name": "appName",
+          "value": "${bundle:bench-messages:app.name}"
+        },
+        {
+          "name": "appTier",
+          "value": "${bundle:bench-messages:app.tier}"
+        },
+        {
+          "name": "tierUpper",
+          "value": "${upper:${bundle:bench-messages:app.tier}}"
+        },
+        {
+          "name": "hostLower",
+          "value": "${lower:${env:HOSTNAME:-LOCALHOST}}"
+        },
+        {
+          "name": "configLocation",
+          "value": "${log4j:configLocation}"
+        },
+        {
+          "name": "configParent",
+          "value": "${log4j:configParentLocation}"
+        },
+        {
+          "name": "firstArg",
+          "value": "${main:0:-none}"
+        },
+        {
+          "name": "containerId",
+          "value": "${docker:containerId:-not-in-docker}"
+        },
+        {
+          "name": "jndiValue",
+          "value": "${jndi:java:comp/env/benchName}"
+        },
+        {
+          "name": "springProfile",
+          "value": "${spring:spring.profiles.active:-no-spring}"
+        }
+      ]
+    },
+    "appenders": {
+      "File": [
+        {
+          "name": "Resolved",
+          "fileName": "${dir}/${startDate}-${appTier}.log",
+          "append": "false",
+          "PatternLayout": {
+            "pattern": "%d{HH:mm:ss.SSS} %-5level %logger{1.} - %msg%n"
+          }
+        },
+        {
+          "name": "PerEvent",
+          "fileName": "${dir}/per-event.log",
+          "append": "false",
+          "PatternLayout": {
+            "pattern": "%d{HH:mm:ss.SSS} %-5level ctx=$${ctx:traceId:-none} map=$${map:event:-none} marker=$${marker:name:-none} sd=$${sd:type:-none} event=$${event:Level} - %msg%n"
+          }
+        }
+      ],
+      "Console": {
+        "name": "Console",
+        "target": "SYSTEM_OUT",
+        "PatternLayout": {
+          "pattern": "%d{HH:mm:ss.SSS} %-5level %logger{1.} - %msg%n",
+          "header": "== config-time lookups ==============================%n  app          ${appName} (${appTier} / ${tierUpper})%n  java         ${javaVersion} ${javaVm}%n  runtime      ${javaRuntime}%n  os           ${javaOs}%n  hw           ${javaHw}%n  locale       ${javaLocale}%n  user         ${userName}%n  home         ${home}%n  BENCH_ENV    ${benchEnv}%n  host(lower)  ${hostLower}%n  date         ${startDate}%n  config       ${configLocation}%n  config dir   ${configParent}%n  argv[0]      ${firstArg}%n  docker       ${containerId}%n  jndi         ${jndiValue}%n  spring       ${springProfile}%n=====================================================%n"
+        }
+      }
+    },
+    "loggers": {
+      "logger": {
+        "name": "org.apache.logging.bench",
+        "level": "TRACE"
+      },
+      "root": {
+        "level": "INFO",
+        "AppenderRef": [
+          {
+            "ref": "Console"
+          },
+          {
+            "ref": "Resolved"
+          },
+          {
+            "ref": "PerEvent"
+          }
+        ]
+      }
+    }
+  }
+}
