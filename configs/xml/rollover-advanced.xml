@@ -1,0 +1,161 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  The rest of the rollover vocabulary: the Delete conditions that rollover-full
+  does not use, script-driven deletion, and PosixViewAttribute. Feature matrix §6.
+
+  rollover-full covers the policies and strategies. This covers what happens
+  AFTER a roll — which files survive, and what permissions they end up with.
+
+  A word on why Delete is worth testing carefully rather than trusted: it runs
+  as a post-rollover action against a real directory tree, and a condition that
+  matches more than intended deletes logs rather than failing a test. The
+  conditions below are deliberately conservative, and every path is under
+  logs/rollover-advanced so a mistake cannot reach anything else.
+
+  Thresholds are tiny so a short run produces rollovers. Do not copy them.
+-->
+<Configuration status="WARN" name="rollover-advanced">
+
+  <Properties>
+    <Property name="dir">${sys:bench.log.dir:-logs}/rollover-advanced</Property>
+    <Property name="pattern">%d{HH:mm:ss.SSS} %-5level %logger{1.} - %msg%n</Property>
+  </Properties>
+
+  <Appenders>
+    <Console name="Console" target="SYSTEM_OUT">
+      <PatternLayout pattern="${pattern}"/>
+    </Console>
+
+    <!-- ══ IfAll + IfNot + SortByModificationTime ════════════════════════════
+         IfAll requires every nested condition; IfAny (see rollover-full) any
+         one. IfNot inverts whatever it wraps.
+
+         Read the nesting below as: delete files matching app-*.log.gz, that are
+         NOT newer than 1 minute, once more than 4 have accumulated — oldest
+         first, which is what SortByModificationTime controls.
+
+         The sorter matters more than it looks, and its attribute is
+         `recentFirst` — not `ascending`, which is silently rejected as an
+         invalid attribute while the sorter still builds with its default.
+
+         IfAccumulatedFileCount walks the sorted list and deletes everything
+         past the threshold, so the sort order decides WHICH files survive.
+         recentFirst="true" (the default, and what is wanted) puts the newest
+         first, leaving the oldest past the cut. Set it false and "keep 4" keeps
+         the four oldest and deletes everything recent. -->
+    <!-- The value below is the default, written out because relying on the
+         default here is how the inverted case goes unnoticed. -->
+    <RollingFile name="Conditions"
+                 fileName="${dir}/conditions/app.log"
+                 filePattern="${dir}/conditions/app-%i.log.gz">
+      <PatternLayout pattern="${pattern}"/>
+      <SizeBasedTriggeringPolicy size="8KB"/>
+      <DefaultRolloverStrategy max="20">
+        <!-- IfFileName WRAPS the rest rather than sitting beside it, and that
+             is load-bearing, not style.
+
+             Delete's sibling conditions are evaluated in document order, and
+             IfAccumulatedFileCount is STATEFUL — it counts every file it is
+             asked about. As siblings, whichever comes first sees every
+             candidate, so putting the counter before the glob makes it count
+             the active app.log too and the threshold is reached a file early:
+             the identical policy then keeps 3 files instead of 4. Measured, not
+             theorised.
+
+             That also makes such a config unportable to the properties format,
+             which cannot express sibling order at all: java.util.Properties is
+             a Hashtable, so components are added in hash order. Nesting removes
+             the question — there is one top-level condition, and the counter
+             only ever sees files matching the glob. -->
+        <Delete basePath="${dir}/conditions" maxDepth="1">
+          <IfFileName glob="app-*.log.gz">
+            <IfAll>
+              <!-- Never touch anything written in the last minute, however many
+                   have accumulated. A guard like this is the difference between
+                   a retention policy and a data-loss incident. -->
+              <IfNot>
+                <IfLastModified age="PT1M"/>
+              </IfNot>
+              <IfAccumulatedFileCount exceeds="4"/>
+            </IfAll>
+          </IfFileName>
+          <SortByModificationTime recentFirst="true"/>
+        </Delete>
+      </DefaultRolloverStrategy>
+    </RollingFile>
+
+    <!-- ══ ScriptCondition ═══════════════════════════════════════════════════
+         The escape hatch: arbitrary logic over the candidate file list. The
+         script is handed `pathList` (the candidates), `statusLogger`, and the
+         configuration, and returns the list to actually delete. Returning the
+         list it was given deletes everything — the empty list is the safe
+         default, and getting that backwards is unrecoverable.
+
+         Needs a JSR-223 engine and log4j2.Script.enableLanguages, which ./bench
+         passes. Without it the condition is dropped with "Script support is not
+         enabled" and NOTHING is deleted — which fails safe, at least. -->
+    <RollingFile name="Scripted"
+                 fileName="${dir}/scripted/app.log"
+                 filePattern="${dir}/scripted/app-%i.log.gz">
+      <PatternLayout pattern="${pattern}"/>
+      <SizeBasedTriggeringPolicy size="8KB"/>
+      <DefaultRolloverStrategy max="20">
+        <Delete basePath="${dir}/scripted" maxDepth="1">
+          <ScriptCondition>
+            <Script name="KeepNewestThree" language="groovy"><![CDATA[
+              // pathList holds PathWithAttributes candidates. Sort newest
+              // first, keep three, and return the remainder for deletion.
+              // An empty list means "delete nothing", which is the safe answer
+              // whenever the logic below is uncertain.
+              def sorted = pathList.sort { -it.attributes.lastModifiedTime().toMillis() }
+              def doomed = sorted.size() > 3 ? sorted[3..-1] : []
+              statusLogger.debug("ScriptCondition: {} candidates, deleting {}",
+                                 sorted.size(), doomed.size())
+              doomed
+            ]]></Script>
+          </ScriptCondition>
+        </Delete>
+      </DefaultRolloverStrategy>
+    </RollingFile>
+
+    <!-- ══ PosixViewAttribute ════════════════════════════════════════════════
+         A post-rollover action that sets POSIX permissions, owner and group on
+         the files it matches. The reason it exists: a rolled file is created by
+         Log4j with the process umask, so a log directory that is group-readable
+         by policy silently stops being so the moment it rolls.
+
+         fileOwner and fileGroup are omitted here on purpose — setting them
+         requires privileges the bench does not have, and the action fails the
+         whole rollover rather than skipping the attribute it cannot set.
+         Permissions alone work as any user.
+
+         maxDepth and basePath are relative to the action, not the appender, so
+         a basePath wider than the appender's own directory will happily
+         re-permission files another appender owns. -->
+    <RollingFile name="Posix"
+                 fileName="${dir}/posix/app.log"
+                 filePattern="${dir}/posix/app-%i.log.gz"
+                 filePermissions="rw-r-----">
+      <PatternLayout pattern="${pattern}"/>
+      <SizeBasedTriggeringPolicy size="8KB"/>
+      <DefaultRolloverStrategy max="20">
+        <PosixViewAttribute basePath="${dir}/posix" maxDepth="1"
+                            followLinks="false"
+                            filePermissions="rw-r-----">
+          <IfFileName glob="app-*.log.gz"/>
+        </PosixViewAttribute>
+      </DefaultRolloverStrategy>
+    </RollingFile>
+  </Appenders>
+
+  <Loggers>
+    <Logger name="org.apache.logging.bench" level="TRACE"/>
+    <Root level="INFO">
+      <AppenderRef ref="Console"/>
+      <AppenderRef ref="Conditions"/>
+      <AppenderRef ref="Scripted"/>
+      <AppenderRef ref="Posix"/>
+    </Root>
+  </Loggers>
+
+</Configuration>

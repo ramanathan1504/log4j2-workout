@@ -302,7 +302,23 @@ cmd_run() {
   jvm_args+=(-Dlog4j2.Script.enableLanguages=groovy,js,javascript)
 
   if [[ -n "$config" ]]; then
-    local resolved; resolved="$(resolve_config "$config")"
+    # A comma-separated list is a COMPOSITE configuration: Log4j reads every
+    # file and merges them, later files overriding earlier ones per the
+    # MergeStrategy. Each element is resolved separately so the usual short
+    # names still work: --config xml/baseline-console,xml/filter-all
+    local resolved
+    if [[ "$config" == *,* ]]; then
+      local part parts=()
+      local IFS=,
+      for part in $config; do
+        parts+=("$(resolve_config "$part")")
+      done
+      unset IFS
+      resolved="$(printf '%s,' "${parts[@]}")"
+      resolved="${resolved%,}"
+    else
+      resolved="$(resolve_config "$config")"
+    fi
 
     if [[ "$resolved" == */configs/log4j1/* ]]; then
       # Log4j 1.x config formats need the bridge's factories, which are off by

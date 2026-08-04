@@ -1,0 +1,107 @@
+{
+  "configuration": {
+    "status": "WARN",
+    "name": "appender-file-variants",
+    "properties": {
+      "property": [
+        {
+          "name": "dir",
+          "value": "${sys:bench.log.dir:-logs}/file-variants"
+        },
+        {
+          "name": "pattern",
+          "value": "%d{HH:mm:ss.SSS} %-5level %logger{1.} - %msg%n"
+        }
+      ]
+    },
+    "appenders": {
+      "Console": {
+        "name": "Console",
+        "target": "SYSTEM_OUT",
+        "PatternLayout": {
+          "pattern": "${pattern}"
+        }
+      },
+      "File": [
+        {
+          "name": "Plain",
+          "fileName": "${dir}/plain.log",
+          "append": "false",
+          "immediateFlush": "true",
+          "filePermissions": "rw-r-----",
+          "PatternLayout": {
+            "pattern": "[plain] ${pattern}"
+          }
+        },
+        {
+          "name": "Buffered",
+          "fileName": "${dir}/buffered.log",
+          "append": "false",
+          "immediateFlush": "false",
+          "bufferedIO": "true",
+          "bufferSize": "16384",
+          "PatternLayout": {
+            "pattern": "[buffered] ${pattern}"
+          }
+        },
+        {
+          "name": "OnDemand",
+          "fileName": "${dir}/on-demand.log",
+          "append": "false",
+          "createOnDemand": "true",
+          "PatternLayout": {
+            "pattern": "[on-demand] ${pattern}"
+          }
+        }
+      ],
+      "RandomAccessFile": {
+        "name": "RandomAccess",
+        "fileName": "${dir}/random-access.log",
+        "append": "false",
+        "immediateFlush": "true",
+        "PatternLayout": {
+          "pattern": "[random-access] ${pattern}"
+        }
+      },
+      "MemoryMappedFile": {
+        "name": "MemoryMapped",
+        "fileName": "${dir}/memory-mapped.log",
+        "append": "false",
+        "regionLength": "65536",
+        "immediateFlush": "false",
+        "PatternLayout": {
+          "pattern": "[memory-mapped] ${pattern}"
+        }
+      }
+    },
+    "loggers": {
+      "logger": {
+        "name": "org.apache.logging.bench",
+        "level": "TRACE"
+      },
+      "root": {
+        "level": "INFO",
+        "AppenderRef": [
+          {
+            "ref": "Console"
+          },
+          {
+            "ref": "Plain"
+          },
+          {
+            "ref": "Buffered"
+          },
+          {
+            "ref": "OnDemand"
+          },
+          {
+            "ref": "RandomAccess"
+          },
+          {
+            "ref": "MemoryMapped"
+          }
+        ]
+      }
+    }
+  }
+}

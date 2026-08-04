@@ -1,0 +1,101 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  The non-rolling file appenders and the File options that change how bytes
+  reach the disk. Feature matrix §1.
+
+  Four appenders that all "write to a file" and differ in where the bytes sit
+  between the log call and the disk — which is exactly what decides how much you
+  lose when the process is killed:
+
+    File                    a BufferedOutputStream. immediateFlush=true (the
+                            default) pushes every event to the OS.
+    RandomAccessFile        a ByteBuffer, flushed to the channel. Faster for the
+                            same durability because the copy is cheaper.
+    MemoryMappedFile        an mmap region. Events land in the page cache with
+                            no write syscall at all; the OS decides when they
+                            reach disk, so a KILLED PROCESS loses nothing but a
+                            crashed MACHINE can lose the tail.
+    File, buffered          immediateFlush=false: fast, and the tail is lost if
+                            the JVM dies.
+
+  Durability differs, output does not — so a bug here shows up as missing events
+  after a crash rather than as wrong output, which is why these need exercising
+  deliberately rather than being assumed equivalent.
+-->
+<Configuration status="WARN" name="appender-file-variants">
+
+  <Properties>
+    <Property name="dir">${sys:bench.log.dir:-logs}/file-variants</Property>
+    <Property name="pattern">%d{HH:mm:ss.SSS} %-5level %logger{1.} - %msg%n</Property>
+  </Properties>
+
+  <Appenders>
+    <Console name="Console" target="SYSTEM_OUT">
+      <PatternLayout pattern="${pattern}"/>
+    </Console>
+
+    <!-- ══ File, flushed per event — the safe default ═════════════════════════
+         filePermissions is applied at creation, so unlike PosixViewAttribute
+         (see rollover-advanced) it needs no post-rollover action. It is POSIX
+         only and simply ignored on Windows. -->
+    <File name="Plain" fileName="${dir}/plain.log" append="false"
+          immediateFlush="true" filePermissions="rw-r-----">
+      <PatternLayout pattern="[plain] ${pattern}"/>
+    </File>
+
+    <!-- ══ File, buffered ════════════════════════════════════════════════════
+         immediateFlush=false batches into bufferSize bytes. Worth knowing: the
+         buffer is flushed on a clean shutdown, so the events only vanish if the
+         JVM dies without running its hooks — which makes this the setting that
+         tests fine and loses data in production. -->
+    <File name="Buffered" fileName="${dir}/buffered.log" append="false"
+          immediateFlush="false" bufferedIO="true" bufferSize="16384">
+      <PatternLayout pattern="[buffered] ${pattern}"/>
+    </File>
+
+    <!-- ══ File, created on demand ═══════════════════════════════════════════
+         The file is not opened until the first event, so a configuration with
+         many rarely-used appenders does not litter empty files. The cost is
+         that a bad path is not discovered at startup: it fails at the first
+         event instead, which is the behaviour apps/../appender-composite relies
+         on for its failover primary. -->
+    <File name="OnDemand" fileName="${dir}/on-demand.log" append="false"
+          createOnDemand="true">
+      <PatternLayout pattern="[on-demand] ${pattern}"/>
+    </File>
+
+    <!-- ══ RandomAccessFile ══════════════════════════════════════════════════
+         ByteBuffer-backed. bufferSize is in BYTES here, not events. -->
+    <RandomAccessFile name="RandomAccess" fileName="${dir}/random-access.log"
+                      append="false" immediateFlush="true">
+      <PatternLayout pattern="[random-access] ${pattern}"/>
+    </RandomAccessFile>
+
+    <!-- ══ MemoryMappedFile ══════════════════════════════════════════════════
+         regionLength is the mmap window, and it is not a tuning knob to guess
+         at: the file is pre-extended to it, so this appender's file appears at
+         its full region size on disk immediately, mostly zero bytes, and is
+         truncated back only on a clean close. A 256 MB default region for a
+         file with three events in it surprises people; 64 KB here keeps the
+         bench tidy.
+
+         Must be a power of two — Log4j rounds up silently otherwise. -->
+    <MemoryMappedFile name="MemoryMapped" fileName="${dir}/memory-mapped.log"
+                      append="false" regionLength="65536" immediateFlush="false">
+      <PatternLayout pattern="[memory-mapped] ${pattern}"/>
+    </MemoryMappedFile>
+  </Appenders>
+
+  <Loggers>
+    <Logger name="org.apache.logging.bench" level="TRACE"/>
+    <Root level="INFO">
+      <AppenderRef ref="Console"/>
+      <AppenderRef ref="Plain"/>
+      <AppenderRef ref="Buffered"/>
+      <AppenderRef ref="OnDemand"/>
+      <AppenderRef ref="RandomAccess"/>
+      <AppenderRef ref="MemoryMapped"/>
+    </Root>
+  </Loggers>
+
+</Configuration>

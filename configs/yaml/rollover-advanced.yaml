@@ -1,0 +1,139 @@
+# The rest of the rollover vocabulary, in YAML.
+# Mirrors configs/xml/rollover-advanced.xml. Feature matrix §6, §11.
+#
+# rollover-full covers the policies and strategies. This covers what happens
+# AFTER a roll — which files survive, and what permissions they end up with.
+#
+# Delete runs against a real directory tree, and a condition that matches more
+# than intended deletes logs rather than failing a test. Every path here is
+# under logs/rollover-advanced so a mistake cannot reach anything else.
+
+Configuration:
+  status: WARN
+  name: rollover-advanced
+
+  Properties:
+    Property:
+      - name: dir
+        value: ${sys:bench.log.dir:-logs}/rollover-advanced
+      - name: pattern
+        value: "%d{HH:mm:ss.SSS} %-5level %logger{1.} - %msg%n"
+
+  Appenders:
+    Console:
+      name: Console
+      target: SYSTEM_OUT
+      PatternLayout:
+        pattern: ${pattern}
+
+    RollingFile:
+      # ══ IfAll + IfNot + SortByModificationTime ══
+      # IfAll requires every nested condition; IfAny any one. IfNot inverts what
+      # it wraps. Read the nesting as: delete app-*.log.gz that are NOT newer
+      # than a minute, once more than 4 have accumulated.
+      #
+      # The sorter's attribute is `recentFirst` — not `ascending`, which is
+      # rejected as invalid while the sorter still builds with its default.
+      # IfAccumulatedFileCount deletes everything past the threshold in sorted
+      # order, so recentFirst=true (the default, and what is wanted) leaves the
+      # oldest past the cut. False keeps the four oldest and deletes the recent.
+      - name: Conditions
+        fileName: ${dir}/conditions/app.log
+        filePattern: ${dir}/conditions/app-%i.log.gz
+        PatternLayout:
+          pattern: ${pattern}
+        SizeBasedTriggeringPolicy:
+          size: 8KB
+        DefaultRolloverStrategy:
+          max: 20
+          Delete:
+            basePath: ${dir}/conditions
+            maxDepth: 1
+            # IfFileName WRAPS the rest rather than sitting beside it, and
+            # that is load-bearing. Delete's sibling conditions run in document
+            # order and IfAccumulatedFileCount is STATEFUL — it counts every
+            # file it is asked about — so a counter placed before the glob also
+            # counts the active app.log and the identical policy keeps 3 files
+            # instead of 4. Nesting removes the question entirely, and is the
+            # only formulation the properties format can reproduce, since
+            # java.util.Properties cannot express sibling order at all.
+            IfFileName:
+              glob: "app-*.log.gz"
+              IfAll:
+                # Never touch anything written in the last minute, however many
+                # have accumulated — the difference between a retention policy
+                # and a data-loss incident.
+                IfNot:
+                  IfLastModified:
+                    age: PT1M
+                IfAccumulatedFileCount:
+                  exceeds: 4
+            SortByModificationTime:
+              recentFirst: true
+
+      # ══ ScriptCondition ══
+      # Arbitrary logic over the candidate list. The script receives `pathList`
+      # and returns the files to actually delete — returning the list it was
+      # given deletes everything, so the empty list is the safe default.
+      # Needs log4j2.Script.enableLanguages, which ./bench passes; without it
+      # the condition is dropped and nothing is deleted, which fails safe.
+      - name: Scripted
+        fileName: ${dir}/scripted/app.log
+        filePattern: ${dir}/scripted/app-%i.log.gz
+        PatternLayout:
+          pattern: ${pattern}
+        SizeBasedTriggeringPolicy:
+          size: 8KB
+        DefaultRolloverStrategy:
+          max: 20
+          Delete:
+            basePath: ${dir}/scripted
+            maxDepth: 1
+            ScriptCondition:
+              Script:
+                name: KeepNewestThree
+                language: groovy
+                scriptText: |
+                  def sorted = pathList.sort { -it.attributes.lastModifiedTime().toMillis() }
+                  def doomed = sorted.size() > 3 ? sorted[3..-1] : []
+                  statusLogger.debug("ScriptCondition: {} candidates, deleting {}",
+                                     sorted.size(), doomed.size())
+                  doomed
+
+      # ══ PosixViewAttribute ══
+      # Sets POSIX permissions on the files it matches after a roll. It exists
+      # because a rolled file is created with the process umask, so a directory
+      # that is group-readable by policy silently stops being so once it rolls.
+      #
+      # fileOwner and fileGroup are omitted deliberately: setting them needs
+      # privileges the bench does not have, and the action fails the whole
+      # rollover rather than skipping the attribute it cannot set.
+      - name: Posix
+        fileName: ${dir}/posix/app.log
+        filePattern: ${dir}/posix/app-%i.log.gz
+        filePermissions: rw-r-----
+        PatternLayout:
+          pattern: ${pattern}
+        SizeBasedTriggeringPolicy:
+          size: 8KB
+        DefaultRolloverStrategy:
+          max: 20
+          PosixViewAttribute:
+            basePath: ${dir}/posix
+            maxDepth: 1
+            followLinks: false
+            filePermissions: rw-r-----
+            IfFileName:
+              glob: "app-*.log.gz"
+
+  Loggers:
+    Logger:
+      name: org.apache.logging.bench
+      level: TRACE
+    Root:
+      level: INFO
+      AppenderRef:
+        - ref: Console
+        - ref: Conditions
+        - ref: Scripted
+        - ref: Posix

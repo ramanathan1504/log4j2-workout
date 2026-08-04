@@ -288,10 +288,11 @@ provider or a config server, which is why they are grouped rather than bolted on
 existing app.
 
 **On a classpath but not yet driven by a config or scenario:** Syslog · Http ·
-Kafka · JeroMQ · MongoDB · Cassandra · CouchDB (each needs its container from
-`infra/docker-compose.yml`) · MemoryMappedFile · PosixViewAttribute ·
-`ScriptCondition`/`IfAll`/`IfNot`/`SortByModificationTime` · Ssl/KeyStore ·
-composite configuration · custom plugin authoring.
+Kafka · JeroMQ · SMTP · MongoDB · Cassandra · CouchDB — every one of them a
+network destination needing its container from `infra/docker-compose.yml`, so
+they land with the infra work — plus Ssl/KeyStore, which needs a generated
+keystore, and custom plugin authoring, which needs a compile-time test rather
+than a config.
 
 Newly driven, each in every format that can express it, verified identical across formats:
 
@@ -302,6 +303,8 @@ Newly driven, each in every format that can express it, verified identical acros
 | `layout-remaining` | `GelfLayout` · `CsvLogEventLayout` · `CsvParameterLayout` · `Rfc5424Layout` + `LoggerFields` · `SyslogLayout` · `MessageLayout` · Elastic's `EcsLayout` |
 | `async-queues` | `AsyncLogger` · `AsyncAppender` · all four `BlockingQueueFactories` (`ArrayBlockingQueue`, `DisruptorBlockingQueue`, `JCToolsBlockingQueue`, `LinkedTransferQueue`) · `AsyncWaitStrategyFactory` · mixed sync/async in one context |
 | `custom-levels` | `CustomLevels`/`CustomLevel`, custom levels in `ThresholdFilter`/`LevelMatchFilter`/`LevelRangeFilter`, and a `LevelPatternSelector` keyed on one. Driven by the `custom-levels` scenario, since the API has no `audit()` method |
+| `rollover-advanced` | `Delete` with `IfAll`/`IfNot`/`SortByModificationTime` · `ScriptCondition` · `PosixViewAttribute` · `filePermissions` |
+| `appender-file-variants` | `MemoryMappedFile` · `RandomAccessFile` · `File` with `immediateFlush`/`bufferedIO`/`createOnDemand`/`filePermissions` — the four ways bytes reach the disk, which differ in durability rather than output |
 | `lookups` | All 18 built-in lookups **from a configuration** — the config-time (`$`) and per-event (`$$`) paths, which the `lookups` scenario does not exercise. `${docker:}`, `${web:}`, `${spring:}` and `${jndi:}` are present and deliberately unresolved |
 
 Every layout Log4j ships is now exercised except `SerializedLayout`, which is deprecated and
@@ -321,6 +324,8 @@ Things the configs above turned up, verified against the source clone rather tha
 
 | Finding | Where |
 |---|---|
+| **`Delete`'s sibling conditions are order-sensitive, and the properties format cannot express order.** `IfAccumulatedFileCount` is stateful — it counts every file it is asked about — so placing it before `IfFileName` makes it count the active `app.log` too and the identical policy keeps 3 files instead of 4. Measured: XML `IfFileName`-first keeps 4, `IfAll`-first keeps 3, and the properties build produced `{IfAll[...], IfFileName}` regardless of file order, because `java.util.Properties` is a `Hashtable`. Nesting the conditions inside `IfFileName` removes the dependence and is the only portable formulation | `configs/*/rollover-advanced.*` |
+| `SortByModificationTime`'s attribute is `recentFirst`, not `ascending`. The wrong name is rejected as an invalid attribute while the sorter still builds with its default, so the retention order silently stays whatever the default is | `configs/*/rollover-advanced.*` |
 | `AsyncWaitStrategyFactory`'s attribute is `class`, not the builder field name `factoryClassName`. Using the field name fails `@Required` with "cannot be configured without a factory class name", which reads as a missing attribute rather than a misspelled one | `configs/*/async-queues.*` |
 | In the properties format a custom level is `customLevel.<NAME> = <int>` — the key IS the name. The nested spelling every other element uses (`customLevel.audit.name = AUDIT`) makes the builder parse "AUDIT" as an integer, and the `NumberFormatException` escapes configuration, killing the application at its first log call | `configs/properties/custom-levels.properties` |
 | **`CsvParameterLayout` throws NPE on any event with no parameters.** `Message.getParameters()` is null for `SimpleMessage` and for the plain `logger.info("text")` form, and `toSerializable` passes it straight to `CSVFormat.printRecord` → `NullPointerException: Cannot read the array length because "values" is null`. One per event, with no recovery, so the layout is unusable against ordinary traffic | `configs/*/layout-remaining.*` |

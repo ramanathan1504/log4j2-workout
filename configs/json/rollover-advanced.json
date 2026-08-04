@@ -1,0 +1,135 @@
+{
+  "configuration": {
+    "status": "WARN",
+    "name": "rollover-advanced",
+    "properties": {
+      "property": [
+        {
+          "name": "dir",
+          "value": "${sys:bench.log.dir:-logs}/rollover-advanced"
+        },
+        {
+          "name": "pattern",
+          "value": "%d{HH:mm:ss.SSS} %-5level %logger{1.} - %msg%n"
+        }
+      ]
+    },
+    "appenders": {
+      "Console": {
+        "name": "Console",
+        "target": "SYSTEM_OUT",
+        "PatternLayout": {
+          "pattern": "${pattern}"
+        }
+      },
+      "RollingFile": [
+        {
+          "name": "Conditions",
+          "fileName": "${dir}/conditions/app.log",
+          "filePattern": "${dir}/conditions/app-%i.log.gz",
+          "PatternLayout": {
+            "pattern": "${pattern}"
+          },
+          "SizeBasedTriggeringPolicy": {
+            "size": "8KB"
+          },
+          "DefaultRolloverStrategy": {
+            "max": "20",
+            "Delete": {
+              "basePath": "${dir}/conditions",
+              "maxDepth": "1",
+              "IfFileName": {
+                "glob": "app-*.log.gz",
+                "IfAll": {
+                  "IfNot": {
+                    "IfLastModified": {
+                      "age": "PT1M"
+                    }
+                  },
+                  "IfAccumulatedFileCount": {
+                    "exceeds": "4"
+                  }
+                }
+              },
+              "SortByModificationTime": {
+                "recentFirst": "true"
+              }
+            }
+          }
+        },
+        {
+          "name": "Scripted",
+          "fileName": "${dir}/scripted/app.log",
+          "filePattern": "${dir}/scripted/app-%i.log.gz",
+          "PatternLayout": {
+            "pattern": "${pattern}"
+          },
+          "SizeBasedTriggeringPolicy": {
+            "size": "8KB"
+          },
+          "DefaultRolloverStrategy": {
+            "max": "20",
+            "Delete": {
+              "basePath": "${dir}/scripted",
+              "maxDepth": "1",
+              "ScriptCondition": {
+                "Script": {
+                  "name": "KeepNewestThree",
+                  "language": "groovy",
+                  "scriptText": "def sorted = pathList.sort { -it.attributes.lastModifiedTime().toMillis() }\ndef doomed = sorted.size() > 3 ? sorted[3..-1] : []\nstatusLogger.debug(\"ScriptCondition: {} candidates, deleting {}\", sorted.size(), doomed.size())\ndoomed"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Posix",
+          "fileName": "${dir}/posix/app.log",
+          "filePattern": "${dir}/posix/app-%i.log.gz",
+          "filePermissions": "rw-r-----",
+          "PatternLayout": {
+            "pattern": "${pattern}"
+          },
+          "SizeBasedTriggeringPolicy": {
+            "size": "8KB"
+          },
+          "DefaultRolloverStrategy": {
+            "max": "20",
+            "PosixViewAttribute": {
+              "basePath": "${dir}/posix",
+              "maxDepth": "1",
+              "followLinks": "false",
+              "filePermissions": "rw-r-----",
+              "IfFileName": {
+                "glob": "app-*.log.gz"
+              }
+            }
+          }
+        }
+      ]
+    },
+    "loggers": {
+      "logger": {
+        "name": "org.apache.logging.bench",
+        "level": "TRACE"
+      },
+      "root": {
+        "level": "INFO",
+        "AppenderRef": [
+          {
+            "ref": "Console"
+          },
+          {
+            "ref": "Conditions"
+          },
+          {
+            "ref": "Scripted"
+          },
+          {
+            "ref": "Posix"
+          }
+        ]
+      }
+    }
+  }
+}

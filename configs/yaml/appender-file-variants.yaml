@@ -1,0 +1,105 @@
+# The non-rolling file appenders and the File options that change how bytes
+# reach the disk. Mirrors configs/xml/appender-file-variants.xml. Feature matrix §1, §11.
+#
+# Four appenders that all "write to a file" and differ in where the bytes sit
+# between the log call and the disk — which decides how much is lost when the
+# process is killed:
+#
+#   File                a BufferedOutputStream; immediateFlush=true (default)
+#                       pushes every event to the OS
+#   RandomAccessFile    a ByteBuffer flushed to the channel — same durability,
+#                       cheaper copy
+#   MemoryMappedFile    an mmap region; no write syscall at all, so a KILLED
+#                       PROCESS loses nothing but a crashed MACHINE can lose the
+#                       tail
+#   File, buffered      immediateFlush=false: fast, tail lost if the JVM dies
+#
+# Durability differs, output does not — a bug here shows up as missing events
+# after a crash rather than as wrong output.
+
+Configuration:
+  status: WARN
+  name: appender-file-variants
+
+  Properties:
+    Property:
+      - name: dir
+        value: ${sys:bench.log.dir:-logs}/file-variants
+      - name: pattern
+        value: "%d{HH:mm:ss.SSS} %-5level %logger{1.} - %msg%n"
+
+  Appenders:
+    Console:
+      name: Console
+      target: SYSTEM_OUT
+      PatternLayout:
+        pattern: ${pattern}
+
+    File:
+      # Flushed per event — the safe default. filePermissions is applied at
+      # creation, so unlike PosixViewAttribute it needs no post-rollover action.
+      - name: Plain
+        fileName: ${dir}/plain.log
+        append: false
+        immediateFlush: true
+        filePermissions: rw-r-----
+        PatternLayout:
+          pattern: "[plain] ${pattern}"
+
+      # Buffered. The buffer is flushed on a clean shutdown, so events only
+      # vanish if the JVM dies without running its hooks — the setting that
+      # tests fine and loses data in production.
+      - name: Buffered
+        fileName: ${dir}/buffered.log
+        append: false
+        immediateFlush: false
+        bufferedIO: true
+        bufferSize: 16384
+        PatternLayout:
+          pattern: "[buffered] ${pattern}"
+
+      # Not opened until the first event, so a bad path is not discovered at
+      # startup — it fails at the first event instead, which is what
+      # appender-composite relies on for its failover primary.
+      - name: OnDemand
+        fileName: ${dir}/on-demand.log
+        append: false
+        createOnDemand: true
+        PatternLayout:
+          pattern: "[on-demand] ${pattern}"
+
+    # ByteBuffer-backed. bufferSize is in BYTES here, not events.
+    RandomAccessFile:
+      name: RandomAccess
+      fileName: ${dir}/random-access.log
+      append: false
+      immediateFlush: true
+      PatternLayout:
+        pattern: "[random-access] ${pattern}"
+
+    # regionLength is the mmap window and the file is pre-extended to it, so the
+    # file appears at its full region size on disk immediately — mostly zero
+    # bytes — and is truncated back only on a clean close. Must be a power of
+    # two; Log4j rounds up silently otherwise.
+    MemoryMappedFile:
+      name: MemoryMapped
+      fileName: ${dir}/memory-mapped.log
+      append: false
+      regionLength: 65536
+      immediateFlush: false
+      PatternLayout:
+        pattern: "[memory-mapped] ${pattern}"
+
+  Loggers:
+    Logger:
+      name: org.apache.logging.bench
+      level: TRACE
+    Root:
+      level: INFO
+      AppenderRef:
+        - ref: Console
+        - ref: Plain
+        - ref: Buffered
+        - ref: OnDemand
+        - ref: RandomAccess
+        - ref: MemoryMapped

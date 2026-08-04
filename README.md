@@ -80,6 +80,17 @@ on both 2.x and 3.x; **the properties format is 2.x-only**, because 3.x dropped
 reader that uses entirely different keys. A properties config on 3.x falls back
 to the default configuration without complaint.
 
+**Composite configuration.** Comma-separate two or more configs and Log4j merges
+them, later files overriding earlier ones:
+
+```bash
+./bench run core-java --config xml/baseline-console,xml/custom-levels
+```
+
+Each element resolves independently, so the short names still work. The merged
+configuration takes its name from the last file, which is the quickest way to
+tell a merge happened at all.
+
 The 1.x formats live in `configs/log4j1/` and need the bridge's factory, which
 is off by default. `./bench` recognises the directory and passes
 `-Dlog4j1.compatibility=true` plus `-Dlog4j.configuration` (the 1.x property
