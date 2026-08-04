@@ -487,8 +487,13 @@ cmd_coverage() {
   # Shippable modules: everything the clone builds, minus the ones that are
   # test fixtures, fuzz harnesses or multi-release source sets rather than
   # artifacts an application would ever depend on.
+  # log4j-plugin-processor is excluded for a different reason from the rest: it
+  # is an annotation processor, so it is never a runtime dependency and asking
+  # whether it is "on a classpath" is the wrong question. On 2.x it is not even a
+  # separate artifact — it ships inside log4j-core. It is covered by
+  # apps/custom-plugins, which checks the descriptor it generates.
   ( cd "$clone" && ls -d log4j-*/ 2>/dev/null | sed 's|/$||' ) \
-    | grep -vE 'fuzz-test|api-test|core-its|java9|-test$|^log4j-parent$' \
+    | grep -vE 'fuzz-test|api-test|core-its|java9|-test$|^log4j-parent$|^log4j-plugin-processor$' \
     | sort > "$tmp/all"
 
   # Modules resolved onto any app's classpath. Requires that the classpaths have
