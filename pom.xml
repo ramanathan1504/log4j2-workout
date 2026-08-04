@@ -17,6 +17,7 @@
     <module>apps/core-java</module>
     <module>apps/spring-boot-maven</module>
     <module>apps/db</module>
+    <module>apps/java8-baseline</module>
   </modules>
 
   <properties>
@@ -125,6 +126,9 @@
       <modules>
         <module>apps/log4j1-bridge</module>
         <module>apps/jakarta-web</module>
+        <module>apps/bridges-in</module>
+        <module>apps/bridges-out</module>
+        <module>apps/bridges-to-jul</module>
       </modules>
     </profile>
 

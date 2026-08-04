@@ -276,14 +276,27 @@ OTel converters · **all four Log4j 2 config formats** · **both Log4j 1.x confi
 the 1.x bridge app · servlet container integration (per-webapp `LoggerContext`, `${web:}`) ·
 Spring Boot under both Maven and Gradle.
 
-**Not yet exercised (the work list):** Syslog · Socket · SMTP · JMS · Kafka · JeroMQ · Http ·
-MongoDB · Cassandra · CouchDB · JPA (wired in `apps/db`, but each needs its container up) ·
-MemoryMappedFile · Failover · Routing · Rewrite · AppenderSet · ScriptAppenderSelector ·
-GelfLayout · CsvLayouts · Rfc5424Layout · **EcsLayout** (the Elastic jar; Log4j's own
-`EcsLayout.json` template is covered) · all 7 arbiters · 15 of 18 lookups ·
+**Module reach: 33 of 42 shippable 2.x modules** are on some app's classpath.
+`./bench coverage` recomputes this from the source clone and the resolved classpaths, so it
+does not go stale as either moves.
+
+**No classpath yet (9):** `log4j-appserver` · `log4j-jakarta-jms` · `log4j-jakarta-smtp` ·
+`log4j-jdbc-jndi` · `log4j-jpa` · `log4j-spring-cloud-config-client` · `log4j-taglib` ·
+`log4j-web` (javax) · `log4j-plugin-processor` (build-time — needs a compile test, not a run).
+Each of the first eight needs either a javax servlet container, a broker, a mail server, a JPA
+provider or a config server, which is why they are grouped rather than bolted onto an
+existing app.
+
+**On a classpath but not yet driven by a config or scenario:** Syslog · Socket · Http ·
+Kafka · JeroMQ · MongoDB · Cassandra · CouchDB (each needs its container from
+`infra/docker-compose.yml`) · MemoryMappedFile · Failover · Routing · Rewrite · AppenderSet ·
+ScriptAppenderSelector · GelfLayout · CsvLayouts · Rfc5424Layout · **EcsLayout** (the Elastic
+jar; Log4j's own `EcsLayout.json` template is covered) · all 7 arbiters · 15 of 18 lookups ·
 BlockingQueueFactories · PosixViewAttribute · custom levels · Ssl/KeyStore ·
-composite configuration · `log4j-iostreams` · `log4j-jul` · `log4j-jcl` · `log4j-jpl` ·
-`log4j-taglib` · custom plugin authoring
+composite configuration · custom plugin authoring.
+
+The distinction matters: the first list is what the bench *cannot* reach however it is
+invoked; the second is what it could reach today with a config nobody has written yet.
 
 `programmatic` (ConfigurationBuilder) is covered by the scenario of that name rather than by a
 config file, since by definition it has none.
@@ -296,6 +309,8 @@ Things the configs above turned up, verified against the source clone rather tha
 
 | Finding | Where |
 |---|---|
+| Under `log4j-to-jul`, `ThreadContext` is a no-op on the Log4j side as well as the JUL side: `JULProvider` registers `NoOpThreadContextMap.INSTANCE`, so `ThreadContext.put()` discards the value and reading it back returns nothing. Code that stores a trace id and later reads its own MDC gets null, not merely unrendered output | `apps/bridges-to-jul` |
+| `SimpleMessage` and `MapMessage` implement both `Message` and `CharSequence`, and `Logger` overloads for each, so `logger.info(new SimpleMessage(...))` does not compile — it is ambiguous and needs a cast | `apps/java8-baseline` |
 | Log4j 2's `JsonConfiguration` enables `ALLOW_COMMENTS`; Log4j 3's does not, and does not report a parse error either — `root` is left null and the first logger call dies with an NPE inside `JsonConfiguration.setup`, surfacing as `ExceptionInInitializerError`. A commented JSON config works on every 2.x line and hard-fails on 3.x | `configs/json/` (see its README) |
 | **The Log4j 2 properties config format does not exist in 3.x.** `PropertiesConfigurationFactory` is absent from the 3.x source entirely; `log4j-config-properties` ships `JavaPropsConfigurationFactory` instead, a Jackson java-properties reader that maps onto the same tree as JSON/YAML and so uses completely different keys. The module is on the bench's 3.x classpath and still cannot read these files — Log4j falls back to `DefaultConfiguration` without a word | `configs/properties/` |
 | Log4j 3 reads `log4j.configuration.location`, not `log4j.configurationFile`. Passing the 2.x name against 3.x does not fail — Log4j falls back to `DefaultConfiguration` and logs to the console, so a 3.x run can look healthy while testing nothing but the default config | `bench` `cmd_run` |

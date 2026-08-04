@@ -6,6 +6,9 @@
 #   ./bench run core-java --config xml/layout-ecs   run scenarios under a config
 #   ./bench run core-java --log4j 2.25.4 exceptions run one scenario on one version
 #   ./bench matrix --scenario exceptions            same scenario, every version
+#   ./bench matrix --apps core-java,db --javas 17,21
+#   ./bench matrix --all                            every valid cell — hours
+#   ./bench coverage                                what is reached, what is not
 #   ./bench repro 4143 --log4j 2.26.0               build a standalone repro zip
 #
 # Every run forks a real JVM with an explicit classpath rather than running
@@ -31,16 +34,71 @@ VERSIONS=(
 )
 DEFAULT_VERSION=2.27.0-SNAPSHOT
 
-APPS=(core-java spring-boot-maven db log4j1-bridge jakarta-web spring-boot-gradle)
+APPS=(core-java spring-boot-maven db log4j1-bridge jakarta-web spring-boot-gradle
+      java8-baseline bridges-in bridges-out bridges-to-jul)
 
 # Apps that cannot build on 3.x, because the Log4j artifacts they need have no
 # 3.x release. `matrix` skips these rather than reporting a spurious failure.
-APPS_2X_ONLY=(log4j1-bridge jakarta-web spring-boot-gradle)
+APPS_2X_ONLY=(log4j1-bridge jakarta-web spring-boot-gradle
+              bridges-in bridges-out bridges-to-jul)
 
 is_2x_only() {
   local app="$1" a
   for a in "${APPS_2X_ONLY[@]}"; do [[ "$a" == "$app" ]] && return 0; done
   return 1
+}
+
+# ── The JDK axis ────────────────────────────────────────────────────────────
+# Major versions of every JDK installed, oldest first. Derived rather than
+# hard-coded, so the axis reflects this machine.
+installed_javas() {
+  /usr/libexec/java_home -V 2>&1 \
+    | sed -n 's/^ *\([0-9][0-9.]*[0-9_]*\).*/\1/p' \
+    | sed -e 's/^1\.\([0-9][0-9]*\).*/\1/' -e 's/^\([0-9][0-9]*\)\..*/\1/' \
+    | sort -un
+}
+
+# The oldest JDK an app's own bytecode can run on. Everything is compiled at
+# release 17 except the Java 8 baseline module, which exists precisely so the
+# oldest JDK Log4j 2 supports is testable at all.
+min_java_for() {
+  case "$1" in
+    java8-baseline) echo 8 ;;
+    *)              echo 17 ;;
+  esac
+}
+
+# ── Cell validity ───────────────────────────────────────────────────────────
+# Prints why a (app, config, java, log4j) cell cannot run, or nothing if it can.
+# Every exclusion here is a fact about Log4j or the app, not a convenience: a
+# cell that is skipped for a stated reason is information, a cell that fails for
+# an unstated one is noise.
+cell_skip_reason() {
+  local app="$1" config="$2" java="$3" version="$4"
+
+  if [[ "$version" == 3.* ]]; then
+    is_2x_only "$app" && { echo "$app has no 3.x release path"; return; }
+    [[ "$java" -lt 17 ]] && { echo "Log4j 3 requires Java 17+"; return; }
+    [[ "$config" == properties/* ]] && {
+      echo "properties format removed in 3.x (JavaPropsConfigurationFactory uses other keys)"; return; }
+  fi
+
+  local min; min="$(min_java_for "$app")"
+  [[ "$java" -lt "$min" ]] && { echo "$app is compiled at release $min"; return; }
+
+  # The 1.x config formats are only readable where log4j-1.2-api is present.
+  if [[ "$config" == log4j1/* && "$app" != log4j1-bridge ]]; then
+    echo "1.x config needs the log4j-1.2-api bridge, which only log4j1-bridge has"
+    return
+  fi
+
+  # The Java 8 module is deliberately small: it has log4j-api/core and the
+  # config formats, and nothing that would drag in a Java 17 dependency.
+  if [[ "$app" == java8-baseline ]]; then
+    case "$config" in
+      */appender-jdbc|*/layout-jsontemplate) echo "java8-baseline omits this module's dependency"; return ;;
+    esac
+  fi
 }
 
 die()  { printf '\033[31merror:\033[0m %s\n' "$*" >&2; exit 1; }
@@ -77,6 +135,10 @@ module_path_for() {
     db)                 echo "apps/db" ;;
     log4j1-bridge)      echo "apps/log4j1-bridge" ;;
     jakarta-web)        echo "apps/jakarta-web" ;;
+    java8-baseline)     echo "apps/java8-baseline" ;;
+    bridges-in)         echo "apps/bridges-in" ;;
+    bridges-out)        echo "apps/bridges-out" ;;
+    bridges-to-jul)     echo "apps/bridges-to-jul" ;;
     *) die "unknown app '$1' (known: ${APPS[*]})" ;;
   esac
 }
@@ -92,6 +154,10 @@ main_class_for() {
     db)                 echo "org.apache.logging.bench.db.DbBench" ;;
     log4j1-bridge)      echo "org.apache.logging.bench.log4j1.Log4j1Bench" ;;
     jakarta-web)        echo "org.apache.logging.bench.web.WebBench" ;;
+    java8-baseline)     echo "org.apache.logging.bench.java8.Java8Bench" ;;
+    bridges-in)         echo "org.apache.logging.bench.bridges.BridgesInBench" ;;
+    bridges-out)        echo "org.apache.logging.bench.bridges.BridgesOutBench" ;;
+    bridges-to-jul)     echo "org.apache.logging.bench.bridges.ToJulBench" ;;
   esac
 }
 
@@ -109,6 +175,13 @@ extra_jvm_args_for() {
       # Tomcat's own catalina.sh exports. Without them the app dies at startup.
       EXTRA_JVM_ARGS+=(--add-opens=java.base/java.io=ALL-UNNAMED
                        -Dsun.io.useCanonCaches=false)
+      ;;
+    bridges-in)
+      # log4j-jul only takes effect if the JUL LogManager is replaced before any
+      # java.util.logging class initialises, which means a launch flag — setting
+      # the property from main() is already too late. Without it the bridge is
+      # inert and JUL keeps its own handlers, with nothing logged to say so.
+      EXTRA_JVM_ARGS+=(-Djava.util.logging.manager=org.apache.logging.log4j.jul.LogManager)
       ;;
   esac
 }
@@ -259,58 +332,208 @@ cmd_run() {
     ${args[@]+"${args[@]}"}
 }
 
+# Sweep app × config × JDK × Log4j version.
+#
+# Every axis defaults to a single representative value rather than to "all",
+# because the full cross product is thousands of forked JVMs and most of its
+# cells are invalid. --all opens every axis at once; anything narrower is
+# expressed by listing values.
 cmd_matrix() {
-  local scenario="" config="" app="core-java"
+  local scenario="" all=0
+  local apps_arg="" configs_arg="" javas_arg="" versions_arg=""
+
   while [[ $# -gt 0 ]]; do
     case "$1" in
-      --scenario) scenario="$2"; shift 2 ;;
-      --config)   config="$2";   shift 2 ;;
-      --app)      app="$2";      shift 2 ;;
+      --scenario) scenario="$2";     shift 2 ;;
+      --app|--apps)       apps_arg="$2";     shift 2 ;;
+      --config|--configs) configs_arg="$2";  shift 2 ;;
+      --java|--javas)     javas_arg="$2";    shift 2 ;;
+      --log4j)            versions_arg="$2"; shift 2 ;;
+      --all)      all=1; shift ;;
       *) die "matrix: unexpected argument '$1'" ;;
     esac
   done
 
-  local results="$CACHE/matrix-$(date +%Y%m%d-%H%M%S).log"
-  printf 'Log4j matrix — app=%s scenario=%s config=%s\n\n' \
-    "$app" "${scenario:-<all>}" "${config:-<default>}" | tee "$results"
+  local apps configs javas versions
+  if [[ $all -eq 1 ]]; then
+    apps="$(printf '%s\n' "${APPS[@]}" | tr '\n' ',')"
+    configs="$(cmd_list --configs | sed 's/\.[a-z]*$//' | tr '\n' ',')"
+    javas="$(installed_javas | tr '\n' ',')"
+    versions="$(printf '%s\n' "${VERSIONS[@]}" | tr '\n' ',')"
+  else
+    # Defaults: one app, one config, this machine's default JDK, every Log4j
+    # line — the version axis is the one you almost always want swept.
+    apps="${apps_arg:-core-java}"
+    configs="${configs_arg:-xml/baseline-console}"
+    javas="${javas_arg:-$(java_major_of "$(java_home_for '')")}"
+    versions="${versions_arg:-$(printf '%s\n' "${VERSIONS[@]}" | tr '\n' ',')}"
+  fi
+  [[ -n "$apps_arg"     ]] && apps="$apps_arg"
+  [[ -n "$configs_arg"  ]] && configs="$configs_arg"
+  [[ -n "$javas_arg"    ]] && javas="$javas_arg"
+  [[ -n "$versions_arg" ]] && versions="$versions_arg"
 
-  for version in "${VERSIONS[@]}"; do
-    printf '\n═══ log4j %s ═══\n' "$version" | tee -a "$results"
+  local stamp; stamp="$(date +%Y%m%d-%H%M%S)"
+  local results="$CACHE/matrix-$stamp.log"
+  local ledger="$CACHE/coverage.tsv"
 
-    # A 2.x-only app on 3.x is not a failure, it is an absent artifact. Reporting
-    # FAIL there would train you to ignore a red cell in the one column where a
-    # real regression is most likely to appear.
-    if [[ "$version" == 3.* ]] && is_2x_only "$app"; then
-      printf '  \033[33mSKIP\033[0m  %s (%s has no 3.x release path)\n' "$version" "$app" \
-        | tee -a "$results"
-      continue
-    fi
+  local pass=0 fail=0 skip=0
+  printf 'Log4j matrix — scenario=%s\n' "${scenario:-<all>}" | tee "$results"
+  printf '  apps     %s\n  configs  %s\n  javas    %s\n  versions %s\n\n' \
+    "$(csv_pretty "$apps")" "$(csv_pretty "$configs")" \
+    "$(csv_pretty "$javas")" "$(csv_pretty "$versions")" | tee -a "$results"
 
-    local run_args=("$app" --log4j "$version")
-    [[ -n "$config"   ]] && run_args+=(--config "$config")
-    [[ -n "$scenario" ]] && run_args+=("$scenario")
+  local app config java version reason
+  for app in $(csv_split "$apps"); do
+    for config in $(csv_split "$configs"); do
+      for java in $(csv_split "$javas"); do
+        for version in $(csv_split "$versions"); do
 
-    if ( "$0" run "${run_args[@]}" ) >>"$results" 2>&1; then
-      printf '  \033[32mPASS\033[0m  %s\n' "$version"
-    else
-      printf '  \033[31mFAIL\033[0m  %s (exit %d)\n' "$version" "$?"
-    fi
+          reason="$(cell_skip_reason "$app" "$config" "$java" "$version")"
+          if [[ -n "$reason" ]]; then
+            printf '  \033[33mSKIP\033[0m  %-18s %-30s java%-3s %-16s  %s\n' \
+              "$app" "$config" "$java" "$version" "$reason"
+            printf 'SKIP\t%s\t%s\t%s\t%s\t%s\n' "$app" "$config" "$java" "$version" "$reason" >>"$results"
+            skip=$((skip + 1))
+            continue
+          fi
+
+          local run_args=("$app" --log4j "$version" --config "$config" --java "$java")
+          [[ -n "$scenario" ]] && run_args+=("$scenario")
+
+          printf '\n═══ %s | %s | java %s | log4j %s ═══\n' \
+            "$app" "$config" "$java" "$version" >>"$results"
+
+          if ( "$0" run "${run_args[@]}" ) >>"$results" 2>&1; then
+            printf '  \033[32mPASS\033[0m  %-18s %-30s java%-3s %s\n' \
+              "$app" "$config" "$java" "$version"
+            printf '%s\tPASS\t%s\t%s\t%s\t%s\n' "$stamp" "$app" "$config" "$java" "$version" >>"$ledger"
+            pass=$((pass + 1))
+          else
+            printf '  \033[31mFAIL\033[0m  %-18s %-30s java%-3s %s\n' \
+              "$app" "$config" "$java" "$version"
+            printf '%s\tFAIL\t%s\t%s\t%s\t%s\n' "$stamp" "$app" "$config" "$java" "$version" >>"$ledger"
+            fail=$((fail + 1))
+          fi
+        done
+      done
+    done
   done
 
-  printf '\nFull output: %s\n' "$results"
+  printf '\n%d pass, %d fail, %d skip\nFull output: %s\n' "$pass" "$fail" "$skip" "$results"
+}
+
+csv_split()  { printf '%s' "$1" | tr ',' ' '; }
+csv_pretty() { printf '%s' "$1" | tr ',' ' ' | sed 's/  */ /g; s/ $//'; }
+
+# Major version of the JDK at a given JAVA_HOME, e.g. 17.
+java_major_of() {
+  local home="$1"
+  [[ -x "$home/bin/java" ]] || { echo 17; return; }
+  "$home/bin/java" -version 2>&1 \
+    | sed -n '1s/.*version "\([0-9][0-9.]*\).*/\1/p' \
+    | sed -e 's/^1\.\([0-9][0-9]*\).*/\1/' -e 's/^\([0-9][0-9]*\)\..*/\1/'
 }
 
 cmd_repro() { exec "$ROOT/scripts/repro.sh" "$@"; }
+
+# Where the bench actually reaches, as opposed to where it is meant to reach.
+#
+# Two different questions, answered separately because they fail differently:
+#   * which Log4j modules are on some app's classpath at all — a gap here means
+#     a module the bench cannot exercise however it is invoked;
+#   * which axis cells have actually been run — a gap here means a combination
+#     nobody has tried yet, on a classpath that could have tried it.
+LOG4J_2X_CLONE="${LOG4J_2X_CLONE:-$HOME/apache/logging-log4j2}"
+LOG4J_3X_CLONE="${LOG4J_3X_CLONE:-$HOME/apache/log4j-main}"
+
+cmd_coverage() {
+  local clone="$LOG4J_2X_CLONE"
+  case "${1:-}" in
+    --3x) clone="$LOG4J_3X_CLONE"; shift ;;
+    --2x) shift ;;
+  esac
+
+  [[ -d "$clone" ]] || die "no source clone at $clone (set LOG4J_2X_CLONE / LOG4J_3X_CLONE)"
+
+  local tmp; tmp="$(mktemp -d)"
+  trap 'rm -rf "$tmp"' RETURN
+
+  # Shippable modules: everything the clone builds, minus the ones that are
+  # test fixtures, fuzz harnesses or multi-release source sets rather than
+  # artifacts an application would ever depend on.
+  ( cd "$clone" && ls -d log4j-*/ 2>/dev/null | sed 's|/$||' ) \
+    | grep -vE 'fuzz-test|api-test|core-its|java9|-test$|^log4j-parent$' \
+    | sort > "$tmp/all"
+
+  # Modules resolved onto any app's classpath. Requires that the classpaths have
+  # been resolved at least once, which any ./bench run does.
+  cat "$CACHE"/cp-*.txt 2>/dev/null \
+    | tr ':' '\n' \
+    | grep -o 'org/apache/logging/log4j/[^/]*' \
+    | sed 's|.*/||' | sort -u > "$tmp/on-classpath"
+
+  local total covered
+  total="$(wc -l < "$tmp/all" | tr -d ' ')"
+  covered="$(comm -12 "$tmp/all" "$tmp/on-classpath" | wc -l | tr -d ' ')"
+
+  printf '\033[1mModule coverage\033[0m  (%s)\n' "$clone"
+  printf '  %s of %s shippable modules are on some app classpath\n\n' "$covered" "$total"
+
+  printf '  \033[31mnot on any classpath:\033[0m\n'
+  comm -23 "$tmp/all" "$tmp/on-classpath" | sed 's/^/    /'
+
+  printf '\n  \033[32mon a classpath:\033[0m\n'
+  comm -12 "$tmp/all" "$tmp/on-classpath" | tr '\n' ' ' | fold -s -w 76 | sed 's/^/    /'
+  printf '\n'
+
+  # Note: a module being present says the bench *can* reach it. Whether any
+  # config actually drives it is a separate question the ledger cannot answer,
+  # since a classpath entry is not proof a plugin was instantiated.
+  printf '\n\033[1mAxis coverage\033[0m  (from %s)\n' "$CACHE/coverage.tsv"
+  if [[ ! -s "$CACHE/coverage.tsv" ]]; then
+    printf '  no matrix runs recorded yet — run ./bench matrix\n'
+    return
+  fi
+
+  printf '  %s cells run, %s distinct\n' \
+    "$(wc -l < "$CACHE/coverage.tsv" | tr -d ' ')" \
+    "$(cut -f3-6 "$CACHE/coverage.tsv" | sort -u | wc -l | tr -d ' ')"
+  printf '  %s pass, %s fail\n\n' \
+    "$(cut -f2 "$CACHE/coverage.tsv" | grep -c PASS)" \
+    "$(cut -f2 "$CACHE/coverage.tsv" | grep -c FAIL)"
+
+  # Count distinct (app, config, java, version) cells per axis value. Deduping
+  # on the whole cell matters: re-running the same slice must not look like
+  # wider coverage than it is.
+  printf '  by Log4j version:\n'
+  cut -f3-6 "$CACHE/coverage.tsv" | sort -u | cut -f4 | sort | uniq -c \
+    | awk '{printf "    %-18s %s cell(s)\n", $2, $1}'
+  printf '  by JDK:\n'
+  cut -f3-6 "$CACHE/coverage.tsv" | sort -u | cut -f3 | sort -n | uniq -c \
+    | awk '{printf "    java %-13s %s cell(s)\n", $2, $1}'
+  printf '  by app:\n'
+  cut -f3-6 "$CACHE/coverage.tsv" | sort -u | cut -f1 | sort | uniq -c \
+    | awk '{printf "    %-18s %s cell(s)\n", $2, $1}'
+
+  local failed
+  failed="$(awk -F'\t' '$2=="FAIL" {printf "    %s %s java%s %s\n", $3, $4, $5, $6}' \
+    "$CACHE/coverage.tsv" | sort -u)"
+  if [[ -n "$failed" ]]; then
+    printf '\n  \033[31mfailing cells:\033[0m\n%s\n' "$failed"
+  fi
+}
 
 usage() {
   sed -n '2,20p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//'
 }
 
 case "${1:-help}" in
-  list)   shift; cmd_list "$@" ;;
-  run)    shift; cmd_run "$@" ;;
-  matrix) shift; cmd_matrix "$@" ;;
-  repro)  shift; cmd_repro "$@" ;;
+  list)     shift; cmd_list "$@" ;;
+  run)      shift; cmd_run "$@" ;;
+  matrix)   shift; cmd_matrix "$@" ;;
+  coverage) shift; cmd_coverage "$@" ;;
+  repro)    shift; cmd_repro "$@" ;;
   clean)  rm -rf "$CACHE"; info "cleared $CACHE" ;;
   help|--help|-h) usage ;;
   *) die "unknown command '$1' (try: ./bench help)" ;;

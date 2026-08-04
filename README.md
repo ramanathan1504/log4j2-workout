@@ -12,6 +12,8 @@ zip to attach to the issue.
 ./bench list                                          # what exists
 ./bench run core-java --config xml/layout-pattern-full # run scenarios
 ./bench matrix --scenario exceptions                   # same test, every version
+./bench matrix --apps core-java,db --javas 17,21       # slice any axis
+./bench coverage                                       # what is reached, what is not
 ./bench repro 4143 --scenario exceptions --config xml/layout-jsontemplate
 ```
 
@@ -28,10 +30,14 @@ zip to attach to the issue.
 │   └── templates/           JsonTemplateLayout event templates
 ├── apps/
 │   ├── core-java/           no framework — scenarios, custom plugins
+│   ├── java8-baseline/      Java 8 source, for the oldest supported JDK
 │   ├── spring-boot-maven/   real Spring Boot app, HTTP-triggered
 │   ├── spring-boot-gradle/  the same app, built by Gradle
 │   ├── jakarta-web/         servlet container, per-webapp LoggerContext
 │   ├── log4j1-bridge/       1.x API on 2.x core via log4j-1.2-api
+│   ├── bridges-in/          SLF4J 1.7, JUL, JCL, JPL, iostreams → Log4j
+│   ├── bridges-out/         Log4j API → SLF4J → Logback
+│   ├── bridges-to-jul/      Log4j API → java.util.logging
 │   └── db/                  JDBC / Mongo / Cassandra / CouchDB appenders
 ├── infra/docker-compose.yml Kafka, Mongo, Cassandra, CouchDB, Postgres, MySQL,
 │                            syslog-ng, MailHog, Elasticsearch, Kibana
@@ -114,6 +120,34 @@ To (re)build the local snapshots:
 cd ~/apache/logging-log4j2 && mvn install -DskipTests          # 2.27.0-SNAPSHOT
 cd ~/apache/log4j-main     && mvn install -DskipTests          # 3.0.0-SNAPSHOT
 ```
+
+---
+
+## The four axes
+
+`matrix` sweeps app × config × JDK × Log4j version. Every axis defaults to a
+single value except the Log4j one, because the full cross product is thousands
+of forked JVMs:
+
+```bash
+./bench matrix                                   # every Log4j version, one app/config/JDK
+./bench matrix --apps core-java,db --javas 17,21 # widen the axes you care about
+./bench matrix --all                             # every valid cell — hours
+```
+
+**Most of the cross product is invalid, and that is reported rather than run.**
+A cell is skipped with its reason when the app has no 3.x release path, the JDK
+is older than the app's class file target, Log4j 3 is paired with a JDK below
+17, or a properties config is paired with 3.x. A skip is information; a failure
+you have to explain away is not.
+
+The JDK axis is discovered from `/usr/libexec/java_home`, so it reflects what is
+installed. Only `java8-baseline` is compiled at release 8 — every other module
+targets 17 and is skipped on older JDKs rather than failing to load.
+
+`./bench coverage` answers the other question: which Log4j modules are on some
+app's classpath at all, and which axis cells have actually been run. It reads
+the module list from your source clone, so it stays honest as the clone moves.
 
 ---
 

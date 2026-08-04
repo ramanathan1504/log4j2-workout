@@ -1,0 +1,100 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <parent>
+    <groupId>org.apache.logging.bench</groupId>
+    <artifactId>log4j-bench-parent</artifactId>
+    <version>1.0.0-SNAPSHOT</version>
+    <relativePath>../../pom.xml</relativePath>
+  </parent>
+
+  <artifactId>bench-bridges-in</artifactId>
+  <name>Log4j Bench :: Bridges In</name>
+  <description>Other logging APIs routed INTO Log4j: SLF4J 1.7, JUL, Commons Logging, JDK System.Logger, IO streams</description>
+
+  <!--
+    Every bridge that routes some other API *into* Log4j, on one classpath.
+    Feature matrix §12.
+
+    These live in their own module because they cannot coexist with the
+    bridges that route the other way — see apps/bridges-out. log4j-to-slf4j on
+    this classpath would make log4j-slf4j-impl abort at first use with
+    "log4j-slf4j2-impl cannot be present with log4j-to-slf4j", and log4j-to-jul
+    would fight log4j-jul for the same handlers.
+
+    2.x ONLY. log4j-slf4j-impl, log4j-jcl and log4j-jpl have no 3.x release.
+  -->
+
+  <dependencies>
+    <dependency>
+      <groupId>org.apache.logging.log4j</groupId>
+      <artifactId>log4j-api</artifactId>
+      <version>${log4j.api.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.logging.log4j</groupId>
+      <artifactId>log4j-core</artifactId>
+    </dependency>
+
+    <!-- ══ SLF4J 1.7 → Log4j ══
+         Deliberately the 1.7 binding, not log4j-slf4j2-impl: the 2.x line
+         still ships both, and the 1.7 one is what older applications carry.
+         The two are mutually exclusive, so slf4j2 is exercised by the Spring
+         Boot apps instead. -->
+    <dependency>
+      <groupId>org.apache.logging.log4j</groupId>
+      <artifactId>log4j-slf4j-impl</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.slf4j</groupId>
+      <artifactId>slf4j-api</artifactId>
+      <version>1.7.36</version>
+    </dependency>
+
+    <!-- ══ java.util.logging → Log4j ══
+         Needs -Djava.util.logging.manager=org.apache.logging.log4j.jul.LogManager,
+         which ./bench passes for this app. -->
+    <dependency>
+      <groupId>org.apache.logging.log4j</groupId>
+      <artifactId>log4j-jul</artifactId>
+    </dependency>
+
+    <!-- ══ Commons Logging → Log4j ══ -->
+    <dependency>
+      <groupId>org.apache.logging.log4j</groupId>
+      <artifactId>log4j-jcl</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>commons-logging</groupId>
+      <artifactId>commons-logging</artifactId>
+      <version>1.3.4</version>
+    </dependency>
+
+    <!-- ══ JDK 9 System.Logger → Log4j ══ -->
+    <dependency>
+      <groupId>org.apache.logging.log4j</groupId>
+      <artifactId>log4j-jpl</artifactId>
+    </dependency>
+
+    <!-- ══ Streams/Writers/Readers → Log4j ══ -->
+    <dependency>
+      <groupId>org.apache.logging.log4j</groupId>
+      <artifactId>log4j-iostreams</artifactId>
+    </dependency>
+  </dependencies>
+
+  <build>
+    <plugins>
+      <plugin>
+        <groupId>org.codehaus.mojo</groupId>
+        <artifactId>exec-maven-plugin</artifactId>
+        <configuration>
+          <mainClass>org.apache.logging.bench.bridges.BridgesInBench</mainClass>
+        </configuration>
+      </plugin>
+    </plugins>
+  </build>
+</project>

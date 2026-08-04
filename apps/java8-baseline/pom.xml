@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <parent>
+    <groupId>org.apache.logging.bench</groupId>
+    <artifactId>log4j-bench-parent</artifactId>
+    <version>1.0.0-SNAPSHOT</version>
+    <relativePath>../../pom.xml</relativePath>
+  </parent>
+
+  <artifactId>bench-java8-baseline</artifactId>
+  <name>Log4j Bench :: Java 8 Baseline</name>
+  <description>Java 8 source and bytecode, so the oldest JDK Log4j 2 supports is testable</description>
+
+  <!--
+    Java 8, deliberately, and the only module that is.
+
+    Log4j 2 supports Java 8, and a large share of the bug reports that arrive
+    upstream come from applications still on it. Every other module here is
+    compiled at release 17 and uses text blocks and pattern matching, so none of
+    them can even load on a Java 8 JVM — which left the oldest supported JDK
+    completely untestable.
+
+    Dependencies are kept to what genuinely runs on 8. Anything requiring a
+    newer class file version is intentionally absent, and ./bench skips the
+    configs that would need it rather than failing them.
+  -->
+
+  <properties>
+    <maven.compiler.source>8</maven.compiler.source>
+    <maven.compiler.target>8</maven.compiler.target>
+    <!-- release, not just source/target: it also pins the JDK API surface, so a
+         Java 11+ method slipping in fails at compile time here rather than with
+         NoSuchMethodError on the Java 8 JVM under test. -->
+    <maven.compiler.release>8</maven.compiler.release>
+  </properties>
+
+  <dependencies>
+    <dependency>
+      <groupId>org.apache.logging.log4j</groupId>
+      <artifactId>log4j-api</artifactId>
+      <version>${log4j.api.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.logging.log4j</groupId>
+      <artifactId>log4j-core</artifactId>
+    </dependency>
+
+    <!-- The JSON/YAML config formats. Jackson 2.18 still targets Java 8. -->
+    <dependency>
+      <groupId>com.fasterxml.jackson.core</groupId>
+      <artifactId>jackson-databind</artifactId>
+      <version>${jackson.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>com.fasterxml.jackson.dataformat</groupId>
+      <artifactId>jackson-dataformat-yaml</artifactId>
+      <version>${jackson.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>com.fasterxml.jackson.dataformat</groupId>
+      <artifactId>jackson-dataformat-xml</artifactId>
+      <version>${jackson.version}</version>
+    </dependency>
+  </dependencies>
+
+  <build>
+    <plugins>
+      <plugin>
+        <groupId>org.codehaus.mojo</groupId>
+        <artifactId>exec-maven-plugin</artifactId>
+        <configuration>
+          <mainClass>org.apache.logging.bench.java8.Java8Bench</mainClass>
+        </configuration>
+      </plugin>
+    </plugins>
+  </build>
+</project>

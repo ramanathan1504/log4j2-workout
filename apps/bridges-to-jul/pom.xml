@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <parent>
+    <groupId>org.apache.logging.bench</groupId>
+    <artifactId>log4j-bench-parent</artifactId>
+    <version>1.0.0-SNAPSHOT</version>
+    <relativePath>../../pom.xml</relativePath>
+  </parent>
+
+  <artifactId>bench-bridges-to-jul</artifactId>
+  <name>Log4j Bench :: Bridges Out (JUL)</name>
+  <description>The Log4j API routed OUT to java.util.logging via log4j-to-jul</description>
+
+  <!--
+    Its own module rather than a profile on apps/bridges-out, because
+    log4j-to-jul and log4j-to-slf4j both supply the Log4j API's provider: with
+    both on a classpath the ServiceLoader picks one arbitrarily and the result
+    is not reproducible.
+
+    log4j-core is absent here too — with core present it would answer
+    LogManager.getLogger and the bridge would never be reached, while the output
+    looked identical.
+
+    2.x ONLY: log4j-to-jul has no 3.x release.
+  -->
+
+  <dependencies>
+    <dependency>
+      <groupId>org.apache.logging.log4j</groupId>
+      <artifactId>log4j-api</artifactId>
+      <version>${log4j.api.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.logging.log4j</groupId>
+      <artifactId>log4j-to-jul</artifactId>
+    </dependency>
+  </dependencies>
+
+  <build>
+    <plugins>
+      <plugin>
+        <groupId>org.codehaus.mojo</groupId>
+        <artifactId>exec-maven-plugin</artifactId>
+        <configuration>
+          <mainClass>org.apache.logging.bench.bridges.ToJulBench</mainClass>
+        </configuration>
+      </plugin>
+    </plugins>
+  </build>
+</project>

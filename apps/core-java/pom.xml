@@ -229,6 +229,29 @@
           <groupId>org.apache.logging.log4j</groupId>
           <artifactId>log4j-config-yaml</artifactId>
         </dependency>
+
+        <!-- The alternate BlockingQueueFactories. On 2.x these live inside
+             log4j-core and only the third-party queue jars are needed; 3.x
+             moved each adapter into its own artifact, so without these two the
+             DisruptorBlockingQueue and JCToolsBlockingQueue plugins simply do
+             not exist on 3.x and a config naming them falls back to the
+             default ArrayBlockingQueue. -->
+        <dependency>
+          <groupId>org.apache.logging.log4j</groupId>
+          <artifactId>log4j-conversant</artifactId>
+        </dependency>
+        <dependency>
+          <groupId>org.apache.logging.log4j</groupId>
+          <artifactId>log4j-jctools</artifactId>
+        </dependency>
+
+        <!-- JNDI, likewise split out of log4j-core on 3.x. Nothing here enables
+             the JNDI lookup: since 2.17.0 it stays off unless
+             log4j2.enableJndiLookup is set, and the bench does not set it. -->
+        <dependency>
+          <groupId>org.apache.logging.log4j</groupId>
+          <artifactId>log4j-jndi</artifactId>
+        </dependency>
       </dependencies>
     </profile>
   </profiles>

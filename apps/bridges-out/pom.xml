@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <parent>
+    <groupId>org.apache.logging.bench</groupId>
+    <artifactId>log4j-bench-parent</artifactId>
+    <version>1.0.0-SNAPSHOT</version>
+    <relativePath>../../pom.xml</relativePath>
+  </parent>
+
+  <artifactId>bench-bridges-out</artifactId>
+  <name>Log4j Bench :: Bridges Out</name>
+  <description>The Log4j API routed OUT to another backend: log4j-to-slf4j and log4j-to-jul</description>
+
+  <!--
+    The reverse direction: application code calls the Log4j API, and the events
+    are handed to somebody else's backend. Feature matrix §12.
+
+    log4j-core is deliberately ABSENT. That is the whole point — with core on
+    the classpath it, not the bridge, would serve LogManager.getLogger, and the
+    test would silently measure nothing. It also means the configs under
+    configs/ do not apply to this app: the backend is configured by Logback and
+    JUL respectively.
+
+    Cannot share a classpath with apps/bridges-in: log4j-to-slf4j plus
+    log4j-slf4j-impl is a routing loop, which log4j-slf4j-impl detects and
+    aborts on.
+
+    2.x ONLY — log4j-to-slf4j and log4j-to-jul have no 3.x release.
+  -->
+
+  <dependencies>
+    <dependency>
+      <groupId>org.apache.logging.log4j</groupId>
+      <artifactId>log4j-api</artifactId>
+      <version>${log4j.api.version}</version>
+    </dependency>
+
+    <!-- ══ Log4j API → SLF4J → Logback ══ -->
+    <dependency>
+      <groupId>org.apache.logging.log4j</groupId>
+      <artifactId>log4j-to-slf4j</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.slf4j</groupId>
+      <artifactId>slf4j-api</artifactId>
+      <version>${slf4j.version}</version>
+    </dependency>
+    <!-- A real backend, so "did it arrive" has a visible answer -->
+    <dependency>
+      <groupId>ch.qos.logback</groupId>
+      <artifactId>logback-classic</artifactId>
+      <version>1.5.16</version>
+    </dependency>
+
+    <!--
+      log4j-to-jul is NOT here, and is not a profile either. It and
+      log4j-to-slf4j both supply the Log4j API's provider, so with both present
+      the ServiceLoader picks one and the other is dead weight — a coin toss the
+      bench must not depend on. It gets its own module, apps/bridges-to-jul, so
+      the classpath under test stays something you can read off the POM.
+    -->
+  </dependencies>
+
+  <build>
+    <plugins>
+      <plugin>
+        <groupId>org.codehaus.mojo</groupId>
+        <artifactId>exec-maven-plugin</artifactId>
+        <configuration>
+          <mainClass>org.apache.logging.bench.bridges.BridgesOutBench</mainClass>
+        </configuration>
+      </plugin>
+    </plugins>
+  </build>
+</project>
