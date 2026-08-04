@@ -1,0 +1,89 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <parent>
+    <groupId>org.apache.logging.bench</groupId>
+    <artifactId>log4j-bench-parent</artifactId>
+    <version>1.0.0-SNAPSHOT</version>
+    <relativePath>../../pom.xml</relativePath>
+  </parent>
+
+  <artifactId>bench-jdbc-jndi</artifactId>
+  <name>Log4j Bench :: JDBC via JNDI</name>
+  <description>The JDBC appender's DataSource connection source, resolved through an in-process JNDI context</description>
+
+  <!--
+    Runs on BOTH lines, which is the unusual part.
+
+    On 2.x the DataSource connection source lives inside log4j-core. On 3.x it
+    was split into log4j-jdbc-jndi, added by the profile below — so this module
+    is one of the few places the split is directly observable: the same config
+    works on both, and only the classpath differs.
+
+    ── On enabling JNDI ────────────────────────────────────────────────────────
+
+    Log4j has disabled JNDI by default since 2.17.0, with a separate flag per
+    subsystem. This app needs log4j2.enableJndiJdbc=true, which ./bench passes
+    for it and only for it.
+
+    That is safe here for a reason worth stating rather than assuming: the JNDI
+    provider is BenchInitialContextFactory, in this module, which resolves names
+    from a HashMap populated by the application itself. It speaks no protocol
+    and opens no socket, so there is no remote lookup to abuse. The flag is
+    scoped to this one app, and the bench never sets enableJndiLookup — the
+    ${jndi:} lookup that CVE-2021-44228 abused stays off everywhere, as
+    configs/xml/lookups.xml demonstrates.
+  -->
+
+  <dependencies>
+    <dependency>
+      <groupId>org.apache.logging.log4j</groupId>
+      <artifactId>log4j-api</artifactId>
+      <version>${log4j.api.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.logging.log4j</groupId>
+      <artifactId>log4j-core</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>com.h2database</groupId>
+      <artifactId>h2</artifactId>
+      <version>${h2.version}</version>
+    </dependency>
+  </dependencies>
+
+  <profiles>
+    <profile>
+      <id>log4j-3x</id>
+      <dependencies>
+        <!-- 3.x moved DataSourceConnectionSource out of log4j-core. Without
+             this the config still parses and the DataSource element is simply
+             unknown, so the appender falls back to no connection source. -->
+        <dependency>
+          <groupId>org.apache.logging.log4j</groupId>
+          <artifactId>log4j-jdbc-jndi</artifactId>
+        </dependency>
+        <dependency>
+          <groupId>org.apache.logging.log4j</groupId>
+          <artifactId>log4j-jdbc</artifactId>
+        </dependency>
+      </dependencies>
+    </profile>
+  </profiles>
+
+  <build>
+    <plugins>
+      <plugin>
+        <groupId>org.codehaus.mojo</groupId>
+        <artifactId>exec-maven-plugin</artifactId>
+        <configuration>
+          <mainClass>org.apache.logging.bench.jndi.JdbcJndiBench</mainClass>
+        </configuration>
+      </plugin>
+    </plugins>
+  </build>
+</project>

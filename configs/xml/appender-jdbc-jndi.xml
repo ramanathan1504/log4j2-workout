@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  The JDBC appender's DataSource connection source, resolved through JNDI.
+  Feature matrix §1, §7.
+
+  configs/xml/appender-jdbc.xml covers the other two sources — DriverManager,
+  which takes a URL, and PoolingDriver, which takes a pool name. This one takes
+  only a JNDI name, so nothing here says which database is written to. That is
+  the whole point in a container, where the deployer owns the datasource; it
+  also means this configuration cannot work unless something else bound the name
+  first, and the failure arrives as a Log4j appender error.
+
+  Two prerequisites, both outside this file, and both silent when missing:
+
+    -Djava.naming.factory.initial=...BenchInitialContextFactory
+        without a JNDI provider the lookup cannot even start
+
+    -Dlog4j2.enableJndiJdbc=true
+        Log4j has disabled JNDI per-subsystem since 2.17.0. Without this the
+        appender refuses to resolve anything, and says so only in the status log
+
+  ./bench passes both for the jdbc-jndi app. Note the bench never sets
+  log4j2.enableJndiLookup — the ${jndi:} lookup CVE-2021-44228 abused stays off,
+  and configs/xml/lookups.xml shows it rendering unresolved.
+
+  Usable only with the jdbc-jndi app, which owns the binding.
+-->
+<Configuration status="WARN" name="appender-jdbc-jndi">
+
+  <Appenders>
+    <Console name="Console" target="SYSTEM_OUT">
+      <PatternLayout pattern="%d{HH:mm:ss.SSS} %-5level %logger{1.} - %msg%n"/>
+    </Console>
+
+    <!-- bufferSize="0" writes per event, so the row count is meaningful the
+         moment logging stops. -->
+    <JDBC name="Jdbc" tableName="LOG_EVENTS" bufferSize="0">
+      <!-- The entire connection configuration: one name, resolved at appender
+           construction. A name that is not bound yet fails the appender rather
+           than retrying, so binding order matters — the app binds before its
+           first log call. -->
+      <DataSource jndiName="java:comp/env/jdbc/benchDataSource"/>
+
+      <Column name="EVENT_DATE" isEventTimestamp="true"/>
+      <Column name="LEVEL" pattern="%level"/>
+      <Column name="LOGGER" pattern="%logger"/>
+      <Column name="MESSAGE" pattern="%message"/>
+      <Column name="THREAD" pattern="%thread"/>
+      <Column name="TRACE_ID" pattern="%X{traceId}"/>
+      <Column name="THROWABLE" pattern="%ex{full}"/>
+    </JDBC>
+  </Appenders>
+
+  <Loggers>
+    <Logger name="org.apache.logging.bench" level="TRACE"/>
+    <Root level="INFO">
+      <AppenderRef ref="Console"/>
+      <AppenderRef ref="Jdbc"/>
+    </Root>
+  </Loggers>
+
+</Configuration>

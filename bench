@@ -35,7 +35,7 @@ VERSIONS=(
 DEFAULT_VERSION=2.27.0-SNAPSHOT
 
 APPS=(core-java spring-boot-maven db log4j1-bridge jakarta-web spring-boot-gradle
-      java8-baseline bridges-in bridges-out bridges-to-jul custom-plugins jpa smtp javax-web)
+      java8-baseline bridges-in bridges-out bridges-to-jul custom-plugins jpa smtp javax-web jdbc-jndi)
 
 # Apps that cannot build on 3.x, because the Log4j artifacts they need have no
 # 3.x release. `matrix` skips these rather than reporting a spurious failure.
@@ -140,6 +140,7 @@ module_path_for() {
     jpa)                echo "apps/jpa" ;;
     smtp)               echo "apps/smtp" ;;
     javax-web)          echo "apps/javax-web" ;;
+    jdbc-jndi)          echo "apps/jdbc-jndi" ;;
     bridges-in)         echo "apps/bridges-in" ;;
     bridges-out)        echo "apps/bridges-out" ;;
     bridges-to-jul)     echo "apps/bridges-to-jul" ;;
@@ -163,6 +164,7 @@ main_class_for() {
     jpa)                echo "org.apache.logging.bench.jpa.JpaBench" ;;
     smtp)               echo "org.apache.logging.bench.smtp.SmtpBench" ;;
     javax-web)          echo "org.apache.logging.bench.javaxweb.JavaxWebBench" ;;
+    jdbc-jndi)          echo "org.apache.logging.bench.jndi.JdbcJndiBench" ;;
     bridges-in)         echo "org.apache.logging.bench.bridges.BridgesInBench" ;;
     bridges-out)        echo "org.apache.logging.bench.bridges.BridgesOutBench" ;;
     bridges-to-jul)     echo "org.apache.logging.bench.bridges.ToJulBench" ;;
@@ -201,6 +203,22 @@ extra_jvm_args_for() {
       #
       # So log4j-jpa is unusable on any current JDK without this.
       EXTRA_JVM_ARGS+=(--add-opens=java.base/java.lang=ALL-UNNAMED)
+      ;;
+    jdbc-jndi)
+      # Two flags, both required and both silent when missing.
+      #
+      # java.naming.factory.initial selects the JNDI provider: the in-process,
+      # map-backed one in this module, which speaks no protocol and opens no
+      # socket.
+      #
+      # log4j2.enableJndiJdbc re-enables the JDBC half of the JNDI support Log4j
+      # disabled by default after CVE-2021-44228. Scoped to this app alone, and
+      # safe here precisely because the provider above cannot reach off the
+      # machine. The bench never sets log4j2.enableJndiLookup, which governs the
+      # ${jndi:} lookup that CVE abused — see configs/xml/lookups.xml, where it
+      # renders unresolved.
+      EXTRA_JVM_ARGS+=(-Djava.naming.factory.initial=org.apache.logging.bench.jndi.BenchInitialContextFactory
+                       -Dlog4j2.enableJndiJdbc=true)
       ;;
     bridges-in)
       # log4j-jul only takes effect if the JUL LogManager is replaced before any

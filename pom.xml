@@ -19,6 +19,7 @@
     <module>apps/db</module>
     <module>apps/java8-baseline</module>
     <module>apps/custom-plugins</module>
+    <module>apps/jdbc-jndi</module>
   </modules>
 
   <properties>
