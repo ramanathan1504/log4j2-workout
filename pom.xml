@@ -132,6 +132,7 @@
         <module>apps/bridges-to-jul</module>
         <module>apps/jpa</module>
         <module>apps/smtp</module>
+        <module>apps/javax-web</module>
       </modules>
     </profile>
 

@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  ServletAppender, plus the web lookups. Feature matrix §1, §12.
+
+  ServletAppender writes through ServletContext.log(), so its destination is
+  whatever the container does with that — catalina.out for Tomcat, the server
+  log for WildFly. That makes it the one appender whose output you cannot find
+  by looking at the configuration: the path is the container's business.
+
+  Two constraints follow from that, and both bite:
+
+    * It only works inside a webapp. Outside one there is no ServletContext, so
+      the appender fails to build and reports "No ServletContext is available".
+      This config is therefore usable only with the javax-web app.
+
+    * It takes no layout by default, because ServletContext.log() takes a
+      String and supplies its own timestamp and prefix. Give it a layout with a
+      %d and every line carries two timestamps in different formats.
+
+  Usable only with the javax-web app.
+-->
+<Configuration status="WARN" name="appender-servlet">
+
+  <Appenders>
+    <Console name="Console" target="SYSTEM_OUT">
+      <PatternLayout pattern="%d{HH:mm:ss.SSS} %-5level %logger{1.} - %msg%n"/>
+    </Console>
+
+    <!--
+      ServletAppender is NOT declared here, and cannot be.
+
+      This file is loaded by the JVM-wide LoggerContext, because ./bench passes
+      -Dlog4j.configurationFile and the application logs before Tomcat starts.
+      At that moment there is no ServletContext, so the appender fails to build:
+
+        ERROR No servlet context is available
+        ERROR Null object returned for Servlet in Appenders.
+        ERROR Unable to locate appender "Servlet" for logger config "root"
+
+      and the error is permanent even if nothing references it. The appender is
+      only constructible inside a webapp's own LoggerContext, which means a
+      configuration that the webapp alone loads — WEB-INF/classes/log4j2.xml, or
+      a log4jConfiguration context-param — not a shared file handed to the whole
+      JVM. The javax-web app writes exactly such a file into the webapp it
+      deploys, which is where ServletAppender is exercised.
+
+      Worth knowing before reaching for it: its destination is
+      ServletContext.log(), so where the output lands is the container's
+      business — catalina.out for Tomcat, the server log for WildFly — and
+      cannot be determined by reading the Log4j configuration at all.
+    -->
+
+    <!-- A file too, so a run leaves something inspectable regardless of where
+         the container decided to put ServletContext.log() output. -->
+    <File name="File" fileName="${sys:bench.log.dir:-logs}/javax-web/app.log" append="false">
+      <PatternLayout pattern="%d{HH:mm:ss.SSS} %-5level %logger{1.} %X - %msg%n"/>
+    </File>
+  </Appenders>
+
+  <Loggers>
+    <Logger name="org.apache.logging.bench" level="TRACE"/>
+
+    <!-- The JSP tag library logs under whatever name the page's setLogger tag
+         chose, which is this one. Separated so a run shows the taglib's events
+         distinctly from the servlet's. -->
+    <Logger name="org.apache.logging.bench.jsp" level="TRACE"/>
+
+    <Root level="INFO">
+      <AppenderRef ref="Console"/>
+      <AppenderRef ref="File"/>
+    </Root>
+  </Loggers>
+
+</Configuration>

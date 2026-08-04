@@ -35,12 +35,12 @@ VERSIONS=(
 DEFAULT_VERSION=2.27.0-SNAPSHOT
 
 APPS=(core-java spring-boot-maven db log4j1-bridge jakarta-web spring-boot-gradle
-      java8-baseline bridges-in bridges-out bridges-to-jul custom-plugins jpa smtp)
+      java8-baseline bridges-in bridges-out bridges-to-jul custom-plugins jpa smtp javax-web)
 
 # Apps that cannot build on 3.x, because the Log4j artifacts they need have no
 # 3.x release. `matrix` skips these rather than reporting a spurious failure.
 APPS_2X_ONLY=(log4j1-bridge jakarta-web spring-boot-gradle
-              bridges-in bridges-out bridges-to-jul jpa smtp)
+              bridges-in bridges-out bridges-to-jul jpa smtp javax-web)
 
 is_2x_only() {
   local app="$1" a
@@ -139,6 +139,7 @@ module_path_for() {
     custom-plugins)     echo "apps/custom-plugins" ;;
     jpa)                echo "apps/jpa" ;;
     smtp)               echo "apps/smtp" ;;
+    javax-web)          echo "apps/javax-web" ;;
     bridges-in)         echo "apps/bridges-in" ;;
     bridges-out)        echo "apps/bridges-out" ;;
     bridges-to-jul)     echo "apps/bridges-to-jul" ;;
@@ -161,6 +162,7 @@ main_class_for() {
     custom-plugins)     echo "org.apache.logging.bench.plugins.CustomPluginBench" ;;
     jpa)                echo "org.apache.logging.bench.jpa.JpaBench" ;;
     smtp)               echo "org.apache.logging.bench.smtp.SmtpBench" ;;
+    javax-web)          echo "org.apache.logging.bench.javaxweb.JavaxWebBench" ;;
     bridges-in)         echo "org.apache.logging.bench.bridges.BridgesInBench" ;;
     bridges-out)        echo "org.apache.logging.bench.bridges.BridgesOutBench" ;;
     bridges-to-jul)     echo "org.apache.logging.bench.bridges.ToJulBench" ;;
@@ -173,8 +175,8 @@ EXTRA_JVM_ARGS=()
 extra_jvm_args_for() {
   EXTRA_JVM_ARGS=()
   case "$1" in
-    jakarta-web)
-      # Tomcat 10.1.34+ refuses to start a DirResourceSet unless it can confirm
+    jakarta-web|javax-web)
+      # Tomcat 10.1.34+ and 9.0.98+ refuse to start a DirResourceSet unless it can confirm
       # the JDK's canonical file name cache is off (the CVE-2024-56337 fix). It
       # confirms by reflectively writing a static final field in java.io, so it
       # needs both the property and the add-opens — this is exactly what
