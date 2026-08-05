@@ -347,7 +347,7 @@ the root README and an entry in the root `<modules>`.
 
 Each cost real time. In rough order of how much.
 
-**Log4j behaviour** — the full set is `FEATURE-MATRIX` §17, 39 entries. The ones
+**Log4j behaviour** — the full set is `FEATURE-MATRIX` §17, 56 entries. The ones
 you will meet first:
 
 - A clean exit proves nothing. Log4j catches appender exceptions and exits 0.
@@ -379,9 +379,9 @@ you will meet first:
 
 ---
 
-## 14. Filed upstream
+## 14. Upstream: filed, and drafted
 
-From findings here, both open on `apache/logging-log4j2`:
+**Filed** — both open on `apache/logging-log4j2`:
 
 - **#4241** — `AbstractDatabaseManager` keeps accepting writes after a failed
   startup, and is never shut down. The same `isRunning()` flag is ignored by
@@ -389,6 +389,20 @@ From findings here, both open on `apache/logging-log4j2`:
   2.x and 3.x.
 - **#4242** — `log4j-cassandra` leaks the DataStax `Cluster` on failed startup,
   so the JVM never exits. 2.x only.
+
+**Drafted, not filed** — `docs/issue-drafts/`. Written to the project's bug
+template, each with a reproduction and, where one is defensible, a suggested fix.
+Nothing in this repository ever touches an upstream project.
+
+| Draft | Evidence | State |
+|---|---|---|
+| `CsvParameterLayout` NPEs on any parameterless event | captured run, 2.26.1 | ready |
+| `@ConditionalOnProperty` has no effect on `Log4j2EventListener` | captured run, 2.26.1 | ready |
+| `locateContext` drops the `ServletContext` entry | captured both sides | decide defect vs intended trade-off first |
+| Interrupting the configuring thread disables every appender | **none — a race, seen once** | hold until reproducible on demand |
+
+`docs/issue-drafts/README.md` carries the pre-filing checklist: re-verify against
+both `2.x` and `main`, search for duplicates, attach a repro zip.
 
 ---
 
