@@ -62,7 +62,9 @@ warning — it produces a coin toss, or a routing loop.
 | `db`
 | JDBC with all three connection sources, against embedded H2.
 | `nosql`
-| MongoDB, CouchDB and Cassandra. Needs containers.
+| MongoDB and CouchDB, verified by row delta. Needs containers. Cassandra is
+skipped unless `-Dbench.cassandra=true`, because its driver retries long enough
+to starve the run.
 | `jpa`
 | The JPA appender on EclipseLink and H2.
 | `jdbc-jndi`

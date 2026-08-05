@@ -61,20 +61,33 @@ public final class NoSqlBench {
         System.out.println();
 
         final boolean couch = prepareCouchDb();
+        // Opt-in, because the DataStax 3.x driver retries rather than failing and
+        // its three bounded calls together still overran the harness timeout —
+        // killing the run before MongoDB and CouchDB were ever written to. One
+        // unusable appender was starving the two that work. Investigate it with
+        // -Dbench.cassandra=true; leave it off to verify the other two reliably.
+        final boolean cassandraEnabled = Boolean.getBoolean("bench.cassandra");
         // Bounded, because the driver can stall indefinitely rather than fail —
         // see prepareCassandra. Without this the whole app hangs on one appender.
-        final boolean cassandra = withTimeout("cassandra setup", 20, NoSqlBench::prepareCassandra, false);
+        final boolean cassandra = cassandraEnabled
+                && withTimeout("cassandra setup", 20, NoSqlBench::prepareCassandra, false);
         System.out.printf("  mongodb    %s  (collection created on first write)%n",
                 reachable("localhost", 27017));
         System.out.printf("  couchdb    %s  database '%s' %s%n",
                 reachable("localhost", 5984), COUCH_DB, couch ? "ready" : "NOT ready");
-        System.out.printf("  cassandra  %s  keyspace/table %s%n",
-                reachable(CASSANDRA_HOST, CASSANDRA_PORT), cassandra ? "ready" : "NOT ready");
+        if (cassandraEnabled) {
+            System.out.printf("  cassandra  %s  keyspace/table %s%n",
+                    reachable(CASSANDRA_HOST, CASSANDRA_PORT), cassandra ? "ready" : "NOT ready");
+        } else {
+            System.out.println("  cassandra  SKIPPED  (enable with -Dbench.cassandra=true)");
+        }
         System.out.println();
 
         final long mongoBefore = mongoCount();
         final long couchBefore = couchCount();
-        final long cassandraBefore = withTimeout("cassandra count", 15, NoSqlBench::cassandraCount, 0L);
+        final long cassandraBefore = cassandraEnabled
+                ? withTimeout("cassandra count", 15, NoSqlBench::cassandraCount, 0L)
+                : 0L;
 
         emit();
         LogManager.shutdown();
@@ -84,8 +97,12 @@ public final class NoSqlBench {
         System.out.println("──── what was stored");
         report("MongoDB  (log4j.events)", mongoBefore, mongoCount());
         report("CouchDB  (" + COUCH_DB + ")", couchBefore, couchCount());
-        report("Cassandra(log4j.log_events)", cassandraBefore,
-                withTimeout("cassandra count", 15, NoSqlBench::cassandraCount, 0L));
+        if (cassandraEnabled) {
+            report("Cassandra(log4j.log_events)", cassandraBefore,
+                    withTimeout("cassandra count", 15, NoSqlBench::cassandraCount, 0L));
+        } else {
+            System.out.println("  Cassandra(log4j.log_events)  skipped");
+        }
 
         System.out.println();
         System.out.println("A count that did not move means the appender failed and reported it");
