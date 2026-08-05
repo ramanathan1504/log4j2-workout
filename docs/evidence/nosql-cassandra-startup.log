@@ -1,0 +1,41 @@
+# Cassandra appender startup failure, captured with:
+#   BENCH_JVM_ARGS='-Dlog4j2.debug=true -Dlog4j2.StatusLogger.level=TRACE -Dbench.cassandra=true' \
+#     ./bench run nosql --config xml/appender-nosql
+# Cassandra 4.1.11, container healthy, CQL verified before the run.
+
+2026-08-05T04:58:33.630178Z bounded-cassandra setup DEBUG Configuration XmlConfiguration[location=/Users/ramanathan/apache/log4j2-workout/configs/xml/appender-nosql.xml, lastModified=2026-08-04T22:41:01.525Z] initialized
+2026-08-05T04:58:33.630245Z bounded-cassandra setup INFO Starting configuration XmlConfiguration[location=/Users/ramanathan/apache/log4j2-workout/configs/xml/appender-nosql.xml, lastModified=2026-08-04T22:41:01.525Z]...
+2026-08-05T04:58:33.901812Z bounded-cassandra setup ERROR CassandraManager Cassandra Could not perform database startup operations: com.datastax.driver.core.exceptions.InvalidQueryException: Keyspace 'log4j' does not exist
+com.datastax.driver.core.exceptions.InvalidQueryException: Keyspace 'log4j' does not exist
+	at com.datastax.driver.core.exceptions.InvalidQueryException.copy(InvalidQueryException.java:50)
+	at com.datastax.driver.core.DriverThrowables.propagateCause(DriverThrowables.java:35)
+	at com.datastax.driver.core.Cluster.connect(Cluster.java:340)
+	at org.apache.logging.log4j.cassandra.CassandraManager.startupInternal(CassandraManager.java:78)
+	at org.apache.logging.log4j.core.appender.db.AbstractDatabaseManager.startup(AbstractDatabaseManager.java:259)
+	at org.apache.logging.log4j.core.appender.db.AbstractDatabaseAppender.start(AbstractDatabaseAppender.java:183)
+	at org.apache.logging.log4j.core.config.AbstractConfiguration.start(AbstractConfiguration.java:344)
+	at org.apache.logging.log4j.core.LoggerContext.setConfiguration(LoggerContext.java:697)
+	at org.apache.logging.log4j.core.LoggerContext.reconfigure(LoggerContext.java:786)
+	at org.apache.logging.log4j.core.LoggerContext.reconfigure(LoggerContext.java:808)
+	at org.apache.logging.log4j.core.LoggerContext.start(LoggerContext.java:311)
+	at org.apache.logging.log4j.core.impl.Log4jContextFactory.getContext(Log4jContextFactory.java:264)
+	at org.apache.logging.log4j.core.impl.Log4jContextFactory.getContext(Log4jContextFactory.java:48)
+	at org.apache.logging.log4j.LogManager.getContext(LogManager.java:119)
+	at org.apache.logging.log4j.LogManager.getLogger(LogManager.java:624)
+	at io.netty.util.internal.logging.Log4J2LoggerFactory.newInstance(Log4J2LoggerFactory.java:33)
+	at io.netty.util.internal.logging.InternalLoggerFactory.useLog4J2LoggerFactory(InternalLoggerFactory.java:76)
+	at io.netty.util.internal.logging.InternalLoggerFactory.newDefaultFactory(InternalLoggerFactory.java:47)
+	at io.netty.util.internal.logging.InternalLoggerFactory.getDefaultFactory(InternalLoggerFactory.java:111)
+	at io.netty.util.internal.logging.InternalLoggerFactory.getInstance(InternalLoggerFactory.java:134)
+	at io.netty.util.internal.logging.InternalLoggerFactory.getInstance(InternalLoggerFactory.java:127)
+	at io.netty.util.concurrent.FastThreadLocalThread.<clinit>(FastThreadLocalThread.java:27)
+	at io.netty.util.concurrent.DefaultThreadFactory.newThread(DefaultThreadFactory.java:121)
+	at io.netty.util.concurrent.DefaultThreadFactory.newThread(DefaultThreadFactory.java:105)
+
+# ---- what the same run stored ----
+──── what was stored
+  MongoDB  (log4j.events)      0 before, 4 after (delta 4)
+  CouchDB  (log4j)             0 before, 4 after (delta 4)
+  Cassandra(log4j.log_events)  0 before, 0 after (delta 0)   ← NOTHING STORED
+
+A count that did not move means the appender failed and reported it

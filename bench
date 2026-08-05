@@ -365,6 +365,15 @@ cmd_run() {
   # it lets anyone who can write the configuration run code.
   jvm_args+=(-Dlog4j2.Script.enableLanguages=groovy,js,javascript)
 
+  # Ad-hoc JVM flags, because unrecognised CLI arguments are passed to the app
+  # rather than the JVM. Mainly for turning the StatusLogger all the way up
+  # when an appender fails quietly:
+  #   BENCH_JVM_ARGS='-Dlog4j2.debug=true -Dlog4j2.StatusLogger.level=TRACE' ./bench run nosql ...
+  if [[ -n "${BENCH_JVM_ARGS:-}" ]]; then
+    # Deliberately unquoted: the variable holds several space-separated flags.
+    jvm_args+=(${BENCH_JVM_ARGS})
+  fi
+
   if [[ -n "$config" ]]; then
     # A comma-separated list is a COMPOSITE configuration: Log4j reads every
     # file and merges them, later files overriding earlier ones per the

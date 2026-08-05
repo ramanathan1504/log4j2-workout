@@ -278,9 +278,40 @@ docker compose -f infra/docker-compose.yml up -d mongodb couchdb cassandra</code
   <li><strong>Under <code>log4j-to-jul</code>, <code>ThreadContext</code> is a no-op.</strong> <code>JULProvider</code> registers <code>NoOpThreadContextMap</code>, so code reading back its own trace id gets null.</li>
 </ul>
 
+
+<h3>The Cassandra appender cannot bootstrap its own keyspace</h3>
+<p>Circular rather than merely mis-ordered. The DataStax driver pulls in Netty, and Netty's
+<code>InternalLoggerFactory</code> calls <code>LogManager.getLogger</code> while the driver is still
+initialising. That first logger acquisition triggers Log4j configuration, which starts the Cassandra
+appender, which calls <code>cluster.connect("log4j")</code> — and the keyspace does not exist yet,
+because the code that creates it is the very code initialising the driver.</p>
+<pre><code>InvalidQueryException: Keyspace 'log4j' does not exist
+  at CassandraManager.startupInternal(CassandraManager.java:78)
+  at AbstractDatabaseManager.startup(AbstractDatabaseManager.java:259)
+  ...
+  at LogManager.getLogger(LogManager.java:624)
+  at io.netty.util.internal.logging.Log4J2LoggerFactory.newInstance(:33)</code></pre>
+<p><code>startupInternal</code> runs once, so the appender is dead for the rest of the run. No reordering
+inside the application fixes it — the keyspace has to exist before anything touches the driver.</p>
+<p>Two defects follow, pulling in opposite directions on the same flag:</p>
+<ul>
+  <li><strong><code>write()</code> does not check <code>isRunning()</code></strong>, so the manager keeps
+  accepting events and every one throws an NPE on the null <code>preparedStatement</code>, burying the
+  single line that named the real cause.</li>
+  <li><strong><code>shutdown()</code> does check it</strong>, so <code>cluster.close()</code> never runs.
+  The DataStax <code>Cluster</code> holds <em>non-daemon</em> threads, so <strong>the JVM never exits</strong>.
+  A dump 8s after the bench printed its results shows five, each carrying the configured
+  <code>clusterName</code>: <code>log4j-bench-nio-worker-0/1</code>, <code>-connection-reaper-0</code>,
+  <code>-scheduled-task-worker-0</code>, <code>-timeouter-0</code>. Meanwhile
+  <code>LogManager.shutdown()</code> reports <code>all resources released: true</code> while releasing nothing.</li>
+</ul>
+<p>The guard is on the wrong method in both cases. Evidence:
+<code>docs/evidence/nosql-cassandra-startup.log</code> and
+<code>docs/evidence/nosql-hang-threads.txt</code>.</p>
+
 <h3>Environment compatibility</h3>
 <ul>
-  <li><strong>log4j-cassandra does not reach Cassandra 5.</strong> It is built on DataStax driver 3.11, which negotiates native protocol v4 at most. Against a 5.0 container the connection attempt neither completed nor errored — the run stalled with no output — so the bench bounds it with a timeout. Against 4.1 it <em>does</em> connect, then fails for the separate reason above. Why startup failed against 4.1 was never captured; that one is still open.</li>
+  <li><strong>log4j-cassandra does not reach Cassandra 5.</strong> It is built on DataStax driver 3.11, which negotiates native protocol v4 at most. Against a 5.0 container the connection attempt neither completed nor errored — the run stalled with no output — so the bench bounds it with a timeout. Against 4.1 it connects fine, and everything that then goes wrong is the circular-initialisation section below, not the version.</li>
   <li><strong>log4j-couchdb cannot work with modern Gson.</strong> LightCouch 0.2.0 calls <code>registerTypeAdapter(JsonObject.class, …)</code>, which Gson 2.11 forbids, so the provider cannot be constructed — and the message names neither Gson's version nor log4j-couchdb.</li>
   <li><strong>EclipseLink 2.7 cannot drive H2 2.x.</strong> Its DDL emits H2 1.x syntax and it treats the failure as a warning, so deployment reports success and every insert fails with "table not found".</li>
 </ul>

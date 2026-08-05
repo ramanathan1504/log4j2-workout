@@ -70,7 +70,8 @@ Worse, because the run looks healthy.
   "this.preparedStatement" is null`. The one line naming the real cause is
   emitted once, at startup, and then buried under one NPE per event. Nothing
   here is Cassandra-specific: it is the shape of any `AbstractDatabaseManager`
-  subclass whose startup fails.
+  subclass whose startup fails. See the dedicated section below for what made
+  startup fail, and for the matching leak on the shutdown path.
 * **The JNDI `DataSource` connection source resolves its name while the appender
   is being built**, so the binding must exist before the *first logger acquired
   anywhere in the JVM*. A conventional `private static final Logger` initialises
@@ -136,11 +137,66 @@ Worse, because the run looks healthy.
   java driver 3.11, which negotiates native protocol v4 at most. Against a 5.0
   container the connection attempt neither completed nor errored — the run
   stalled with no output — so the bench bounds it with an explicit timeout.
-  Against 4.1 it *does* connect, and fails afterwards for the unrelated reason
-  given under "Where the error names the wrong thing".
+  Against 4.1 it connects fine, and everything that then goes wrong is the
+  circular-initialisation entry below, not the version.
+
+== The Cassandra appender cannot bootstrap its own keyspace
+
+This one deserves its own section, because it is circular rather than merely
+mis-ordered, and because the two `AbstractDatabaseManager` defects it exposes
+are not Cassandra-specific.
+
+The DataStax driver pulls in Netty, and Netty's `InternalLoggerFactory` calls
+`LogManager.getLogger` while the driver is still initialising. That first
+logger acquisition triggers Log4j configuration, which starts the Cassandra
+appender, which calls `cluster.connect("log4j")` — and the keyspace does not
+exist yet, because the code that creates it is the very code initialising the
+driver:
+
+[source]
+----
+InvalidQueryException: Keyspace 'log4j' does not exist
+  at CassandraManager.startupInternal(CassandraManager.java:78)
+  at AbstractDatabaseManager.startup(AbstractDatabaseManager.java:259)
+  ...
+  at LogManager.getLogger(LogManager.java:624)
+  at io.netty.util.internal.logging.Log4J2LoggerFactory.newInstance(:33)
+----
+
+`startupInternal` runs once, so the appender is dead for the rest of the run.
+No amount of reordering inside the application fixes it — the keyspace has to
+exist before anything touches the driver.
+
+Two separate defects follow from the failed startup, and they pull in opposite
+directions on the same flag:
+
+. **`write()` does not check `isRunning()`**, so the manager keeps accepting
+  events. `preparedStatement` is still null, so every event throws
+  `NullPointerException: … because "this.preparedStatement" is null`. The one
+  line naming the real cause is emitted once and then buried.
+. **`shutdown()` does check `isRunning()`** (line 230), so `shutdownInternal()`
+  — and with it `cluster.close()` — never runs. The DataStax `Cluster` holds
+  *non-daemon* threads, so **the JVM never exits**. A dump taken 8 seconds
+  after the bench printed its results shows five of them, each carrying the
+  `clusterName` from the configuration:
 +
-NOTE: Why startup failed against 4.1 was never captured — the missing
-`isRunning()` guard masked it. That one is still open.
+----
+log4j-bench-nio-worker-0        log4j-bench-connection-reaper-0
+log4j-bench-nio-worker-1        log4j-bench-scheduled-task-worker-0
+log4j-bench-timeouter-0
+----
++
+Meanwhile `LogManager.shutdown()` reports `all resources released: true`
+while releasing nothing.
+
+The guard is on the wrong method in both cases: writing while not running
+produces per-event NPEs, and skipping cleanup for a half-started manager leaks
+whatever `startupInternal` managed to construct before it threw.
+
+TIP: Full trace in `docs/evidence/nosql-cassandra-startup.log`, thread dump in
+`docs/evidence/nosql-hang-threads.txt`. Reproduce with
+`BENCH_JVM_ARGS='-Dlog4j2.debug=true -Dbench.cassandra=true' ./bench run nosql
+--config xml/appender-nosql`.
 * **EclipseLink 2.7 cannot drive H2 2.x.** Its DDL emits
   `ID BIGINT IDENTITY NOT NULL` and it fetches keys with `CALL IDENTITY()`, both
   H2 1.x. It treats the failed DDL as a warning, so deployment reports success

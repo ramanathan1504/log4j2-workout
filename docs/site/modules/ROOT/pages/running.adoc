@@ -95,3 +95,21 @@ Produces `repros/issue-4143/`:
 * the full output of each version's run
 
 The bench itself is never mutated: generation writes only to `repros/`.
+
+== Extra JVM flags
+
+Unrecognised arguments to `./bench run` are passed to the *application*, not to
+the JVM, so ad-hoc `-D` flags go through `BENCH_JVM_ARGS`. Mostly this is for
+turning the StatusLogger all the way up when an appender fails quietly — which
+is how the Cassandra circular-initialisation finding was captured:
+
+[source,bash]
+----
+BENCH_JVM_ARGS='-Dlog4j2.debug=true -Dlog4j2.StatusLogger.level=TRACE' \
+  ./bench run nosql --config xml/appender-nosql
+----
+
+Appenders that catch their own exceptions report through the StatusLogger and
+leave the exit code at 0, so a run that looks clean at `WARN` can be doing
+nothing at all. When a scenario stores or sends less than expected, raise the
+level before assuming the configuration is wrong.
