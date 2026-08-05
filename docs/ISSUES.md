@@ -54,6 +54,21 @@ The 3.x copy moved module and gained a recycler; the null check is still absent.
 
 ---
 
+### [#4244](https://github.com/apache/logging-log4j2/issues/4244) — `Log4j2EventListener`'s `@ConditionalOnProperty` has no effect
+
+Registered twice: as `@Component`, where the condition applies, and in
+`META-INF/spring.factories` as an `ApplicationListener`, where it cannot —
+`SpringApplication` instantiates those directly, with no bean definition for a
+condition to suppress. So `spring.cloud.config.watch.enabled=false` disables
+nothing.
+
+Captured with the property `false` and `monitorInterval` at 300s: the reload
+arrived 298 seconds early, so the event drove it, not the timer.
+
+**2.x.**
+
+---
+
 ## Drafted, not filed
 
 In `docs/issue-drafts/`. Written to the project's bug template, each with a

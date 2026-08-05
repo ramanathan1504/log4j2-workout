@@ -391,6 +391,8 @@ you will meet first:
   so the JVM never exits. 2.x only.
 - **#4243** — `CsvParameterLayout` throws NPE on any event without parameters.
   Affects 2.x and 3.x.
+- **#4244** — `Log4j2EventListener`'s `@ConditionalOnProperty` has no effect;
+  the listener always runs. 2.x.
 
 **Drafted, not filed** — `docs/issue-drafts/`. Written to the project's bug
 template, each with a reproduction and, where one is defensible, a suggested fix.
