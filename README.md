@@ -19,6 +19,20 @@ zip to attach to the issue.
 
 ---
 
+## Start here
+
+**`docs/HANDOVER.md`** is the operator's manual — everything needed to use this
+repository without asking anyone. Read it once end to end, then use it as
+reference. It covers the daily commands, reviewing an issue, producing a
+reproduction, what needs Docker, the git workflow, and a collected list of the
+traps that cost time.
+
+`docs/FEATURE-MATRIX.md` is the catalogue: what is covered, what is not, and §17,
+the findings — around 39 Log4j behaviours, each traced to source rather than
+inferred.
+
+---
+
 ## Setup
 
 **Prerequisites**
