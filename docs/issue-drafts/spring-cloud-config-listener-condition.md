@@ -59,14 +59,28 @@ where the condition *does* pass, the class is registered as a listener twice, so
 
 ## Reproduction
 
-1. A Spring Boot application with `log4j-spring-cloud-config-client` on the
-   classpath and a Spring Cloud Config server.
-2. Set `spring.cloud.config.watch.enabled=false`.
-3. Publish an `EnvironmentChangeEvent` — for example by POSTing to
-   `/actuator/refresh` after changing the served configuration.
-4. Log4j reconfigures. Expected: nothing happens, because the watch is disabled.
+Run a Spring Boot application with `log4j-spring-cloud-config-client`, a Spring
+Cloud Config server, and the documented switch **off**:
 
-Adding a breakpoint or a log line in `onApplicationEvent` shows it being reached.
+```bash
+-Dspring.cloud.config.watch.enabled=false
+```
+
+Change the served configuration and publish an `EnvironmentChangeEvent` — for
+example by POSTing to `/actuator/refresh`.
+
+Expected: nothing, because the watch is disabled. Actual, captured on Log4j
+**2.26.1**, JDK 21, Spring Boot 3.4.3:
+
+```
+  WatchEventService impl   org.apache.logging.log4j.spring.cloud.config.client.WatchEventManager
+  (still cloud-config-baseline - the watch interval is 300s and has not elapsed)
+RELOADED - the refresh event drove the reload, 298 seconds before
+           the monitorInterval would have
+```
+
+The reload happened 298 seconds ahead of the polling interval, so it was the
+event that drove it, not the timer. With the property set to `false`.
 
 ## Suggested fix
 
