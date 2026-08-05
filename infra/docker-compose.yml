@@ -86,6 +86,25 @@ services:
       timeout: 10s
       retries: 12
 
+  # Creates the keyspace and table BEFORE any JVM touches the driver.
+  #
+  # The appender cannot do this itself: the DataStax driver pulls in Netty,
+  # whose InternalLoggerFactory calls LogManager.getLogger during driver
+  # initialisation, which configures Log4j, which starts the Cassandra
+  # appender, which connects to a keyspace that in-JVM bootstrap code has not
+  # created yet — it is the very code initialising the driver. startupInternal
+  # runs once, so the appender stays dead for the whole run.
+  cassandra-init:
+    image: cassandra:4.1
+    depends_on:
+      cassandra:
+        condition: service_healthy
+    volumes:
+      - ./cql:/cql:ro
+    # Runs once and exits; `up` returns when it has applied the schema.
+    restart: "no"
+    command: ["cqlsh", "cassandra", "-f", "/cql/cassandra-init.cql"]
+
   couchdb:
     image: couchdb:3
     ports:

@@ -61,31 +61,44 @@ public final class NoSqlBench {
         System.out.println();
 
         final boolean couch = prepareCouchDb();
-        // Opt-in, because the DataStax 3.x driver retries rather than failing and
-        // its three bounded calls together still overran the harness timeout —
-        // killing the run before MongoDB and CouchDB were ever written to. One
-        // unusable appender was starving the two that work. Investigate it with
-        // -Dbench.cassandra=true; leave it off to verify the other two reliably.
-        final boolean cassandraEnabled = Boolean.getBoolean("bench.cassandra");
-        // Bounded, because the driver can stall indefinitely rather than fail —
-        // see prepareCassandra. Without this the whole app hangs on one appender.
-        final boolean cassandra = cassandraEnabled
-                && withTimeout("cassandra setup", 20, NoSqlBench::prepareCassandra, false);
+
+        // Configure Log4j HERE, on the main thread, before anything touches a
+        // Cassandra driver. Two reasons, both learned the hard way:
+        //
+        //  1. The schema is not created from this JVM at all. Doing so is what
+        //     kept the appender permanently dead — the DataStax driver pulls in
+        //     Netty, whose InternalLoggerFactory calls LogManager.getLogger
+        //     while the driver initialises, which configures Log4j, which starts
+        //     the Cassandra appender, which connects to a keyspace the
+        //     bootstrap code had not reached yet. startupInternal runs once, so
+        //     the appender never recovers. infra/docker-compose.yml's
+        //     cassandra-init service applies the schema before any run.
+        //
+        //  2. Configuration must not happen on one of the bounded threads
+        //     below. It did, briefly: a driver call on a daemon thread
+        //     triggered configuration there, the timeout fired, and
+        //     shutdownNow() interrupted Log4j mid-configuration — after which
+        //     MongoDB and CouchDB stored nothing either. One interrupted
+        //     configuration takes down every appender, not just the slow one.
+        LogManager.getContext(false);
+
+        final boolean cassandra = withTimeout("cassandra schema check", 15,
+                NoSqlBench::cassandraSchemaReady, false);
         System.out.printf("  mongodb    %s  (collection created on first write)%n",
                 reachable("localhost", 27017));
         System.out.printf("  couchdb    %s  database '%s' %s%n",
                 reachable("localhost", 5984), COUCH_DB, couch ? "ready" : "NOT ready");
-        if (cassandraEnabled) {
-            System.out.printf("  cassandra  %s  keyspace/table %s%n",
-                    reachable(CASSANDRA_HOST, CASSANDRA_PORT), cassandra ? "ready" : "NOT ready");
-        } else {
-            System.out.println("  cassandra  SKIPPED  (enable with -Dbench.cassandra=true)");
+        System.out.printf("  cassandra  %s  keyspace/table %s%n",
+                reachable(CASSANDRA_HOST, CASSANDRA_PORT), cassandra ? "ready" : "NOT ready");
+        if (!cassandra) {
+            System.out.println("             run: docker compose -f infra/docker-compose.yml "
+                    + "up -d cassandra-init");
         }
         System.out.println();
 
         final long mongoBefore = mongoCount();
         final long couchBefore = couchCount();
-        final long cassandraBefore = cassandraEnabled
+        final long cassandraBefore = cassandra
                 ? withTimeout("cassandra count", 15, NoSqlBench::cassandraCount, 0L)
                 : 0L;
 
@@ -97,7 +110,7 @@ public final class NoSqlBench {
         System.out.println("──── what was stored");
         report("MongoDB  (log4j.events)", mongoBefore, mongoCount());
         report("CouchDB  (" + COUCH_DB + ")", couchBefore, couchCount());
-        if (cassandraEnabled) {
+        if (cassandra) {
             report("Cassandra(log4j.log_events)", cassandraBefore,
                     withTimeout("cassandra count", 15, NoSqlBench::cassandraCount, 0L));
         } else {
@@ -219,24 +232,16 @@ public final class NoSqlBench {
      * including types: the appender writes a prepared INSERT built from them, so
      * a type mismatch is a CQL error per event rather than a startup failure.
      */
-    private static boolean prepareCassandra() {
-        try (var cluster = cassandraCluster(); var session = cluster.connect()) {
-            session.execute("CREATE KEYSPACE IF NOT EXISTS log4j WITH replication = "
-                    + "{'class':'SimpleStrategy','replication_factor':1}");
-        } catch (final Exception e) {
-            return false;
-        }
+    /**
+     * Checks that the keyspace and table exist. It deliberately does NOT create
+     * them — see the note in {@code main}. The columns must match the
+     * ColumnMappings in the configuration exactly, including types, since the
+     * appender writes a prepared INSERT built from them; a mismatch is a CQL
+     * error per event rather than a startup failure.
+     */
+    private static boolean cassandraSchemaReady() {
         try (var cluster = cassandraCluster(); var session = cluster.connect("log4j")) {
-            session.execute("CREATE TABLE IF NOT EXISTS log_events ("
-                    + "id timeuuid PRIMARY KEY, "
-                    + "timeid timeuuid, "
-                    + "message text, "
-                    + "level text, "
-                    + "logger text, "
-                    + "marker text, "
-                    + "thread text, "
-                    + "event_date timestamp, "
-                    + "mdc map<text, text>)");
+            session.execute("SELECT id FROM log_events LIMIT 1");
             return true;
         } catch (final Exception e) {
             return false;

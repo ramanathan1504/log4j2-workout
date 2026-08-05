@@ -309,6 +309,22 @@ inside the application fixes it — the keyspace has to exist before anything to
 <code>docs/evidence/nosql-cassandra-startup.log</code> and
 <code>docs/evidence/nosql-hang-threads.txt</code>.</p>
 
+<h3>Interrupting the configuring thread kills every appender</h3>
+<p>A corollary, found by getting the fix wrong first. The bench briefly ran its Cassandra schema
+check on a bounded daemon thread; that call initialised the driver, which triggered Log4j
+configuration <em>on that thread</em>, and when the 15s timeout fired <code>shutdownNow()</code>
+interrupted it mid-configuration. <strong>MongoDB and CouchDB then stored nothing either</strong>,
+in a run where both were healthy and had worked minutes before.</p>
+<p>Whichever thread calls the first <code>LogManager.getLogger</code> owns configuration, and that is
+rarely a thread chosen on purpose — here it was a library's internal logger acquisition on a worker
+with a deadline attached. Code that time-boxes anything that might log, or logs from a thread it
+later cancels, is one interrupt away from losing every appender silently.</p>
+<p>Resolved by moving the schema out of the JVM (<code>infra/cql/cassandra-init.cql</code>, applied by
+the one-shot <code>cassandra-init</code> compose service) and calling
+<code>LogManager.getContext(false)</code> on main before touching a driver. With the keyspace present
+the appender starts, writes, and the rows read back — all three NoSQL appenders now verified by row
+delta.</p>
+
 <h3>Environment compatibility</h3>
 <ul>
   <li><strong>log4j-cassandra does not reach Cassandra 5.</strong> It is built on DataStax driver 3.11, which negotiates native protocol v4 at most. Against a 5.0 container the connection attempt neither completed nor errored — the run stalled with no output — so the bench bounds it with a timeout. Against 4.1 it connects fine, and everything that then goes wrong is the circular-initialisation section below, not the version.</li>

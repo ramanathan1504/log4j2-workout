@@ -193,10 +193,48 @@ The guard is on the wrong method in both cases: writing while not running
 produces per-event NPEs, and skipping cleanup for a half-started manager leaks
 whatever `startupInternal` managed to construct before it threw.
 
+=== Interrupting the configuring thread takes down every appender
+
+A corollary, found by getting the fix wrong first. If the thread that happens to
+trigger Log4j configuration is interrupted while configuring, the whole
+`LoggerContext` is left unusable — not merely the appender it was starting.
+
+The bench briefly ran its Cassandra schema check on a bounded daemon thread.
+That call initialised the driver, which triggered configuration *on that
+thread*; the 15-second timeout then fired and `shutdownNow()` interrupted it
+mid-configuration. The result was that **MongoDB and CouchDB stored nothing
+either**, in a run where both were healthy and had worked moments before.
+
+Whichever thread calls the first `LogManager.getLogger` owns configuration, and
+that is rarely a thread chosen on purpose — here it was a library's internal
+logger acquisition on a worker with a timeout attached to it. Application code
+that puts a deadline on anything that might log, or that logs from a thread it
+later cancels, is one interrupt away from silently losing every appender.
+
+`NoSqlBench` now calls `LogManager.getContext(false)` on the main thread before
+touching a driver, so configuration completes on a thread nobody cancels.
+
+=== How the bench resolves it
+
+The schema moved out of the JVM entirely. `infra/cql/cassandra-init.cql` is
+applied by a one-shot `cassandra-init` compose service that waits for the node
+to be healthy, so the keyspace exists before anything touches the driver:
+
+[source,bash]
+----
+docker compose -f infra/docker-compose.yml up -d mongodb couchdb cassandra-init
+./bench run nosql --config xml/appender-nosql
+----
+
+With the keyspace already present the appender starts normally, writes, and the
+rows read back — which is what confirms the diagnosis rather than merely working
+around it. `NoSqlBench` no longer creates the schema; it only checks that the
+init service did, and says so if not.
+
 TIP: Full trace in `docs/evidence/nosql-cassandra-startup.log`, thread dump in
-`docs/evidence/nosql-hang-threads.txt`. Reproduce with
-`BENCH_JVM_ARGS='-Dlog4j2.debug=true -Dbench.cassandra=true' ./bench run nosql
---config xml/appender-nosql`.
+`docs/evidence/nosql-hang-threads.txt`. To see the original failure again, drop
+the keyspace and run with
+`BENCH_JVM_ARGS='-Dlog4j2.debug=true' ./bench run nosql --config xml/appender-nosql`.
 * **EclipseLink 2.7 cannot drive H2 2.x.** Its DDL emits
   `ID BIGINT IDENTITY NOT NULL` and it fetches keys with `CALL IDENTITY()`, both
   H2 1.x. It treats the failed DDL as a warning, so deployment reports success
