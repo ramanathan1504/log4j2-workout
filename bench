@@ -118,6 +118,30 @@ requires_config_for() {
   esac
 }
 
+# The mirror of requires_config_for: configurations whose destinations are
+# supplied in-process by one particular app, and which therefore cannot work
+# under any other. `appender-network` posts to localhost:4560, :5514 and :8123 —
+# listeners that apps/network's NetworkBench opens itself. Loaded by core-java
+# those are simply Connection refused, once per appender per event.
+#
+# Left unconstrained this produced 21 failures in the first 2000 cells and would
+# have produced thousands more: every app, every one of these configs, every JDK
+# and version. All of them saying nothing except "the listener was not there".
+#
+# appender-nosql is deliberately absent: Mongo, CouchDB and Cassandra run in
+# containers, so any app can write to them. Only in-process infrastructure
+# creates this coupling.
+requires_app_for() {
+  case "$1" in
+    */appender-network)    echo "network" ;;     # in-process socket/HTTP listeners
+    */appender-smtp)       echo "smtp" ;;        # embedded GreenMail
+    */appender-jms)        echo "jms" ;;         # embedded ActiveMQ Artemis
+    */appender-jpa)        echo "jpa" ;;         # its own persistence unit
+    */appender-jdbc-jndi)  echo "jdbc-jndi" ;;   # in-process InitialContext
+    *)                     echo "" ;;
+  esac
+}
+
 # The oldest 2.x line an app can run on, where one of its Log4j modules is
 # younger than the oldest version in VERSIONS. Empty means "any".
 min_log4j_for() {
@@ -169,6 +193,13 @@ cell_skip_reason() {
   local needs; needs="$(requires_config_for "$app")"
   if [[ -n "$needs" && "$config" != *"$needs"* ]]; then
     echo "$app asserts on $needs; $config cannot satisfy it"
+    return
+  fi
+
+  # The mirror: a config whose destinations only one app provides.
+  local owner; owner="$(requires_app_for "$config")"
+  if [[ -n "$owner" && "$app" != "$owner" ]]; then
+    echo "$config needs the in-process infrastructure only $owner starts"
     return
   fi
 
