@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  ~ Licensed to the Apache Software Foundation (ASF) under one or more
+  ~ contributor license agreements.  See the NOTICE file distributed with
+  ~ this work for additional information regarding copyright ownership.
+  ~ The ASF licenses this file to you under the Apache License, Version 2.0
+  ~ (the "License"); you may not use this file except in compliance with
+  ~ the License.  You may obtain a copy of the License at
+  ~
+  ~      http://www.apache.org/licenses/LICENSE-2.0
+  ~
+  ~ Unless required by applicable law or agreed to in writing, software
+  ~ distributed under the License is distributed on an "AS IS" BASIS,
+  ~ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  ~ See the License for the specific language governing permissions and
+  ~ limitations under the License.
+  -->
+
+<!--
+  status="warn" is deliberate. Log4j reports a plugin it cannot resolve through
+  the StatusLogger and then carries on with the element absent, so a
+  configuration that silently lost an appender looks identical to one that
+  worked. Raise this to "trace" to watch the plugins being registered.
+-->
+<Configuration status="warn">
+
+  <Appenders>
+    <!--
+      Both of these are the custom plugins in this module, resolved by the names
+      in their @Plugin annotations rather than by class name. If the descriptor
+      were missing and package scanning also failed, Log4j would report
+      "Unable to locate plugin type for Counting" and continue with no appender.
+    -->
+    <Counting name="Counting">
+      <PatternLayout pattern="%d{HH:mm:ss.SSS} %-5level %logger{36} - %msg%n"/>
+      <!-- Appender scope: this filter sees only what is routed here. -->
+      <EveryNthFilter n="2" onMatch="ACCEPT" onMismatch="DENY"/>
+    </Counting>
+  </Appenders>
+
+  <Loggers>
+    <Root level="info">
+      <AppenderRef ref="Counting"/>
+    </Root>
+  </Loggers>
+
+</Configuration>

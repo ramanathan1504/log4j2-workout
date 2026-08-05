@@ -1,0 +1,86 @@
+////
+Licensed to the Apache Software Foundation (ASF) under one or more
+contributor license agreements. See the NOTICE file distributed with
+this work for additional information regarding copyright ownership.
+The ASF licenses this file to You under the Apache License, Version 2.0
+(the "License"); you may not use this file except in compliance with
+the License. You may obtain a copy of the License at
+
+    https://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+////
+= Custom plugins
+
+This project shows how to write Log4j plugins and, more importantly, how to
+check that Log4j actually found them.
+
+Two things have to be true, and they fail independently:
+
+Build time:: `log4j-plugin-processor` must have seen the `@Plugin` annotations
+and written `META-INF/org/apache/logging/log4j/core/config/plugins/Log4j2Plugins.dat`.
+
+Run time:: the plugins must resolve from a configuration, under the right
+category and name.
+
+== Why the descriptor matters
+
+Without the descriptor Log4j falls back to scanning packages by name. That
+fallback works when classes sit loose on a classpath — which is exactly the
+situation in an IDE — and finds nothing inside a shaded or modular jar.
+
+This is the mechanism behind the most common plugin report: *"my plugin works
+when I run it from my IDE and is ignored once I build a fat jar."* Nothing in the
+log says so. Log4j reports the unresolved element through the `StatusLogger` and
+then carries on with that element absent, so a configuration that silently lost
+an appender looks the same as one that worked.
+
+`CustomPluginsTest` asserts the descriptor exists *and* that one of the copies on
+the classpath belongs to this module. Finding merely _a_ descriptor proves
+nothing, because `log4j-core` ships its own.
+
+== What is in here
+
+`CountingAppender`:: A `Core`-category appender that counts events instead of
+writing them. The count is exposed so a test can assert that events arrived,
+rather than inferring it from output.
+
+`EveryNthFilter`:: A filter that accepts one event in every `n`. It is
+deliberately stateful, because the same filter behaves differently at each of the
+four scopes it may occupy — context, logger, appender, appender-ref — and scope
+is what people get wrong more often than the filter itself.
+
+== Running it
+
+[source,bash]
+----
+./mvnw --projects log4j-samples-custom-plugins test
+----
+
+The test asserts three events out of six reach the appender, `EveryNthFilter`
+being configured with `n=2`.
+
+== A note for Log4j 3.x
+
+Plugin sources are *not portable between the lines*. The annotations moved:
+
+[cols="1,1"]
+|===
+| 2.x | 3.x
+
+| `org.apache.logging.log4j.core.config.plugins.Plugin`
+| `org.apache.logging.log4j.plugins.Plugin`
+|===
+
+`@PluginFactory` and `@PluginAttribute` moved with it, and the registry a program
+would introspect changed too — `core.config.plugins.util.PluginManager` on 2.x,
+`plugins.model.PluginRegistry` returning a `PluginNamespace` on 3.x. Code
+compiled against the 2.x class fails with `NoClassDefFoundError` on 3.x *after*
+the descriptor has already been located, which reads like a plugin failure and is
+not one.
+
+Supporting both lines needs two source sets, not a Maven profile.

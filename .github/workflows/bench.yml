@@ -34,6 +34,11 @@ on:
       - '.gitignore'
       - '.gitattributes'
       - 'infra/output/**'
+      # log4j-samples/ holds candidate modules for the logging-log4j-samples
+      # repository. They are not in this project's reactor - they are built
+      # against that repository's parent, in a scratch checkout - so running
+      # the bench on a change to them proves nothing.
+      - 'log4j-samples/**'
   workflow_dispatch:
 
 permissions:

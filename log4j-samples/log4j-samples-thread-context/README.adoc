@@ -1,0 +1,45 @@
+////
+Licensed to the Apache Software Foundation (ASF) under one or more
+contributor license agreements. See the NOTICE file distributed with
+this work for additional information regarding copyright ownership.
+The ASF licenses this file to You under the Apache License, Version 2.0
+(the "License"); you may not use this file except in compliance with
+the License. You may obtain a copy of the License at
+
+    https://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+////
+= Thread Context
+
+`ThreadContext` — Log4j's MDC and NDC — and the one property of it that costs
+people real time: it is *thread* local, so it does not follow work handed to an
+executor.
+
+== Why it is quiet
+
+That behaviour is documented and correct. The failure mode is not loud.
+
+A correlation id set on a request thread simply renders *empty* on the pool
+thread that does the work. An unset key renders as the empty string, not as
+`null`, so a lost context is indistinguishable from a value that was genuinely
+blank. Nothing is logged to say the context did not travel.
+
+== What the tests assert
+
+* MDC and NDC appear in the pattern, via `%X{key}` and `%x`
+* an unset key renders empty — `[4711|]` — and never as `null`
+* submitting to an executor loses the context entirely: `[|]`
+* capturing `getImmutableContext()` and restoring it on the worker carries it
+  across, which is what every "MDC-propagating executor" wrapper does underneath
+
+== Running it
+
+[source,bash]
+----
+./mvnw --projects log4j-samples-thread-context test
+----
