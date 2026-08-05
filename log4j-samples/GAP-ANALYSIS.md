@@ -1,6 +1,13 @@
 # logging-log4j-samples — gap analysis
 
-Against `~/apache/logging-log4j-samples` at `7f9e5a1` (main), Log4j `2.25.2`.
+Against `apache/logging-log4j-samples` at `581d9a8` (main), Log4j `2.26.1`.
+
+> Re-baselined. The first pass was verified against `7f9e5a1` / Log4j 2.25.2,
+> four commits stale — upstream had since moved `log4j.version` to 2.26.1. All
+> seven modules were re-run against the current head and remain green, but the
+> lesson stands: **fetch before verifying.** This bench exists partly because
+> adjacent Log4j releases do differ, so verifying against a stale parent proves
+> less than it appears to.
 
 **Nothing here is pushed anywhere.** Every proposed sample is built in this
 folder, in the upstream module layout, so it can be tested by hand and offered
@@ -103,8 +110,9 @@ Taken from the existing modules, not guessed:
 
 ## Progress
 
-**Seven modules built, tested and green** against the real samples parent
-(`logging-parent:12.1.1`, Log4j 2.25.2) — **21 tests**.
+**Seven modules built, tested and green** against the current samples parent
+(`581d9a8`, `logging-parent:12.1.1`, Log4j **2.26.1**) — **21 tests**. Also
+verified green on 2.25.2.
 
 | Module | Tests | The quiet failure it demonstrates |
 |---|:--:|---|
@@ -133,10 +141,13 @@ a decision from upstream before they can be offered.
 
 ### Verifying a module before offering it
 
-The samples clone is only ever used as a scratch build area, never committed to:
+The samples clone is only ever a scratch build area, never committed to. **Fetch
+first** — the first pass here was verified against a parent four commits stale,
+on a Log4j version upstream had already moved off.
 
 ```bash
-cp -r log4j-samples/<module> ~/apache/logging-log4j-samples/
+cd ~/apache/logging-log4j-samples && git pull --ff-only    # <- do not skip
+cp -r <workout>/log4j-samples/<module> .
 # add <module> to <modules> in that repo's pom.xml
 cd ~/apache/logging-log4j-samples
 ./mvnw --projects <module> --also-make test
@@ -172,3 +183,17 @@ building every module in a scratch checkout before offering it.
   the fortunate case: in production the bridge is simply inert with no error.
 - **`${revision}` must survive shell templating.** Generating poms from a heredoc
   escaped it to `\${revision}`, which Maven cannot resolve.
+
+---
+
+## Upstream state, checked before submitting
+
+At `581d9a8`. Open pull requests are almost entirely Dependabot — `#409`–`#414`
+bumping actions, Spring Boot, Gradle and the Android plugin.
+
+The one human PR is **#352, "Maven: Repro for issue 3834"**, which adds
+`log4j-assembly-test`. No overlap with anything proposed here.
+
+So there is no contention: none of the seven modules duplicates work already in
+flight. Worth re-checking immediately before each submission, since that can
+change.
