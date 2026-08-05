@@ -1,0 +1,63 @@
+////
+Licensed to the Apache Software Foundation (ASF) under one or more
+contributor license agreements. See the NOTICE file distributed with
+this work for additional information regarding copyright ownership.
+The ASF licenses this file to You under the Apache License, Version 2.0
+(the "License"); you may not use this file except in compliance with
+the License. You may obtain a copy of the License at
+
+    https://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+////
+= Logging bridges
+
+Routing SLF4J, Commons Logging and `java.util.logging` *into* Log4j, so a
+mixed-API application has one configuration and one destination.
+
+== Each bridge installs differently
+
+SLF4J:: `log4j-slf4j2-impl` is a *provider*. SLF4J finds it through
+`ServiceLoader`, so there is nothing to configure. Two providers on the
+classpath is a coin toss, and SLF4J only warns.
+
+Commons Logging:: `log4j-jcl` works the same way, through JCL's own discovery.
+
+java.util.logging:: `log4j-jul` needs `java.util.logging.manager` set
+*before the JUL classes initialise*.
+
+== The one that bites
+
+`java.util.logging.manager` **cannot be set from Java.** JUL reads it once, when
+`LogManager` first loads, which is before any application code runs.
+
+[source,bash]
+----
+java -Djava.util.logging.manager=org.apache.logging.log4j.jul.LogManager -jar app.jar
+----
+
+Set it from `main`, a static initialiser or a test hook and it is already too
+late — **and nothing fails.** JUL quietly keeps its own handlers, the bridge is
+inert, and the only symptom is that some of your logs are missing.
+
+An earlier draft of this sample set it in `@BeforeAll`, and the test failed.
+That is the bug demonstrating itself: in a test you find out, in production you
+do not. This module sets it as a surefire `systemPropertyVariables` entry, which
+is a JVM argument.
+
+== What the tests assert
+
+* SLF4J, JCL and JUL events all reach the same Log4j appender
+* the originating logger name survives the bridge, so per-logger levels and
+  routing keep working against the library's own names
+
+== Running it
+
+[source,bash]
+----
+./mvnw --projects log4j-samples-bridges test
+----

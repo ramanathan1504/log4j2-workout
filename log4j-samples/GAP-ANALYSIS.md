@@ -103,19 +103,33 @@ Taken from the existing modules, not guessed:
 
 ## Progress
 
-Five modules built, tested and green against the real samples parent
-(`logging-parent:12.1.1`, Log4j 2.25.2) — **15 tests**.
+**Seven modules built, tested and green** against the real samples parent
+(`logging-parent:12.1.1`, Log4j 2.25.2) — **21 tests**.
 
-| Module | Tests | Asserts |
+| Module | Tests | The quiet failure it demonstrates |
 |---|:--:|---|
-| `log4j-samples-custom-plugins` | 2 | descriptor generated *for this module*; plugins resolve and receive events |
-| `log4j-samples-json-template-layout` | 4 | declared fields present; unset MDC key omitted entirely; exception resolver renders; bundled ECS template uses Elastic's names |
-| `log4j-samples-thread-context` | 4 | MDC/NDC render; unset key is empty not null; context lost across an executor; carried deliberately it survives |
-| `log4j-samples-rolling-file` | 2 | archives are really gzip (magic number, not extension); `Delete` bounds the directory to the stated count |
-| `log4j-samples-filters` | 3 | appender scope, appender-ref scope and logger scope each admit a different set |
+| `custom-plugins` | 2 | descriptor missing → package-scan fallback: works in an IDE, finds nothing in a shaded jar |
+| `json-template-layout` | 4 | an unresolvable `eventTemplateUri` is not an error — valid JSON in a shape nobody asked for |
+| `thread-context` | 4 | context does not cross an executor; an unset key renders empty, not null |
+| `rolling-file` | 2 | `max` caps `%i`, not retention; `Delete` siblings are order-sensitive |
+| `filters` | 3 | the same filter at appender, appender-ref and logger scope admits three different sets |
+| `bridges` | 4 | `java.util.logging.manager` cannot be set from Java; too late is silent, not an error |
+| `arbiters` | 2 | the branch not taken is never built, so a typo in it is never reported |
 
-Remaining from the tables above: `bridges`, `web`, `migration-1x`,
-`jdbc-appender`, `arbiters`, `garbage-free`, `network-appenders`, `smtp`.
+### Not built, and why
+
+Each needs a dependency the samples parent does not manage. Adding a hard-coded
+version would break the convention every existing module follows, so these need
+a decision from upstream before they can be offered.
+
+| Module | Blocked on |
+|---|---|
+| `jdbc-appender` | a JDBC driver — H2 is not in the parent's `dependencyManagement` |
+| `smtp` | GreenMail, likewise unmanaged; `jakarta.mail` would also be needed |
+| `network-appenders` | Kafka, syslog and an SMTP sink as containers — probably unsuitable for this repository at all |
+| `web` | feasible: `tomcat-embed-core` and `jetty-servlet` **are** managed. Not built here only because a servlet container sample is substantially larger than the others |
+| `migration-1x` | feasible: `log4j-1.2-api` is in `log4j-bom`. Scaffolded and removed rather than left half-built |
+| `garbage-free` | feasible: needs no extra dependency. Same |
 
 ### Verifying a module before offering it
 
@@ -132,22 +146,29 @@ rm -rf <module> && git checkout -- pom.xml
 
 ### Bugs caught by building against the real parent
 
-All four would have reached a reviewer otherwise, which is the argument for
+Seven, all of which would have reached a reviewer. This is the argument for
 building every module in a scratch checkout before offering it.
 
 - **A plugin's `category` must be `Node.CATEGORY` (`"Core"`), not the element
-  type.** `@Plugin(name = "Counting", category = Appender.ELEMENT_TYPE, …)`
-  compiles, writes a descriptor entry under `appender/counting`, and is then
-  never found, because Log4j looks under `Core`. The only symptom is an unknown
-  element.
-- **`log4j-core`'s `test-jar` is not managed by the samples parent.** Declaring
-  it without a version fails the build at model resolution. `log4j-core-test`
-  and its `ListAppender` are therefore unavailable, so these samples assert
-  against files on disk instead — which is closer to what users do anyway.
-- **Substring collisions make an assertion lie.** The filters test used
-  `"audited"` and `"not audited"`, so `noneMatch(contains("audited"))` matched
-  the negative case too. The filters were correct; the test was not. Sample
-  messages must share no substring.
+  type.** `category = Appender.ELEMENT_TYPE` compiles, writes a descriptor entry
+  under `appender/counting`, and is then never found. The only symptom is an
+  unknown element.
+- **`log4j-core`'s `test-jar` is not managed by the parent**, so `ListAppender`
+  is unavailable. These samples assert against files on disk instead — closer to
+  real use anyway.
+- **`commons-logging` is not managed either.** `log4j-jcl` brings it
+  transitively; declaring it explicitly needs a hard-coded version that no other
+  module has.
+- **Substring collisions make assertions lie.** `"audited"` / `"not audited"`
+  meant `noneMatch(contains("audited"))` matched the negative case. The filters
+  were right; the test was not. Sample messages must share no substring.
 - **Rollover completion needs `LogManager.shutdown()`, not a sleep.**
-  Compression runs on a background executor, so reading the directory too early
-  is a race that passes on a quiet machine and fails in CI.
+  Compression runs on a background executor; reading early is a race that passes
+  locally and fails in CI.
+- **`java.util.logging.manager` cannot be set from Java.** An earlier draft set
+  it in `@BeforeAll` and the JUL test failed — surefire has already logged
+  through JUL by then. It is now a surefire `systemPropertyVariables` entry, i.e.
+  a JVM argument, which is what a real deployment needs too. The test failing is
+  the fortunate case: in production the bridge is simply inert with no error.
+- **`${revision}` must survive shell templating.** Generating poms from a heredoc
+  escaped it to `\${revision}`, which Maven cannot resolve.
