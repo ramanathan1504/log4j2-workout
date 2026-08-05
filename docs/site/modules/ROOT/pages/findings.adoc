@@ -60,6 +60,17 @@ Worse, because the run looks healthy.
   `InaccessibleObjectException` escapes. The JPA provider then reports a
   deployment failure from its own `Class.forName`, naming neither Log4j, nor the
   converter, nor the flag.
+* **A database manager whose startup failed still accepts writes.**
+  `AbstractDatabaseManager.startup()` catches everything `startupInternal()`
+  throws, logs "Could not perform database startup operations", and leaves
+  `running = false` — but `write()` never checks `isRunning()`, so it proceeds
+  to `writeThrough` → `writeInternal` anyway. In `CassandraManager` the
+  `preparedStatement` assigned by `startupInternal` is therefore still null, and
+  every single event throws `NullPointerException: … because
+  "this.preparedStatement" is null`. The one line naming the real cause is
+  emitted once, at startup, and then buried under one NPE per event. Nothing
+  here is Cassandra-specific: it is the shape of any `AbstractDatabaseManager`
+  subclass whose startup fails.
 * **The JNDI `DataSource` connection source resolves its name while the appender
   is being built**, so the binding must exist before the *first logger acquired
   anywhere in the JVM*. A conventional `private static final Logger` initialises
@@ -121,11 +132,15 @@ Worse, because the run looks healthy.
 
 == Environment compatibility
 
-* **log4j-cassandra cannot talk to Cassandra 5.** It is built against DataStax
-  java driver 3.11, which negotiates native protocol v4 at most. A connection
-  attempt never completes rather than failing, so the appender hangs at
-  construction and the run stalls with no error at all. Cassandra 4.1 is the
-  newest line the shipped driver reaches.
+* **log4j-cassandra does not reach Cassandra 5.** It is built against DataStax
+  java driver 3.11, which negotiates native protocol v4 at most. Against a 5.0
+  container the connection attempt neither completed nor errored — the run
+  stalled with no output — so the bench bounds it with an explicit timeout.
+  Against 4.1 it *does* connect, and fails afterwards for the unrelated reason
+  given under "Where the error names the wrong thing".
++
+NOTE: Why startup failed against 4.1 was never captured — the missing
+`isRunning()` guard masked it. That one is still open.
 * **EclipseLink 2.7 cannot drive H2 2.x.** Its DDL emits
   `ID BIGINT IDENTITY NOT NULL` and it fetches keys with `CALL IDENTITY()`, both
   H2 1.x. It treats the failed DDL as a warning, so deployment reports success

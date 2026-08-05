@@ -251,6 +251,7 @@ docker compose -f infra/docker-compose.yml up -d mongodb couchdb cassandra</code
 
 <h3>Where the error names the wrong thing</h3>
 <ul>
+  <li><strong>A database manager whose startup failed still accepts writes.</strong> <code>AbstractDatabaseManager.startup()</code> catches everything <code>startupInternal()</code> throws, logs "Could not perform database startup operations", and leaves <code>running = false</code> — but <code>write()</code> never checks <code>isRunning()</code>, so it proceeds to <code>writeInternal</code> anyway. In <code>CassandraManager</code> the <code>preparedStatement</code> is therefore still null and every event throws an NPE naming that field, burying the one line that named the real cause. Not Cassandra-specific — it is the shape of any <code>AbstractDatabaseManager</code> subclass whose startup fails.</li>
   <li><strong>log4j-jpa cannot initialise on any JDK 16+</strong> without <code>--add-opens java.base/java.lang=ALL-UNNAMED</code>. Its <code>ThrowableAttributeConverter</code> reflects into <code>Throwable.cause</code> in a static initialiser and catches only <code>NoSuchFieldException</code>. The provider then reports a deployment failure from its own <code>Class.forName</code>, naming neither Log4j, nor the converter, nor the flag.</li>
   <li><strong>The JNDI <code>DataSource</code> source resolves its name while the appender is being built</strong>, so the binding must exist before the first logger acquired anywhere in the JVM. A conventional <code>private static final Logger</code> initialises at class load — so binding in <code>main()</code> is already too late.</li>
   <li><strong><code>InitialContext</code> copies only <code>java.naming.*</code> from system properties</strong>, so a provider needing its own keys cannot be configured with <code>-D</code> at all. It falls back to its defaults and fails with a message that says nothing about where it tried to connect.</li>
@@ -279,7 +280,7 @@ docker compose -f infra/docker-compose.yml up -d mongodb couchdb cassandra</code
 
 <h3>Environment compatibility</h3>
 <ul>
-  <li><strong>log4j-cassandra is built on DataStax driver 3.11</strong>, which negotiates native protocol v4 at most and cannot read Cassandra 5's schema tables. The connection never completes rather than failing, so the appender hangs at construction with no error.</li>
+  <li><strong>log4j-cassandra does not reach Cassandra 5.</strong> It is built on DataStax driver 3.11, which negotiates native protocol v4 at most. Against a 5.0 container the connection attempt neither completed nor errored — the run stalled with no output — so the bench bounds it with a timeout. Against 4.1 it <em>does</em> connect, then fails for the separate reason above. Why startup failed against 4.1 was never captured; that one is still open.</li>
   <li><strong>log4j-couchdb cannot work with modern Gson.</strong> LightCouch 0.2.0 calls <code>registerTypeAdapter(JsonObject.class, …)</code>, which Gson 2.11 forbids, so the provider cannot be constructed — and the message names neither Gson's version nor log4j-couchdb.</li>
   <li><strong>EclipseLink 2.7 cannot drive H2 2.x.</strong> Its DDL emits H2 1.x syntax and it treats the failure as a warning, so deployment reports success and every insert fails with "table not found".</li>
 </ul>
