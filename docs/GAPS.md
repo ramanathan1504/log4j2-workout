@@ -58,7 +58,7 @@ In `docs/issue-drafts/`. Four filed already — see `docs/ISSUES.md`.
 
 | Draft | Evidence | Blocked on |
 |---|---|---|
-| `locateContext` drops the `ServletContext` entry | captured both sides | a judgement: defect, or the intended trade-off? The draft argues the *silence* is the real problem either way |
+| `locateContext` drops the `ServletContext` entry | captured both sides | **duplicate of #2314** (open since Feb 2024). New material is the appserver+web trigger — draft comment in `docs/SLACK.md`, not posted |
 | Interrupting the configuring thread disables every appender | **none** | a deterministic reproduction. It is a race; observed once, two unrelated healthy appenders went silent after a worker was interrupted mid-configuration |
 
 The selector draft's control is a sibling app on a different servlet API, not the
