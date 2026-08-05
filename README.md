@@ -360,7 +360,7 @@ Two details worth knowing:
 * **It does not run on `development` → `main` syncs.** Nothing reaches `main`
   without passing here first, so a second run would re-prove the same commits.
   `workflow_dispatch` still runs it on demand.
-* **It skips `**.md`, `docs/**` and `.githooks/**`.** If it is ever made a
+* **It skips paths that cannot change the bench** — `**.md`, `docs/**`, `.githooks/**`, `.gitignore`, `.gitattributes`, `infra/output/**`.** If it is ever made a
   *required* status check, a skipped run never reports and the merge blocks
   forever — the fix then is a lightweight always-pass job, not removing the
   filter.

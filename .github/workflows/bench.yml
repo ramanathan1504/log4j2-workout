@@ -29,6 +29,11 @@ on:
       - '**.md'
       - 'docs/**'
       - '.githooks/**'
+      # Git metadata and the directory containers write back into. PR #15 spent
+      # thirteen minutes proving that a .gitignore edit does not break the bench.
+      - '.gitignore'
+      - '.gitattributes'
+      - 'infra/output/**'
   workflow_dispatch:
 
 permissions:
