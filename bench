@@ -289,6 +289,24 @@ classpath_for() {
   # changed, and skipping it on a source-only edit would silently run stale
   # classes — the worst possible failure mode for a bench you are using to judge
   # whether a Log4j change altered behaviour.
+  #
+  # The one exception is a matrix sweep, where the same (app, version) pair is
+  # rebuilt for every config and JDK even though nothing between cells can have
+  # changed the sources. Maven's own startup then dominates the run: at roughly
+  # 10s a cell it is the difference between a sweep taking hours and taking
+  # days. BENCH_REUSE_BUILDS=1 reuses the cached classpath whenever one exists
+  # for the pair — which may have been written by an earlier run, not just this
+  # one. Never set it while editing app sources: that is precisely the case the
+  # always-build policy protects against.
+  if [[ "${BENCH_REUSE_BUILDS:-0}" == 1 && -s "$key" ]]; then
+    if is_gradle "$app"; then
+      cat "$key"
+    else
+      printf '%s:%s/%s/target/classes' "$(cat "$key")" "$ROOT" "$module"
+    fi
+    return
+  fi
+
   set_mvn_flags "$version"
   info "building: $app @ log4j $version"
 
@@ -475,6 +493,10 @@ cmd_matrix() {
       --java|--javas)     javas_arg="$2";    shift 2 ;;
       --log4j)            versions_arg="$2"; shift 2 ;;
       --all)      all=1; shift ;;
+      # Build each (app, version) once instead of once per cell. Safe for a
+      # sweep, where nothing between cells changes the sources; see the note in
+      # classpath_for for when not to use it.
+      --reuse-builds) export BENCH_REUSE_BUILDS=1; shift ;;
       *) die "matrix: unexpected argument '$1'" ;;
     esac
   done
