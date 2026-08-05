@@ -66,7 +66,7 @@ jobs:
       - name: Run the bench
         run: |
           ./bench matrix \
-            --apps core-java,java8-baseline,log4j1-bridge,bridges-in,bridges-out,bridges-to-jul,custom-plugins,jpa,smtp,jdbc-jndi,jms,spring-cloud-config \
+            --apps core-java,java8-baseline,log4j1-bridge,bridges-in,bridges-out,bridges-to-jul,custom-plugins,jpa,smtp,jdbc-jndi,jms,spring-cloud-config,spring-boot-maven \
             --configs xml/baseline-console,json/baseline-console,yaml/baseline-console,properties/baseline-console,log4j1/log4j.xml,log4j1/log4j.properties \
             --javas 8,17,21 \
             --log4j ${{ matrix.log4j }} \

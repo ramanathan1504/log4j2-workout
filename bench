@@ -260,6 +260,17 @@ EXTRA_JVM_ARGS=()
 extra_jvm_args_for() {
   EXTRA_JVM_ARGS=()
   case "$1" in
+    spring-boot-maven|spring-boot-gradle)
+      # main() is SpringApplication.run on a web application, so without this
+      # the app serves until killed and can never finish a matrix cell. The
+      # self-test drives the bench endpoints over real HTTP and then exits, so
+      # the servlet stack is still exercised rather than skipped. Unset it to
+      # get the interactive server back:
+      #   BENCH_SPRING_SELFTEST=0 ./bench run spring-boot-maven
+      if [[ "${BENCH_SPRING_SELFTEST:-1}" == 1 ]]; then
+        EXTRA_JVM_ARGS+=(-Dbench.selfTest=true)
+      fi
+      ;;
     jakarta-web|javax-web)
       # Tomcat 10.1.34+ and 9.0.98+ refuse to start a DirResourceSet unless it can confirm
       # the JDK's canonical file name cache is off (the CVE-2024-56337 fix). It
@@ -577,6 +588,20 @@ cmd_matrix() {
   local results="$CACHE/matrix-$stamp.log"
   local ledger="$CACHE/coverage.tsv"
 
+  # Per-cell wall-clock bound. GNU timeout is `timeout` on Linux and `gtimeout`
+  # from coreutils on macOS; if neither is present the sweep still runs, because
+  # refusing to run at all would be a worse answer than running unbounded — but
+  # say so, since an unbounded sweep can hang on a single cell.
+  CELL_RUNNER=()
+  local secs="${BENCH_CELL_TIMEOUT:-300}"
+  if command -v timeout >/dev/null 2>&1; then
+    CELL_RUNNER=(timeout -k 10 "$secs")
+  elif command -v gtimeout >/dev/null 2>&1; then
+    CELL_RUNNER=(gtimeout -k 10 "$secs")
+  else
+    printf '  \033[33mnote\033[0m  no timeout(1) found — cells run unbounded; an app that does not exit will stall the sweep\n'
+  fi
+
   local pass=0 fail=0 skip=0
   printf 'Log4j matrix — scenario=%s\n' "${scenario:-<all>}" | tee "$results"
   printf '  apps     %s\n  configs  %s\n  javas    %s\n  versions %s\n\n' \
@@ -604,7 +629,13 @@ cmd_matrix() {
           printf '\n═══ %s | %s | java %s | log4j %s ═══\n' \
             "$app" "$config" "$java" "$version" >>"$results"
 
-          if ( "$0" run "${run_args[@]}" ) >>"$results" 2>&1; then
+          # Bound every cell. Without this one app that does not terminate stalls
+          # the whole sweep silently — spring-boot-maven is a real Spring Boot web
+          # app whose main() is SpringApplication.run, so it serves until killed
+          # and its cell never returns. A sweep sat on it for two hours looking
+          # exactly like slow progress. A cell that outruns the limit is a FAIL
+          # with a stated cause, which is information; a sweep that hangs is not.
+          if ( ${CELL_RUNNER[@]+"${CELL_RUNNER[@]}"} "$0" run "${run_args[@]}" ) >>"$results" 2>&1; then
             printf '  \033[32mPASS\033[0m  %-18s %-30s java%-3s %s\n' \
               "$app" "$config" "$java" "$version"
             printf '%s\tPASS\t%s\t%s\t%s\t%s\n' "$stamp" "$app" "$config" "$java" "$version" >>"$ledger"
