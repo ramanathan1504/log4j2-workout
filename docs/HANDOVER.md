@@ -389,6 +389,8 @@ you will meet first:
   2.x and 3.x.
 - **#4242** — `log4j-cassandra` leaks the DataStax `Cluster` on failed startup,
   so the JVM never exits. 2.x only.
+- **#4243** — `CsvParameterLayout` throws NPE on any event without parameters.
+  Affects 2.x and 3.x.
 
 **Drafted, not filed** — `docs/issue-drafts/`. Written to the project's bug
 template, each with a reproduction and, where one is defensible, a suggested fix.
@@ -396,7 +398,7 @@ Nothing in this repository ever touches an upstream project.
 
 | Draft | Evidence | State |
 |---|---|---|
-| `CsvParameterLayout` NPEs on any parameterless event | captured run, 2.26.1 | ready |
+
 | `@ConditionalOnProperty` has no effect on `Log4j2EventListener` | captured run, 2.26.1 | ready |
 | `locateContext` drops the `ServletContext` entry | captured both sides | decide defect vs intended trade-off first |
 | Interrupting the configuring thread disables every appender | **none — a race, seen once** | hold until reproducible on demand |
