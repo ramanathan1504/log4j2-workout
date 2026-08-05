@@ -3,13 +3,9 @@
 Extracted from the local source clone `~/apache/logging-log4j2` (branch `2.x`, at `04c93c1d33`).
 **293 plugins across 59 modules.** This is the checklist the bench must cover.
 
-**This catalogue is 2.x only.** It was extracted from the `2.x` branch, and every
-count in it is a 2.x count. Log4j 3.x has 30 modules and a different structure —
-`log4j-core` was split into `log4j-plugins`, `log4j-config-jackson/properties/yaml`,
-`log4j-jdbc`, `log4j-csv`, `log4j-script`, `log4j-async-logger` and `log4j-compress`
-among others. The bench runs on 3.x (251 passing cells recorded) and ten apps are
-marked 2.x-only where their modules have no 3.x release, but no equivalent
-module-by-module audit of 3.x exists. Do not read "41 of 41" as a statement about 3.x.
+**Sections 1–18 describe the 2.x line.** Every count in them is a 2.x count.
+Log4j 3.x has a different structure and its own catalogue in §19 — read that
+before treating any number here as a statement about 3.x.
 
 Legend: `[ ]` not yet covered by the bench · `[x]` covered · `(test)` = test-only fixture, low priority
 
@@ -344,6 +340,8 @@ config file, since by definition it has none.
 
 Things the configs above turned up, verified against the source clone rather than the docs.
 
+| **Plugin authoring is source-incompatible between Log4j 2.x and 3.x.** `@Plugin` lives in `org.apache.logging.log4j.core.config.plugins` on 2.x and `org.apache.logging.log4j.plugins` on 3.x, along with `@PluginFactory` and `@PluginAttribute`. The same plugin source cannot compile against both — supporting both lines needs two source sets, not a Maven profile. Any third-party plugin targeting both faces this, and it is why `log4j-plugin-processor` is the one shippable 3.x module the bench does not reach | `apps/custom-plugins` |
+| **Registration introspection moved too.** 2.x exposes `core.config.plugins.util.PluginManager` (`collectPlugins()` then `getPlugins()`); 3.x replaced it with `plugins.model.PluginRegistry`, whose `getNamespace(String)` returns a `PluginNamespace`. Code compiled against the 2.x class dies with `NoClassDefFoundError` on 3.x *after* the plugin descriptor has already been found — the plugin machinery works, the introspection does not, which reads like a plugin failure and is not | `apps/custom-plugins`, source: `PluginRegistry:162`, `PluginNamespace:83` |
 | Finding | Where |
 |---|---|
 | **`Log4j2EventListener`'s `@ConditionalOnProperty("spring.cloud.config.watch.enabled")` has no effect.** The class is annotated `@Component` with that condition, but log4j-spring-cloud-config-client registers it in `META-INF/spring.factories` under `org.springframework.context.ApplicationListener` — and SpringApplication instantiates those directly, without bean definitions. Conditions are a bean-definition mechanism, so the listener is active whether or not the property is set, and never appears in the bean factory. Anyone trying to switch it off with the documented property will find it still running | `apps/spring-cloud-config` |
@@ -386,3 +384,83 @@ Things the configs above turned up, verified against the source clone rather tha
 | `ClassLoaderContextSelector.locateContext` returns a parent classloader's context without applying the `Map.Entry` it was given. When log4j-core sits on a shared/parent classloader and a context already exists there, `log4j-jakarta-web`'s SCI silently fails to bind the `ServletContext`: every `${web:}` lookup goes unresolved and the shared context is renamed to the webapp's path | `apps/jakarta-web` |
 | Maven resolves a shared transitive dependency once and keeps the winning path's exclusions; Gradle unions all paths. So excluding `spring-boot-starter-logging` from `spring-boot-starter-web` alone suffices in Maven but leaves Logback on the Gradle classpath via the actuator | `apps/spring-boot-gradle` |
 | Gradle platforms contribute constraints resolved by highest-version-wins, so Spring Boot's `log4j2.version` pin silently overrides a request for an older Log4j unless forced | `apps/spring-boot-gradle` |
+
+---
+
+## 19. Log4j 3.x catalogue
+
+Extracted from `origin/main` of the same clone. 3.x is not a renumbered 2.x: the
+module set is smaller and differently cut, because `log4j-core` was broken apart.
+
+**30 modules, of which 22 are shippable** — the other eight are test or build
+scaffolding (`log4j-core-test`, `log4j-gc-test`, `log4j-jndi-test`,
+`log4j-layout-template-json-test`, `log4j-osgi-test`, `log4j-parent`,
+`log4j-perf-test`, `log4j-plugins-test`).
+
+### What moved out of log4j-core
+
+| 3.x module | Was, on 2.x | Plugins |
+|---|---|:--:|
+| `log4j-plugins` | the plugin system inside `log4j-core` | 3 |
+| `log4j-plugin-processor` | annotation processor inside `log4j-core` | — |
+| `log4j-config-jackson` | JSON/XML config support in `log4j-core` | 0 |
+| `log4j-config-properties` | `PropertiesConfigurationFactory` in `log4j-core` | 1 |
+| `log4j-config-yaml` | YAML config support in `log4j-core` | 1 |
+| `log4j-async-logger` | Disruptor async in `log4j-core` | 2 |
+| `log4j-compress` | rollover compression in `log4j-core` | 1 |
+| `log4j-csv` | `log4j-csv` (unchanged) | 2 |
+| `log4j-script` | script support in `log4j-core` | 9 |
+| `log4j-jdbc` | JDBC appender in `log4j-core` | 5 |
+| `log4j-jndi` | JNDI support in `log4j-core` | 1 |
+| `log4j-kit` | new in 3.x | 0 |
+| `log4j-conversant` / `log4j-jctools` | queue implementations in `log4j-core` | 1 each |
+
+`log4j-core` still carries 159 plugins, `log4j-layout-template-json` 21. Roughly
+**212 plugins across the 22 shippable modules**, against 293 across 59 on 2.x —
+the difference is mostly modules that have no 3.x release at all.
+
+### What has no 3.x release
+
+`log4j-1.2-api` · `log4j-jakarta-web` / `log4j-web` · `log4j-spring-boot` ·
+`log4j-jpa` · `log4j-jakarta-smtp` · `log4j-jakarta-jms` · `log4j-jcl` ·
+`log4j-jpl` · `log4j-iostreams` · `log4j-taglib` · `log4j-appserver` ·
+`log4j-cassandra` · `log4j-couchdb` · `log4j-mongodb4` · `log4j-slf4j-impl` ·
+`log4j-to-slf4j` · `log4j-to-jul`
+
+Ten of the bench's nineteen apps are marked `APPS_2X_ONLY` for exactly this
+reason, and `matrix` reports them as SKIP on 3.x rather than FAIL.
+
+**`log4j-spring-cloud-config-client` is the one Spring module that survived.**
+It is present on `main` while `log4j-spring-boot` is not. `apps/spring-cloud-config`
+had been marked 2.x-only on the opposite assumption, which left that module
+unreachable on 3.x entirely — corrected, and the app now runs on both lines.
+
+### Bench reach on 3.x
+
+**21 of 22 shippable modules are on a 3.x classpath.** The exception is
+`log4j-plugin-processor`, and the reason is worth recording rather than filing
+as a rounding error.
+
+**Plugin authoring is source-incompatible between the lines.** `@Plugin` lives in
+`org.apache.logging.log4j.core.config.plugins` on 2.x and in
+`org.apache.logging.log4j.plugins` on 3.x, along with `@PluginFactory`,
+`@PluginAttribute` and the rest. The same plugin source cannot compile against
+both; supporting both needs two source sets, not a profile. `apps/custom-plugins`
+is therefore 2.x-only, and `log4j-plugin-processor` — which only that app uses —
+is unreached on 3.x.
+
+That is a real finding about writing Log4j plugins, not a bench limitation: any
+third-party plugin targeting both lines faces the same split.
+
+**Registration introspection also differs**, and is fixable. 2.x exposes
+`core.config.plugins.util.PluginManager`; 3.x replaced it with
+`plugins.model.PluginRegistry` returning a `PluginNamespace`. `CustomPluginBench`
+now reflects over both rather than compiling against either, so the same code
+reports registrations on whichever line it finds. It was compiling against the
+2.x class, which meant a `NoClassDefFoundError` on 3.x *after* the descriptor had
+already been located — the plugin machinery was fine, the bench's own
+introspection was not.
+
+**Nine of nineteen app targets run on 3.x.** The other ten cannot: their Log4j
+modules were never published for it, or — in the custom-plugins case — the
+annotations they compile against moved.

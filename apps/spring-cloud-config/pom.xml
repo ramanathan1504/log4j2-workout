@@ -16,7 +16,10 @@
   <description>log4j-spring-cloud-config-client against an embedded Spring Cloud Config Server</description>
 
   <!--
-    2.x ONLY: log4j-spring-cloud-config-client has no 3.x release.
+    Runs on 2.x AND 3.x. log4j-spring-cloud-config-client is the one Spring
+    module that survived into 3.x — it is present on `main`, while
+    log4j-spring-boot is not. This app was marked 2.x-only on the opposite
+    assumption, which left the module unreachable on 3.x entirely.
 
     The module is two classes, and knowing that shapes the test:
 
