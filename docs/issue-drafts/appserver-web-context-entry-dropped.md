@@ -90,8 +90,53 @@ Two symptoms in that output:
   been renamed to this webapp's display name, which also affects anything else
   using it.
 
-Removing `log4j-appserver` and redeploying makes the same configuration resolve.
-That control matters: it separates this from ordinary webapp misconfiguration.
+### The control
+
+A sibling deployment **without** `log4j-appserver`, same configuration file:
+
+```
+LoggerContext class : org.apache.logging.log4j.core.LoggerContext
+LoggerContext name  : log4j-bench
+Configuration       : baseline-console
+Appenders           : [Console]
+Config source       : /Users/ramanathan/apache/log4j2-workout/configs/xml/baseline-console.xml
+ServletContext bound to LoggerContext : true
+WebLoggerContextUtils.getServletContext() : org.apache.catalina.core.ApplicationContextFacade@351afa4e
+StrLookup                            : org.apache.logging.log4j.core.lookup.Interpolator
+
+web lookups:
+  ${web:contextPath}               /bench
+  ${web:servletContextName}        log4j-bench
+  ${web:serverInfo}                Apache Tomcat/10.1.36
+  ${web:effectiveMajorVersion}     6
+  ${web:rootDir}                   /private/var/folders/9p/3mz8f0gx5lzcxbx73gsvpbxw0000gn/T/log4j-bench-tomcat7916513248010340563/webapp/
+
+this servlet's classloader   : ParallelWebappClassLoader@2d1ef81a
+ServletContext classloader   : ParallelWebappClassLoader@2d1ef81a
+LoggerContext resolved here  : LoggerContext@39bab98c
+LoggerContext on ServletCtx  : LoggerContext@39bab98c
+
+all LoggerContexts in this JVM:
+  log4j-bench              servletContext=true config=baseline-console
+
+servlet contextPath : /bench
+server info         : Apache Tomcat/10.1.36
+```
+
+`ServletContext bound to LoggerContext : true`, the facade is present, and the
+`${web:}` lookups resolve — `contextPath` to `/bench`, `serverInfo` to the
+container banner. That is what the failing case should look like.
+
+**One caveat, stated plainly:** this control is a sibling application on
+Tomcat 10 / `jakarta.servlet` with `log4j-jakarta-web`, not the identical
+deployment with `log4j-appserver` removed. It differs in servlet API as well as
+in the presence of appserver, so it is strong evidence rather than a controlled
+single-variable comparison.
+
+Removing `log4j-appserver` from the failing deployment and redeploying is the
+cleaner check, and worth doing before filing if a reviewer is likely to press on
+it. The source path in `locateContext` explains the mechanism regardless of which
+control is used.
 
 ## Note on classification
 
