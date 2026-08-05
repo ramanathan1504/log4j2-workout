@@ -1,0 +1,133 @@
+= Findings
+:navtitle: Findings
+:description: Log4j behaviours this bench uncovered, each traced to source rather than inferred.
+
+Everything here was found by building the bench, and every entry was checked
+against the source clone rather than against documentation or memory. The full
+table lives in `docs/FEATURE-MATRIX.md` §17; this page groups the ones worth
+knowing before you write a configuration.
+
+[NOTE]
+====
+These are observations about behaviour, not bug reports. Several are documented
+behaviour that merely fails in a confusing way; a few look like genuine defects.
+Which is which is a maintainer's call.
+====
+
+== Failures that kill the application
+
+The ones that do not degrade. Each escapes configuration and reaches
+`LogManager.getLogger`, so the application dies with
+`ExceptionInInitializerError` in whichever class holds the first static logger.
+
+* **Arbiters in the properties format.** `PropertiesConfigurationBuilder`
+  recognises seven prefixes and none is an arbiter; the nearest spelling throws
+  `ConfigurationException: No name attribute provided for Appender`.
+* **A nested custom level in the properties format.** A custom level is
+  `customLevel.<NAME> = <int>` — the key *is* the name. The nested spelling
+  every other element uses makes the builder parse the name as an integer.
+* **`//` comments in a JSON configuration on Log4j 3.** Log4j 2 enables
+  `ALLOW_COMMENTS`; Log4j 3 does not, and reports no parse error — `root` is
+  left null and the first logger call NPEs inside `JsonConfiguration.setup`.
+
+== Failures that are completely silent
+
+Worse, because the run looks healthy.
+
+* **Log4j 3 reads `log4j.configuration.location`, not
+  `log4j.configurationFile`.** Passing the 2.x name does not fail; Log4j quietly
+  uses `DefaultConfiguration`. An entire 3.x matrix column can pass while
+  testing nothing but the default configuration.
+* **The Log4j 2 properties format does not exist on 3.x.**
+  `PropertiesConfigurationFactory` was removed; `log4j-config-properties` ships
+  a Jackson java-properties reader with different keys. Such a configuration
+  falls back to the default without a word.
+* **JeroMQ endpoints are `<Property name="endpoint">` elements, not
+  attributes.** As attributes they log one invalid-attribute line, after which
+  the appender still builds, binds nothing, and publishes into the void — which
+  is indistinguishable from working, since a PUB socket with no peer discards
+  anyway.
+* **`SortByModificationTime`'s attribute is `recentFirst`, not `ascending`.**
+  The wrong name is rejected while the sorter still builds with its default, so
+  retention order silently stays whatever that is.
+
+== Where the error names the wrong thing
+
+* **log4j-jpa cannot initialise on any JDK 16+** without
+  `--add-opens java.base/java.lang=ALL-UNNAMED`. Its
+  `ThrowableAttributeConverter` reflects into `Throwable.cause` in a static
+  initialiser and catches only `NoSuchFieldException`, so JDK 16's
+  `InaccessibleObjectException` escapes. The JPA provider then reports a
+  deployment failure from its own `Class.forName`, naming neither Log4j, nor the
+  converter, nor the flag.
+* **The JNDI `DataSource` connection source resolves its name while the appender
+  is being built**, so the binding must exist before the *first logger acquired
+  anywhere in the JVM*. A conventional `private static final Logger` initialises
+  at class load, so binding in `main()` is already too late — and the error
+  names the JNDI name, not the ordering.
+* **`InitialContext` copies only `java.naming.*` from system properties**, so a
+  JNDI provider needing its own keys cannot be configured with `-D` at all. It
+  falls back to its defaults and the appender fails with a message that says
+  nothing about where it tried to connect.
+
+== Interactions between modules
+
+* **log4j-appserver and log4j-web together defeat the per-webapp
+  `LoggerContext`.** appserver routes the container's logging into Log4j, so
+  Tomcat logs through Log4j while starting — before any webapp initialises —
+  creating a context keyed to the parent classloader. log4j-web's SCI then hits
+  `ClassLoaderContextSelector.locateContext`'s parent-walk, which returns that
+  context *without applying the `ServletContext` entry*. `${web:}` never
+  resolves and the shared context is renamed to the webapp's display name.
+* **`log4j-jakarta-smtp` contains no appender.** `SmtpAppender` lives in
+  log4j-core and picks its implementation with
+  `ServiceLoader.load(MailManagerFactory.class)`, so the jar on the classpath
+  silently replaces the whole mail stack with nothing naming which one won.
+* **`Log4j2EventListener`'s `@ConditionalOnProperty` has no effect.** It is
+  registered in `spring.factories` as an `ApplicationListener`, and
+  SpringApplication instantiates those directly without bean definitions —
+  conditions are a bean-definition mechanism. The listener runs whether or not
+  the documented property is set.
+
+== Layouts that cannot do what they look like they can
+
+* **`CsvParameterLayout` throws NPE on any event with no parameters.**
+  `getParameters()` is null for `SimpleMessage` and for plain
+  `logger.info("text")`, and `toSerializable` hands that to
+  `CSVFormat.printRecord`. One per event, with no recovery.
+* **`MessageLayout.toByteArray()` is `return null;`.** It works with appenders
+  that consume `Message` objects — JMS — and fails on every event with any
+  stream appender, leaving an empty file.
+* **`Rfc5424Layout`'s `mdcId`/`sdId` must not contain `@`**, even though
+  `name@enterprise` is exactly what appears on the wire. Log4j appends the
+  number itself; an `@` fails the layout, after which the appender falls back to
+  its default and the output looks like a plain log rather than a broken one.
+
+== Ordering and lifecycle
+
+* **`Delete`'s sibling conditions are order-sensitive**, because
+  `IfAccumulatedFileCount` is stateful — it counts every file it is asked
+  about. A counter ahead of the glob also counts the active file, and the same
+  policy keeps one file fewer. The properties format cannot express sibling
+  order at all, so nesting the conditions is the only portable formulation.
+* **`RollingFileManager` builds its async executor with non-daemon threads**,
+  started lazily on the first compressing rollover. The JVM then cannot begin
+  shutting down, and the hook that would stop Log4j only runs once shutdown has
+  begun — so a short-lived application with a compressing rolling appender hangs
+  on exit unless it calls `LogManager.shutdown()` itself.
+* **Under `log4j-to-jul`, `ThreadContext` is a no-op.** `JULProvider` registers
+  `NoOpThreadContextMap`, so a `put` is discarded and code reading back its own
+  trace id gets null — not merely unrendered output.
+
+== Environment compatibility
+
+* **log4j-cassandra cannot talk to Cassandra 5.** It is built against DataStax
+  java driver 3.11, which negotiates native protocol v4 at most. A connection
+  attempt never completes rather than failing, so the appender hangs at
+  construction and the run stalls with no error at all. Cassandra 4.1 is the
+  newest line the shipped driver reaches.
+* **EclipseLink 2.7 cannot drive H2 2.x.** Its DDL emits
+  `ID BIGINT IDENTITY NOT NULL` and it fetches keys with `CALL IDENTITY()`, both
+  H2 1.x. It treats the failed DDL as a warning, so deployment reports success
+  and every insert fails with "table not found" — the real syntax error appears
+  only in H2's trace file.

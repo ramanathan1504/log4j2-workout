@@ -45,6 +45,7 @@ zip to attach to the issue.
 │   ├── jdbc-jndi/           JDBC DataSource resolved through in-process JNDI
 │   ├── jms/                 JMS appender against embedded ActiveMQ Artemis
 │   ├── spring-cloud-config/ config-server-driven reload, server embedded
+│   ├── network/            Syslog, Socket, Http, Kafka, JeroMQ, SMTP over sockets
 │   └── db/                  JDBC / Mongo / Cassandra / CouchDB appenders
 ├── infra/docker-compose.yml Kafka, Mongo, Cassandra, CouchDB, Postgres, MySQL,
 │                            syslog-ng, MailHog, Elasticsearch, Kibana

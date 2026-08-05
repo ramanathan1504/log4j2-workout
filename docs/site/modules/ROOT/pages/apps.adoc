@@ -1,0 +1,85 @@
+= Applications
+:navtitle: Applications
+:description: Every application in the bench, what it covers, and why it exists separately.
+
+Configurations are a shared library; applications are what a configuration is
+loaded *into*. Most exist because their dependencies cannot coexist with
+another application's.
+
+== The general-purpose ones
+
+[cols="1,3"]
+|===
+| Application | Covers
+
+| `core-java`
+| No framework. Carries every scenario, the layouts, filters, rollover and lookups. The default for almost everything.
+
+| `java8-baseline`
+| The same ideas at Java 8 source and bytecode. The only module compiled at release 8 — without it the oldest JDK Log4j 2 supports could not run any bench code at all.
+
+| `spring-boot-maven`
+| A real Spring Boot application, HTTP-triggered, with `log4j-spring-boot`.
+
+| `spring-boot-gradle`
+| The same sources built by Gradle, because Gradle and Maven do not resolve versions the same way.
+|===
+
+== One per conflict group
+
+These cannot share a classpath. Putting two of them together does not produce a
+warning — it produces a coin toss, or a routing loop.
+
+[cols="1,3"]
+|===
+| Application | Why it is separate
+
+| `bridges-in`
+| SLF4J 1.7, JUL, JCL, JPL and iostreams routed *into* Log4j.
+
+| `bridges-out`
+| The Log4j API routed *out* to SLF4J and Logback. `log4j-core` is deliberately absent: with core present it would answer `LogManager.getLogger` and the bridge would never run, while the output looked identical.
+
+| `bridges-to-jul`
+| The Log4j API routed out to `java.util.logging`. Separate from `bridges-out` because both supply the API's provider and the ServiceLoader would pick one arbitrarily.
+
+| `jakarta-web`
+| `log4j-jakarta-web` on Tomcat 10.
+
+| `javax-web`
+| `log4j-web`, `log4j-appserver` and `log4j-taglib` on Tomcat 9 — all three are `javax.servlet` and cannot meet the jakarta ones.
+
+| `log4j1-bridge`
+| The 1.x API on 2.x core.
+|===
+
+== One per backing technology
+
+[cols="1,3"]
+|===
+| Application | Covers
+
+| `db`
+| JDBC with all three connection sources, against embedded H2.
+| `nosql`
+| MongoDB, CouchDB and Cassandra. Needs containers.
+| `jpa`
+| The JPA appender on EclipseLink and H2.
+| `jdbc-jndi`
+| The `DataSource` connection source through an in-process JNDI provider. Runs on both 2.x and 3.x, which makes the module split visible.
+| `jms`
+| The JMS appender against an embedded ActiveMQ Artemis broker.
+| `smtp`
+| The SMTP appender against an embedded GreenMail server.
+| `network`
+| Syslog, Socket, Http, Kafka, JeroMQ and SMTP over real sockets. Needs containers.
+| `custom-plugins`
+| Plugin authoring: a third-party appender, filter, lookup and converter, discovered through the annotation processor's descriptor.
+| `spring-cloud-config`
+| Config-server-driven reload, with the server embedded.
+|===
+
+== Which run on 3.x
+
+Only those whose Log4j modules have a 3.x release. `matrix` reports the rest as
+SKIP with the reason, rather than as failures — see xref:axes.adoc[The four axes].

@@ -1,0 +1,69 @@
+= Configurations
+:navtitle: Configurations
+:description: The shared configuration library — one name, four formats, and where a format cannot follow.
+
+Configurations are a shared library, not per-module. Any application loads any
+configuration, which is what makes the version × configuration × application
+matrix work without duplicating a single file.
+
+Each exists in all four Log4j 2 formats under the same name:
+
+[source,bash]
+----
+./bench run core-java --config xml/filter-all
+./bench run core-java --config yaml/filter-all
+----
+
+The mirrors are *not* mechanical translations. Where a format genuinely cannot
+express what the XML does, the file says so and takes the nearest honest route.
+
+== The library
+
+[cols="1,3"]
+|===
+| Configuration | Covers
+
+| `baseline-console` | The control. One appender, one pattern.
+| `filter-all` | All 16 filters at all four scopes.
+| `layout-pattern-full` | Nearly every `PatternLayout` converter, one per line, labelled.
+| `layout-jsontemplate` | `JsonTemplateLayout` — four built-in templates, an inline template, and a `file:` template URI.
+| `layout-legacy-json-xml-yaml` | The Jackson-backed `JsonLayout`, `XmlLayout`, `YamlLayout`, `HtmlLayout`.
+| `layout-remaining` | Gelf, both CSV layouts, Rfc5424 + `LoggerFields`, Syslog, Message, Elastic's `EcsLayout`.
+| `rollover-full` | Every triggering policy, both strategies, gz/zip/zstd.
+| `rollover-advanced` | `Delete` with `IfAll`/`IfNot`/`SortByModificationTime`, `ScriptCondition`, `PosixViewAttribute`.
+| `appender-composite` | `Failover`, `Routing`, `Rewrite`, `AppenderSet`, `ScriptAppenderSelector`, `Async`.
+| `appender-file-variants` | `MemoryMappedFile`, `RandomAccessFile`, and the `File` options that decide durability.
+| `appender-jdbc` / `appender-jdbc-jndi` / `appender-jpa` | The database appenders and all connection sources.
+| `appender-nosql` | Mongo, CouchDB, Cassandra.
+| `appender-network` | Syslog, Socket, Http, Kafka, JeroMQ, SMTP.
+| `appender-servlet` | The javax web integration.
+| `appender-smtp` / `appender-jms` | Against embedded servers.
+| `async-queues` | Both async models and all four `BlockingQueueFactories`.
+| `custom-levels` | `CustomLevels`, custom levels in filters, and a `LevelPatternSelector` keyed on one.
+| `lookups` | All 18 lookups, from a configuration — both the config-time and per-event paths.
+| `arbiters` | All six that work outside Spring, plus `Select`/`DefaultArbiter`.
+| `custom-plugins` | A configuration built entirely from third-party plugins.
+|===
+
+== Where a format cannot follow
+
+[cols="1,3"]
+|===
+| Limitation | Detail
+
+| `arbiters` has *no properties version*
+| `PropertiesConfigurationBuilder` recognises seven prefixes and none is an arbiter. The only plausible spelling throws `ConfigurationException`, which escapes configuration and kills the application.
+
+| Composite filters in properties
+| `createFilter` always passes `onMatch`/`onMismatch`, which `CompositeFilter` does not declare, so every composite logs an invalid-attribute error. Appender, logger and appender-ref scopes therefore take one filter each.
+
+| JSON carries no comments
+| Log4j 2 allows them; Log4j 3 does not, and fails with an NPE rather than a parse error. The files are strict JSON so the same file works on both, with the prose in `configs/json/README.md`.
+
+| The whole properties directory is 2.x-only
+| 3.x removed `PropertiesConfigurationFactory`; `log4j-config-properties` ships a Jackson java-properties reader whose keys mirror the JSON tree instead.
+|===
+
+`$` versus `$$` is the other thing worth internalising: `$` resolves once while
+the configuration is built, `$$` defers to each event. Use `$` where `$$` was
+meant and every event silently gets the value the first one had.

@@ -59,11 +59,25 @@ services:
       retries: 6
 
   cassandra:
-    image: cassandra:5
+    # 4.1, NOT 5. log4j-cassandra is built against DataStax java driver 3.11,
+    # which negotiates native protocol v4 at most and cannot read the system
+    # schema tables Cassandra 5 exposes — a connection attempt simply never
+    # completes rather than failing, so the appender hangs at construction and
+    # the whole run stalls with no error at all. Cassandra 4.1 is the newest
+    # line the shipped driver can talk to.
+    image: cassandra:4.1
     ports:
       - "9042:9042"
     environment:
       CASSANDRA_CLUSTER_NAME: log4j-bench
+      # The node advertises an address to clients, and a driver connects to
+      # whatever it is told rather than to the address you gave it. Left at the
+      # default the container advertises its own 172.x address, which the host
+      # cannot route to — so the driver's control connection succeeds on
+      # localhost:9042 and then hangs retrying the peer address it learned,
+      # with no error at all.
+      CASSANDRA_RPC_ADDRESS: 0.0.0.0
+      CASSANDRA_BROADCAST_RPC_ADDRESS: 127.0.0.1
       HEAP_NEWSIZE: 128M
       MAX_HEAP_SIZE: 1G
     healthcheck:

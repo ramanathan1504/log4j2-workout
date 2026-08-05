@@ -1,0 +1,292 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Log4j Bench</title>
+<style>
+  :root {
+    --bg: #fbfaf8; --fg: #1c1b19; --muted: #6b6862; --rule: #e2ddd4;
+    --accent: #8c3a1e; --code-bg: #f3f0ea; --card: #fffefc;
+    --ok: #2f6b3a; --warn: #8a6d1f; --bad: #99331f;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #16151a; --fg: #e9e6e0; --muted: #9c968c; --rule: #2f2d33;
+      --accent: #e08a5f; --code-bg: #201f26; --card: #1c1b21;
+      --ok: #7fc08a; --warn: #d9bb63; --bad: #e0836b;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #16151a; --fg: #e9e6e0; --muted: #9c968c; --rule: #2f2d33;
+    --accent: #e08a5f; --code-bg: #201f26; --card: #1c1b21;
+    --ok: #7fc08a; --warn: #d9bb63; --bad: #e0836b;
+  }
+  :root[data-theme="light"] {
+    --bg: #fbfaf8; --fg: #1c1b19; --muted: #6b6862; --rule: #e2ddd4;
+    --accent: #8c3a1e; --code-bg: #f3f0ea; --card: #fffefc;
+    --ok: #2f6b3a; --warn: #8a6d1f; --bad: #99331f;
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    background: var(--bg); color: var(--fg);
+    font: 16px/1.65 ui-serif, Georgia, "Iowan Old Style", serif;
+    margin: 0; padding: 0;
+  }
+  .wrap { max-width: 62rem; margin: 0 auto; padding: 3rem 1.5rem 6rem; }
+
+  header.masthead { border-bottom: 2px solid var(--fg); padding-bottom: 1.5rem; margin-bottom: 2.5rem; }
+  .eyebrow {
+    font: 600 0.72rem/1 ui-sans-serif, system-ui, sans-serif;
+    letter-spacing: 0.16em; text-transform: uppercase; color: var(--accent); margin: 0 0 0.9rem;
+  }
+  h1 { font-size: clamp(2.1rem, 5vw, 3.1rem); line-height: 1.08; margin: 0 0 0.6rem; letter-spacing: -0.02em; }
+  .standfirst { font-size: 1.14rem; color: var(--muted); margin: 0; max-width: 46rem; }
+
+  h2 {
+    font-size: 1.5rem; margin: 3.2rem 0 0.9rem; padding-top: 1.4rem;
+    border-top: 1px solid var(--rule); letter-spacing: -0.01em;
+  }
+  h3 { font-size: 1.08rem; margin: 2rem 0 0.5rem; }
+  p { margin: 0 0 1rem; max-width: 46rem; }
+  ul, ol { max-width: 46rem; padding-left: 1.2rem; }
+  li { margin-bottom: 0.4rem; }
+  a { color: var(--accent); }
+
+  code, pre {
+    font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, monospace;
+    font-size: 0.86em;
+  }
+  code { background: var(--code-bg); padding: 0.12em 0.36em; border-radius: 3px; }
+  pre {
+    background: var(--code-bg); padding: 0.9rem 1.1rem; border-radius: 6px;
+    overflow-x: auto; border: 1px solid var(--rule); line-height: 1.5;
+  }
+  pre code { background: none; padding: 0; }
+
+  .lede {
+    background: var(--card); border: 1px solid var(--rule);
+    border-left: 3px solid var(--accent);
+    padding: 1.1rem 1.3rem; border-radius: 4px; margin: 1.6rem 0;
+  }
+  .lede p:last-child { margin-bottom: 0; }
+
+  .scroll { overflow-x: auto; margin: 1.2rem 0; }
+  table { border-collapse: collapse; width: 100%; font-size: 0.93rem; }
+  th, td { text-align: left; padding: 0.55rem 0.8rem; border-bottom: 1px solid var(--rule); vertical-align: top; }
+  th {
+    font: 600 0.72rem/1.3 ui-sans-serif, system-ui, sans-serif;
+    letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted);
+    border-bottom: 1.5px solid var(--rule);
+  }
+  td code { white-space: nowrap; }
+
+  .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr)); gap: 1px; background: var(--rule); border: 1px solid var(--rule); margin: 2rem 0; }
+  .stat { background: var(--card); padding: 1rem 1.1rem; }
+  .stat .n { font: 700 1.9rem/1 ui-sans-serif, system-ui, sans-serif; letter-spacing: -0.02em; display: block; }
+  .stat .l { font: 0.78rem/1.35 ui-sans-serif, system-ui, sans-serif; color: var(--muted); display: block; margin-top: 0.35rem; }
+
+  .tag { font: 600 0.68rem/1 ui-sans-serif, system-ui, sans-serif; letter-spacing: 0.06em; text-transform: uppercase; padding: 0.2em 0.5em; border-radius: 3px; white-space: nowrap; }
+  .tag.ok { color: var(--ok); background: color-mix(in srgb, var(--ok) 12%, transparent); }
+  .tag.warn { color: var(--warn); background: color-mix(in srgb, var(--warn) 14%, transparent); }
+  .tag.bad { color: var(--bad); background: color-mix(in srgb, var(--bad) 12%, transparent); }
+
+  nav.toc { background: var(--card); border: 1px solid var(--rule); border-radius: 4px; padding: 1rem 1.3rem; margin: 2rem 0; }
+  nav.toc p { font: 600 0.72rem/1 ui-sans-serif, system-ui, sans-serif; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); margin: 0 0 0.6rem; }
+  nav.toc ol { margin: 0; padding-left: 1.1rem; column-count: 2; column-gap: 2rem; }
+  @media (max-width: 34rem) { nav.toc ol { column-count: 1; } }
+
+  footer { margin-top: 4rem; padding-top: 1.4rem; border-top: 1px solid var(--rule); color: var(--muted); font-size: 0.88rem; }
+</style>
+</head>
+<body>
+
+<div class="wrap">
+
+<header class="masthead">
+  <p class="eyebrow">Apache Log4j · maintainer tooling</p>
+  <h1>Log4j Bench</h1>
+  <p class="standfirst">A real-application bench for Apache Log4j — every module, configuration format, JDK and version line, verified by what actually happened rather than by the absence of errors.</p>
+</header>
+
+<div class="lede">
+  <p><strong>The one idea worth reading first.</strong> Log4j catches appender exceptions and reports them through <code>StatusLogger</code>. The JVM still exits 0. So a run that produces no error proves nothing — a broken JDBC appender, an SMTP appender that never sends, and a Kafka appender pointed at a dead broker all look exactly like success from the application's side.</p>
+  <p>Every application here therefore asserts on an <em>outcome</em>: rows read back, mail consumed, a queue drained, a topic polled.</p>
+</div>
+
+<div class="stats">
+  <div class="stat"><span class="n">41/41</span><span class="l">shippable 2.x modules on a classpath</span></div>
+  <div class="stat"><span class="n">17</span><span class="l">applications</span></div>
+  <div class="stat"><span class="n">21</span><span class="l">configurations, most in 4 formats</span></div>
+  <div class="stat"><span class="n">8</span><span class="l">Log4j versions</span></div>
+  <div class="stat"><span class="n">4</span><span class="l">JDKs (8, 17, 21, 22)</span></div>
+</div>
+
+<nav class="toc">
+  <p>Contents</p>
+  <ol>
+    <li><a href="#running">Running it</a></li>
+    <li><a href="#axes">The four axes</a></li>
+    <li><a href="#apps">Applications</a></li>
+    <li><a href="#configs">Configurations</a></li>
+    <li><a href="#infra">Backing services</a></li>
+    <li><a href="#findings">Findings</a></li>
+  </ol>
+</nav>
+
+<h2 id="running">Running it</h2>
+
+<p><code>./bench</code> is the only entry point. It resolves a real classpath per Log4j version and forks a JVM, so what executes is exactly what a reproduction zip would ship — never Maven's own classpath.</p>
+
+<pre><code>./bench list                                    # apps, versions, configs, scenarios
+./bench run core-java --config xml/filter-all   # one app under one configuration
+./bench matrix --scenario exceptions            # that scenario, every Log4j version
+./bench coverage                                # what is reached, what is not
+./bench repro 4143 --config xml/layout-jsontemplate</code></pre>
+
+<p>Every configuration exists in all four Log4j 2 formats under the same name, so the format is just a directory. Comma-separate two and Log4j merges them, which is how composite configuration is exercised:</p>
+
+<pre><code>./bench run core-java --config yaml/filter-all
+./bench run core-java --config xml/baseline-console,xml/custom-levels</code></pre>
+
+<h2 id="axes">The four axes</h2>
+
+<p><code>matrix</code> sweeps <strong>application × configuration × JDK × Log4j version</strong>. Every axis defaults to a single value except the version one, because the full cross product is thousands of forked JVMs.</p>
+
+<p><strong>Most of that cross product is invalid, and that is reported rather than run.</strong> A skip is information; a failure you have to explain away is not.</p>
+
+<div class="scroll">
+<table>
+  <thead><tr><th>Condition</th><th>Reason given</th></tr></thead>
+  <tbody>
+    <tr><td>App has no 3.x release path</td><td><code>log4j1-bridge has no 3.x release path</code></td></tr>
+    <tr><td>JDK older than the app's class file target</td><td><code>core-java is compiled at release 17</code></td></tr>
+    <tr><td>Log4j 3 with a JDK below 17</td><td><code>Log4j 3 requires Java 17+</code></td></tr>
+    <tr><td>A properties configuration on 3.x</td><td><code>properties format removed in 3.x</code></td></tr>
+  </tbody>
+</table>
+</div>
+
+<p>The JDK axis is discovered from <code>java_home</code>, so it reflects what is installed. Only <code>java8-baseline</code> is compiled at release 8 — without it, the oldest JDK Log4j 2 supports was an assumption rather than a column.</p>
+
+<h2 id="apps">Applications</h2>
+
+<p>Configurations are a shared library; applications are what a configuration is loaded <em>into</em>. Most exist because their dependencies cannot coexist with another's — putting two together does not produce a warning, it produces a coin toss or a routing loop.</p>
+
+<div class="scroll">
+<table>
+  <thead><tr><th>Application</th><th>Covers</th></tr></thead>
+  <tbody>
+    <tr><td><code>core-java</code></td><td>No framework. Every scenario, the layouts, filters, rollover, lookups.</td></tr>
+    <tr><td><code>java8-baseline</code></td><td>Java 8 source and bytecode — the only module that can load on a Java 8 JVM.</td></tr>
+    <tr><td><code>spring-boot-maven</code> / <code>-gradle</code></td><td>The same sources under two build tools, which resolve versions differently.</td></tr>
+    <tr><td><code>bridges-in</code></td><td>SLF4J 1.7, JUL, JCL, JPL, iostreams routed <em>into</em> Log4j.</td></tr>
+    <tr><td><code>bridges-out</code>, <code>bridges-to-jul</code></td><td>The Log4j API routed <em>out</em>. <code>log4j-core</code> deliberately absent — with it present the bridge never runs.</td></tr>
+    <tr><td><code>jakarta-web</code>, <code>javax-web</code></td><td>Servlet integration on Tomcat 10 and 9. The javax one also carries appserver and taglib.</td></tr>
+    <tr><td><code>db</code>, <code>nosql</code>, <code>jpa</code>, <code>jdbc-jndi</code></td><td>Every database appender and connection source.</td></tr>
+    <tr><td><code>jms</code>, <code>smtp</code></td><td>Against embedded Artemis and GreenMail.</td></tr>
+    <tr><td><code>network</code></td><td>Syslog, Socket, Http, Kafka, JeroMQ, SMTP over real sockets.</td></tr>
+    <tr><td><code>custom-plugins</code></td><td>Plugin authoring, through the annotation processor's descriptor.</td></tr>
+    <tr><td><code>spring-cloud-config</code></td><td>Config-server-driven reload, server embedded.</td></tr>
+  </tbody>
+</table>
+</div>
+
+<h2 id="configs">Configurations</h2>
+
+<p>The mirrors are <em>not</em> mechanical translations. Where a format genuinely cannot express what the XML does, the file says so and takes the nearest honest route.</p>
+
+<div class="scroll">
+<table>
+  <thead><tr><th>Limitation</th><th>Detail</th></tr></thead>
+  <tbody>
+    <tr><td><code>arbiters</code> has no properties version</td><td>That format has no arbiter support at all; the nearest spelling throws a fatal <code>ConfigurationException</code>.</td></tr>
+    <tr><td>Composite filters in properties</td><td><code>createFilter</code> always passes <code>onMatch</code>/<code>onMismatch</code>, which <code>CompositeFilter</code> does not declare.</td></tr>
+    <tr><td>JSON carries no comments</td><td>Log4j 2 allows them; Log4j 3 fails with an NPE rather than a parse error.</td></tr>
+    <tr><td>The properties directory is 2.x-only</td><td>3.x removed <code>PropertiesConfigurationFactory</code> entirely.</td></tr>
+  </tbody>
+</table>
+</div>
+
+<p><code>$</code> versus <code>$$</code> is the other thing worth internalising: <code>$</code> resolves once while the configuration is built, <code>$$</code> defers to each event. Use <code>$</code> where <code>$$</code> was meant and every event silently gets the value the first one had.</p>
+
+<h2 id="infra">Backing services</h2>
+
+<p>Almost nothing needs a container. H2, GreenMail, Tomcat 9 and 10, ActiveMQ Artemis, an in-process JNDI provider and a Spring Cloud Config server all run <em>inside the bench JVM</em>. Two applications are the exception, because their appenders speak across a socket by definition.</p>
+
+<pre><code>docker compose -f infra/docker-compose.yml up -d kafka syslog mailhog
+docker compose -f infra/docker-compose.yml up -d mongodb couchdb cassandra</code></pre>
+
+<div class="scroll">
+<table>
+  <thead><tr><th>Appender</th><th>Verified by</th></tr></thead>
+  <tbody>
+    <tr><td><code>Socket</code>, <code>Http</code></td><td>Listeners inside the bench JVM, so the exact bytes on the wire can be compared against the layout</td></tr>
+    <tr><td><code>Syslog</code></td><td>The receiver's <code>received.log</code> — both BSD and RFC5424 framings from one run</td></tr>
+    <tr><td><code>Kafka</code></td><td>The topic, consumed</td></tr>
+    <tr><td><code>JeroMQ</code></td><td>A subscriber attached before publishing — a PUB socket with no peer discards silently</td></tr>
+    <tr><td><code>SMTP</code></td><td>MailHog's REST API, the container's own record</td></tr>
+    <tr><td><code>NoSql</code>, <code>Cassandra</code></td><td>Document and row counts, before and after</td></tr>
+  </tbody>
+</table>
+</div>
+
+<h2 id="findings">Findings</h2>
+
+<p>Everything below was found by building the bench, and every entry was checked against the source clone rather than against documentation. These are observations about behaviour, not bug reports — several are documented behaviour that merely fails confusingly; a few look like genuine defects. Which is which is a maintainer's call.</p>
+
+<h3>Failures that kill the application</h3>
+<p>Each escapes configuration and reaches <code>LogManager.getLogger</code>, so the application dies with <code>ExceptionInInitializerError</code> in whichever class holds the first static logger.</p>
+<ul>
+  <li><span class="tag bad">fatal</span> <strong>Arbiters in the properties format.</strong> No arbiter support exists; the nearest spelling throws <code>No name attribute provided for Appender</code>.</li>
+  <li><span class="tag bad">fatal</span> <strong>A nested custom level in properties.</strong> It is <code>customLevel.&lt;NAME&gt; = &lt;int&gt;</code> — the key <em>is</em> the name. The nested spelling makes the builder parse the name as an integer.</li>
+  <li><span class="tag bad">fatal</span> <strong><code>//</code> comments in JSON on Log4j 3.</strong> Log4j 2 enables <code>ALLOW_COMMENTS</code>; Log4j 3 leaves <code>root</code> null and NPEs at the first logger call.</li>
+</ul>
+
+<h3>Failures that are completely silent</h3>
+<ul>
+  <li><span class="tag warn">silent</span> <strong>Log4j 3 reads <code>log4j.configuration.location</code></strong>, not <code>log4j.configurationFile</code>. Passing the 2.x name does not fail — Log4j quietly uses <code>DefaultConfiguration</code>, so an entire 3.x column can pass while testing nothing.</li>
+  <li><span class="tag warn">silent</span> <strong>JeroMQ endpoints are <code>&lt;Property name="endpoint"&gt;</code> elements</strong>, not attributes. As attributes the appender still builds, binds nothing, and publishes into the void.</li>
+  <li><span class="tag warn">silent</span> <strong><code>SortByModificationTime</code>'s attribute is <code>recentFirst</code></strong>, not <code>ascending</code>. The wrong name is rejected while the sorter builds with its default, so retention order silently stays whatever that is.</li>
+</ul>
+
+<h3>Where the error names the wrong thing</h3>
+<ul>
+  <li><strong>log4j-jpa cannot initialise on any JDK 16+</strong> without <code>--add-opens java.base/java.lang=ALL-UNNAMED</code>. Its <code>ThrowableAttributeConverter</code> reflects into <code>Throwable.cause</code> in a static initialiser and catches only <code>NoSuchFieldException</code>. The provider then reports a deployment failure from its own <code>Class.forName</code>, naming neither Log4j, nor the converter, nor the flag.</li>
+  <li><strong>The JNDI <code>DataSource</code> source resolves its name while the appender is being built</strong>, so the binding must exist before the first logger acquired anywhere in the JVM. A conventional <code>private static final Logger</code> initialises at class load — so binding in <code>main()</code> is already too late.</li>
+  <li><strong><code>InitialContext</code> copies only <code>java.naming.*</code> from system properties</strong>, so a provider needing its own keys cannot be configured with <code>-D</code> at all. It falls back to its defaults and fails with a message that says nothing about where it tried to connect.</li>
+</ul>
+
+<h3>Interactions between modules</h3>
+<ul>
+  <li><strong>log4j-appserver and log4j-web together defeat the per-webapp <code>LoggerContext</code>.</strong> appserver routes the container's logging into Log4j, so Tomcat logs <em>before any webapp initialises</em>, creating a context on the parent classloader. log4j-web's SCI then hits <code>ClassLoaderContextSelector</code>'s parent-walk, which returns that context without applying the <code>ServletContext</code> entry.</li>
+  <li><strong><code>log4j-jakarta-smtp</code> contains no appender.</strong> <code>SmtpAppender</code> lives in log4j-core and picks its implementation by <code>ServiceLoader</code>, so the jar silently replaces the whole mail stack with nothing naming which won.</li>
+  <li><strong><code>Log4j2EventListener</code>'s <code>@ConditionalOnProperty</code> has no effect.</strong> It is registered in <code>spring.factories</code> as an <code>ApplicationListener</code>, and those are instantiated without bean definitions — conditions are a bean-definition mechanism.</li>
+</ul>
+
+<h3>Layouts that cannot do what they look like they can</h3>
+<ul>
+  <li><strong><code>CsvParameterLayout</code> throws NPE on any event with no parameters.</strong> <code>getParameters()</code> is null for <code>SimpleMessage</code>, and <code>toSerializable</code> hands that to <code>CSVFormat.printRecord</code>. One per event, no recovery.</li>
+  <li><strong><code>MessageLayout.toByteArray()</code> is <code>return null;</code></strong> — it works with JMS and fails on every event with any stream appender.</li>
+  <li><strong><code>Rfc5424Layout</code>'s <code>mdcId</code> must not contain <code>@</code></strong>, even though <code>name@enterprise</code> is what appears on the wire. Log4j appends the number itself.</li>
+</ul>
+
+<h3>Ordering and lifecycle</h3>
+<ul>
+  <li><strong><code>Delete</code>'s sibling conditions are order-sensitive</strong>, because <code>IfAccumulatedFileCount</code> is stateful. A counter ahead of the glob also counts the active file. The properties format cannot express sibling order at all, so nesting is the only portable formulation.</li>
+  <li><strong><code>RollingFileManager</code> uses non-daemon threads</strong>, started on the first compressing rollover. The JVM cannot begin shutting down, and the hook that would stop Log4j only runs once shutdown has begun — so a short-lived app hangs on exit unless it calls <code>LogManager.shutdown()</code>.</li>
+  <li><strong>Under <code>log4j-to-jul</code>, <code>ThreadContext</code> is a no-op.</strong> <code>JULProvider</code> registers <code>NoOpThreadContextMap</code>, so code reading back its own trace id gets null.</li>
+</ul>
+
+<h3>Environment compatibility</h3>
+<ul>
+  <li><strong>log4j-cassandra is built on DataStax driver 3.11</strong>, which negotiates native protocol v4 at most and cannot read Cassandra 5's schema tables. The connection never completes rather than failing, so the appender hangs at construction with no error.</li>
+  <li><strong>log4j-couchdb cannot work with modern Gson.</strong> LightCouch 0.2.0 calls <code>registerTypeAdapter(JsonObject.class, …)</code>, which Gson 2.11 forbids, so the provider cannot be constructed — and the message names neither Gson's version nor log4j-couchdb.</li>
+  <li><strong>EclipseLink 2.7 cannot drive H2 2.x.</strong> Its DDL emits H2 1.x syntax and it treats the failure as a warning, so deployment reports success and every insert fails with "table not found".</li>
+</ul>
+
+<footer>
+  <p>Source: <code>~/apache/log4j2-workout</code>. The AsciiDoc originals live in <code>docs/site/</code> in Antora layout, matching Log4j's own documentation toolchain. The full findings table is <code>docs/FEATURE-MATRIX.md</code> §17.</p>
+</footer>
+
+</div>
+</body></html>
