@@ -3,6 +3,14 @@
 Extracted from the local source clone `~/apache/logging-log4j2` (branch `2.x`, at `04c93c1d33`).
 **293 plugins across 59 modules.** This is the checklist the bench must cover.
 
+**This catalogue is 2.x only.** It was extracted from the `2.x` branch, and every
+count in it is a 2.x count. Log4j 3.x has 30 modules and a different structure —
+`log4j-core` was split into `log4j-plugins`, `log4j-config-jackson/properties/yaml`,
+`log4j-jdbc`, `log4j-csv`, `log4j-script`, `log4j-async-logger` and `log4j-compress`
+among others. The bench runs on 3.x (251 passing cells recorded) and ten apps are
+marked 2.x-only where their modules have no 3.x release, but no equivalent
+module-by-module audit of 3.x exists. Do not read "41 of 41" as a statement about 3.x.
+
 Legend: `[ ]` not yet covered by the bench · `[x]` covered · `(test)` = test-only fixture, low priority
 
 ---

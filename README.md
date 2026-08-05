@@ -71,9 +71,10 @@ standalone reproduction to attach to it.
 
 | | |
 |---|---|
-| Module reach | 41 of 41 shippable 2.x modules on some app's classpath (`./bench coverage` recomputes it) |
+| Module reach (2.x) | 41 of 41 shippable modules on some app's classpath (`./bench coverage` recomputes it) |
+| Module reach (3.x) | **not audited.** `FEATURE-MATRIX` catalogues the 2.x branch only. 3.x has 30 modules and a different structure — `log4j-core` split into `log4j-plugins`, `log4j-config-*`, `log4j-jdbc`, `log4j-csv`, `log4j-script`, `log4j-async-logger`, `log4j-compress` — with no equivalent module-by-module audit |
 | Config formats | every config in XML, JSON, YAML and properties, plus both Log4j 1.x formats |
-| Axes | 19 app targets · 70 configs · JDK 8/17/21/22 · 2.24.1 → 3.0.0-SNAPSHOT |
+| Axes | 19 app targets · 70 configs · JDK 8/17/21/22 · 2.24.1 → 3.0.0-SNAPSHOT. **Only 9 of the 19 apps run on 3.x** — ten are 2.x-only because `log4j-jakarta-web`, `log4j-spring-boot`, `log4j-jpa`, the JUL/JCL/SLF4J bridges, SMTP, JMS and spring-cloud-config have no 3.x release |
 | Pattern converters | all 41 |
 | Layouts | every layout Log4j ships except `SerializedLayout`, which is deprecated and refuses to build without `log4j2.enableSerialization` |
 | Appenders needing infrastructure | JDBC, JPA, SMTP, JMS, JNDI, Kafka, Syslog, Socket, HTTP, JeroMQ, MongoDB, CouchDB, Cassandra — all verified by outcome against real services |
@@ -86,6 +87,9 @@ standalone reproduction to attach to it.
   interrupted, so they cannot finish a cell. The fix is a self-test like
   `SelfTestRunner` in `apps/spring-boot-maven`; nobody has written it. Drive them
   by hand meanwhile.
+- **3.x coverage is partial and unmeasured.** 251 passing 3.x cells are recorded, so
+  it genuinely runs, but nobody has catalogued 3.x's own plugin and module set the
+  way `FEATURE-MATRIX` does for 2.x. Treat the 2.x numbers as 2.x numbers.
 - No full `--all` sweep has been recorded. It is ~37,000 cells, measured at about
   six hours with `--scenario` and roughly a week without. The CI slice is the
   regression gate; a full sweep is worth running once as a baseline, and then
