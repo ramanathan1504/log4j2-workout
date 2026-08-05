@@ -103,10 +103,19 @@ Taken from the existing modules, not guessed:
 
 ## Progress
 
-| Module | State |
-|---|---|
-| `log4j-samples-custom-plugins` | **built and green** — 2 tests pass against the real samples parent (`logging-parent:12.1.1`, Log4j 2.25.2), verified by copying into a scratch checkout of the samples clone and reverting it |
-| everything else above | not started |
+Five modules built, tested and green against the real samples parent
+(`logging-parent:12.1.1`, Log4j 2.25.2) — **15 tests**.
+
+| Module | Tests | Asserts |
+|---|:--:|---|
+| `log4j-samples-custom-plugins` | 2 | descriptor generated *for this module*; plugins resolve and receive events |
+| `log4j-samples-json-template-layout` | 4 | declared fields present; unset MDC key omitted entirely; exception resolver renders; bundled ECS template uses Elastic's names |
+| `log4j-samples-thread-context` | 4 | MDC/NDC render; unset key is empty not null; context lost across an executor; carried deliberately it survives |
+| `log4j-samples-rolling-file` | 2 | archives are really gzip (magic number, not extension); `Delete` bounds the directory to the stated count |
+| `log4j-samples-filters` | 3 | appender scope, appender-ref scope and logger scope each admit a different set |
+
+Remaining from the tables above: `bridges`, `web`, `migration-1x`,
+`jdbc-appender`, `arbiters`, `garbage-free`, `network-appenders`, `smtp`.
 
 ### Verifying a module before offering it
 
@@ -121,14 +130,24 @@ cd ~/apache/logging-log4j-samples
 rm -rf <module> && git checkout -- pom.xml
 ```
 
-### Two bugs the first module caught
+### Bugs caught by building against the real parent
 
-Worth recording, because both would have reached a reviewer otherwise:
+All four would have reached a reviewer otherwise, which is the argument for
+building every module in a scratch checkout before offering it.
 
 - **A plugin's `category` must be `Node.CATEGORY` (`"Core"`), not the element
   type.** `@Plugin(name = "Counting", category = Appender.ELEMENT_TYPE, …)`
-  compiles, generates a descriptor entry under `appender/counting`, and is then
+  compiles, writes a descriptor entry under `appender/counting`, and is then
   never found, because Log4j looks under `Core`. The only symptom is an unknown
-  element. The sample now carries a comment saying so.
-- **`log4j-core`'s `test-jar` is not managed by the samples parent.** Declaring it
-  without a version fails the build at model resolution.
+  element.
+- **`log4j-core`'s `test-jar` is not managed by the samples parent.** Declaring
+  it without a version fails the build at model resolution. `log4j-core-test`
+  and its `ListAppender` are therefore unavailable, so these samples assert
+  against files on disk instead — which is closer to what users do anyway.
+- **Substring collisions make an assertion lie.** The filters test used
+  `"audited"` and `"not audited"`, so `noneMatch(contains("audited"))` matched
+  the negative case too. The filters were correct; the test was not. Sample
+  messages must share no substring.
+- **Rollover completion needs `LogManager.shutdown()`, not a sleep.**
+  Compression runs on a background executor, so reading the directory too early
+  is a race that passes on a quiet machine and fails in CI.

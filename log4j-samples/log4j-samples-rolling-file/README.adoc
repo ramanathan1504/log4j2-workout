@@ -1,0 +1,80 @@
+////
+Licensed to the Apache Software Foundation (ASF) under one or more
+contributor license agreements. See the NOTICE file distributed with
+this work for additional information regarding copyright ownership.
+The ASF licenses this file to You under the Apache License, Version 2.0
+(the "License"); you may not use this file except in compliance with
+the License. You may obtain a copy of the License at
+
+    https://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+////
+= Rolling File
+
+Rollover, compression, and the `Delete` action that stops the directory growing
+forever.
+
+== Two things that are easy to get wrong, silently
+
+=== `max` is not a retention count
+
+On `DefaultRolloverStrategy`, `max` caps the `%i` counter. When the counter
+wraps, the oldest file is *overwritten*. A configuration with `max="10"` and no
+`Delete` therefore keeps ten files by accident rather than by policy — and
+changing the file pattern silently changes the retention.
+
+=== `Delete`'s sibling conditions are order-sensitive
+
+`IfAccumulatedFileCount` is *stateful*: it counts every file it is asked about.
+Placed as a sibling *before* `IfFileName`, it also counts the active log file,
+so the same policy keeps one archive fewer than it appears to.
+
+[source,xml]
+----
+<!-- Reads like "keep 3 archives", keeps 2: the counter sees app.log too. -->
+<Delete basePath="${dir}">
+  <IfAccumulatedFileCount exceeds="3"/>
+  <IfFileName glob="app-*.log.gz"/>
+</Delete>
+
+<!-- Means what it reads like: the counter only ever sees archives. -->
+<Delete basePath="${dir}">
+  <IfFileName glob="app-*.log.gz">
+    <IfAccumulatedFileCount exceeds="3"/>
+  </IfFileName>
+</Delete>
+----
+
+The properties configuration format cannot express sibling ordering at all, so
+nesting is the only portable formulation.
+
+== What the tests assert
+
+* rollover produces archives, and every one is really gzip — checked by the
+  `1f 8b` magic number, not by the file extension
+* `Delete` bounds the directory to the count the configuration states
+
+`LogManager.shutdown()` is called before reading. Rollover and the compression
+that follows it run on a background executor; stopping the context is what
+guarantees they finished, where sleeping makes the test flaky on a loaded
+machine.
+
+== One more thing
+
+`RollingFileManager` builds that executor with *non-daemon* threads, started
+lazily on the first compressing rollover. A short-lived application therefore
+hangs on exit unless it calls `LogManager.shutdown()` itself — the JVM cannot
+begin shutting down, and the hook that would stop Log4j only runs once shutdown
+has begun.
+
+== Running it
+
+[source,bash]
+----
+./mvnw --projects log4j-samples-rolling-file test
+----
