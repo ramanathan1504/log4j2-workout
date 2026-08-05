@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Minimal reproduction for CsvParameterLayout throwing NPE on any event with no
+  parameters. Filed as https://github.com/apache/logging-log4j2/issues/4243
+
+  Unlike configs/xml/layout-remaining.xml, which parks the CSV appender on a
+  logger nothing writes to precisely so the bench does not emit a stack trace
+  every run, this one points it at ordinary traffic. That is the whole point:
+  logger.info("plain text") produces
+    NullPointerException: Cannot read the array length because "values" is null
+  because Message.getParameters() is null for SimpleMessage and CsvParameterLayout
+  passes it straight to CSVFormat.printRecord.
+
+  A parameterised call works, so the failure depends on which statement is
+  reached - which is why it survives testing and appears in production.
+-->
+<Configuration status="warn">
+  <Appenders>
+    <File name="Csv" fileName="logs/repro-csv/params.csv" append="false">
+      <CsvParameterLayout format="Default"/>
+    </File>
+    <Console name="Console" target="SYSTEM_OUT">
+      <PatternLayout pattern="%level %msg%n"/>
+    </Console>
+  </Appenders>
+  <Loggers>
+    <Root level="info">
+      <AppenderRef ref="Csv"/>
+      <AppenderRef ref="Console"/>
+    </Root>
+  </Loggers>
+</Configuration>

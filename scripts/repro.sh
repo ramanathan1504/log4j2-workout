@@ -106,6 +106,16 @@ grep -q '<JeroMQ'                             "$CONFIG_FILE" && dep org.zeromq j
 grep -qE '<(Script|ScriptFilter|ScriptRef)'   "$CONFIG_FILE" && dep org.codehaus.groovy groovy-jsr223 3.0.23
 grep -qE 'AsyncLogger|AsyncRoot'              "$CONFIG_FILE" && dep com.lmax disruptor 4.0.0
 grep -qE '\.(zst|xz|bz2)"'                    "$CONFIG_FILE" && dep org.apache.commons commons-compress 1.27.1
+# CsvLogEventLayout and CsvParameterLayout live in log4j-core on the 2.x line but
+# need commons-csv at RUNTIME. Without it the plugin cannot be created at all -
+# NoClassDefFoundError: org/apache/commons/csv/QuoteMode - so the appender is
+# silently absent and a reproduction of a CSV bug reproduces nothing. That is
+# exactly the failure this derivation exists to prevent, and it was missing.
+grep -qE '<Csv(LogEvent|Parameter)Layout'     "$CONFIG_FILE" && dep org.apache.commons commons-csv 1.12.0
+grep -q '<Cassandra'                          "$CONFIG_FILE" && dep org.apache.logging.log4j log4j-cassandra '${log4j.version}'
+grep -q '<CouchDB'                            "$CONFIG_FILE" && dep org.apache.logging.log4j log4j-couchdb '${log4j.version}'
+grep -q '<JPA'                                "$CONFIG_FILE" && dep org.apache.logging.log4j log4j-jpa '${log4j.version}'
+grep -qE '<Rfc5424Layout|<SyslogLayout'       "$CONFIG_FILE" && true   # log4j-core, no extra artifact
 
 # ── Scaffold the standalone project ─────────────────────────────────────────
 info "scaffolding $PROJECT"
@@ -245,7 +255,11 @@ for version in "${VERSIONS[@]}"; do
     MATRIX+="| \`${version}\` | ✅ PASS | clean run, no StatusLogger error |"$'\n'
   else
     if [[ -n "$status_error" ]]; then
-      detail="$(printf '%s' "$status_error" | grep -oE '(java|org)\.[A-Za-z0-9_.$]*(Exception|Error)(: [^\"]{0,70})?' | head -1)"
+      # || true is not optional: under `set -o pipefail` a grep that matches
+      # nothing returns 1 and kills the script - which happened exactly when a
+      # reproduction reproduced something the regex did not anticipate, i.e. the
+      # case this tool exists for. The README and zip were never written.
+      detail="$(printf '%s' "$status_error" | grep -oE '(java|org)\.[A-Za-z0-9_.$]*(Exception|Error)(: [^\"]{0,70})?' | head -1 || true)"
       [[ -n "$detail" ]] || detail="StatusLogger reported an appender error"
       kind="swallowed by StatusLogger"
     else
