@@ -18,9 +18,12 @@
     <module>apps/spring-boot-maven</module>
     <module>apps/db</module>
     <module>apps/java8-baseline</module>
-    <module>apps/custom-plugins</module>
     <module>apps/jdbc-jndi</module>
     <module>apps/network</module>
+    <!-- Builds on both lines: log4j-spring-cloud-config-client is the one
+         Spring module present on 3.x. log4j-spring-boot is not, which is
+         why the Spring Boot apps stay in the 2.x-only profile below. -->
+    <module>apps/spring-cloud-config</module>
   </modules>
 
   <properties>
@@ -136,7 +139,11 @@
         <module>apps/smtp</module>
         <module>apps/javax-web</module>
         <module>apps/jms</module>
-        <module>apps/spring-cloud-config</module>
+        <!-- Plugin authoring is source-incompatible across the lines:
+             @Plugin moved from org.apache.logging.log4j.core.config.plugins
+             to org.apache.logging.log4j.plugins in 3.x, so the same sources
+             cannot compile against both. -->
+        <module>apps/custom-plugins</module>
       </modules>
     </profile>
 

@@ -44,7 +44,7 @@ APPS=(core-java spring-boot-maven db log4j1-bridge jakarta-web spring-boot-gradl
 # 3.x release. `matrix` skips these rather than reporting a spurious failure.
 APPS_2X_ONLY=(log4j1-bridge jakarta-web spring-boot-gradle
               bridges-in bridges-out bridges-to-jul jpa smtp javax-web jms
-              spring-cloud-config)
+              custom-plugins)
 
 is_2x_only() {
   local app="$1" a

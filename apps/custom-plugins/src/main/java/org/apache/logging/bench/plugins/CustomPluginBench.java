@@ -7,7 +7,6 @@ import java.util.Map;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.core.LoggerContext;
-import org.apache.logging.log4j.core.config.plugins.util.PluginType;
 
 /**
  * Plugin authoring, end to end. Feature matrix §13.
@@ -98,19 +97,78 @@ public final class CustomPluginBench {
         report(ctx, "Converter", "ElapsedConverter");
     }
 
+    /**
+     * Reports where a plugin registered, on either Log4j line.
+     *
+     * <p>The two lines expose registrations through entirely different types, so
+     * this reflects rather than compiles against either. 2.x has
+     * {@code core.config.plugins.util.PluginManager}, populated by
+     * {@code collectPlugins()}. 3.x moved the plugin system into log4j-plugins
+     * and replaced it with {@code plugins.model.PluginRegistry}, whose
+     * {@code getNamespace(String)} returns a {@code PluginNamespace} that is
+     * itself a collection.
+     *
+     * <p>Compiling against 2.x's PluginManager is what made this app die on 3.x
+     * with NoClassDefFoundError, after the descriptor had already been found —
+     * the plugin machinery was fine, the bench's own introspection was not.
+     */
     private static void report(final LoggerContext ctx, final String category, final String name) {
-        // A PluginManager per category, populated by collectPlugins() — which is
-        // what reads Log4j2Plugins.dat (and falls back to package scanning).
-        // Keys are lower-cased, so a lookup by the declared name misses.
-        final org.apache.logging.log4j.core.config.plugins.util.PluginManager manager =
-                new org.apache.logging.log4j.core.config.plugins.util.PluginManager(category);
-        manager.collectPlugins();
-        final Map<String, PluginType<?>> plugins = manager.getPlugins();
-        final PluginType<?> type = plugins == null
-                ? null
-                : plugins.get(name.toLowerCase(java.util.Locale.ROOT));
+        final String key = name.toLowerCase(java.util.Locale.ROOT);
+        String where = tryLog4j2(category, key);
+        if (where == null) {
+            where = tryLog4j3(category, key);
+        }
         System.out.printf("    %-10s %-18s %s%n", category, name,
-                type == null ? "NOT REGISTERED" : type.getPluginClass().getName());
+                where == null ? "NOT REGISTERED" : where);
+    }
+
+    /** 2.x: PluginManager per category. Keys are lower-cased, so look up by that. */
+    private static String tryLog4j2(final String category, final String key) {
+        try {
+            final Class<?> mgrClass =
+                    Class.forName("org.apache.logging.log4j.core.config.plugins.util.PluginManager");
+            final Object manager = mgrClass.getConstructor(String.class).newInstance(category);
+            mgrClass.getMethod("collectPlugins").invoke(manager);
+            final Object plugins = mgrClass.getMethod("getPlugins").invoke(manager);
+            if (!(plugins instanceof Map)) {
+                return null;
+            }
+            final Object type = ((Map<?, ?>) plugins).get(key);
+            return type == null ? null : pluginClassName(type);
+        } catch (final ReflectiveOperationException | RuntimeException e) {
+            return null;
+        }
+    }
+
+    /** 3.x: PluginRegistry -> PluginNamespace, from log4j-plugins. */
+    private static String tryLog4j3(final String category, final String key) {
+        try {
+            final Class<?> regClass =
+                    Class.forName("org.apache.logging.log4j.plugins.model.PluginRegistry");
+            final Object registry = regClass
+                    .getConstructor(ClassLoader.class)
+                    .newInstance(CustomPluginBench.class.getClassLoader());
+            final Object namespace =
+                    regClass.getMethod("getNamespace", String.class).invoke(registry, category);
+            if (namespace == null) {
+                return null;
+            }
+            final Object type = namespace.getClass()
+                    .getMethod("get", String.class).invoke(namespace, key);
+            return type == null ? null : pluginClassName(type);
+        } catch (final ReflectiveOperationException | RuntimeException e) {
+            return null;
+        }
+    }
+
+    /** Both lines expose getPluginClass() on their PluginType. */
+    private static String pluginClassName(final Object pluginType) {
+        try {
+            final Object cls = pluginType.getClass().getMethod("getPluginClass").invoke(pluginType);
+            return cls instanceof Class ? ((Class<?>) cls).getName() : String.valueOf(cls);
+        } catch (final ReflectiveOperationException e) {
+            return pluginType.toString();
+        }
     }
 
     private CustomPluginBench() {}
