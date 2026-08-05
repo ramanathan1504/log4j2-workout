@@ -8,6 +8,10 @@ out/
 logs/
 .bench/
 repros/**/*.zip
+# What the containers write back to the host. infra/output/syslog/received.log
+# is how the syslog appender is verified — it is evidence of a run, not source,
+# and it was committed once by a careless `git add -A`.
+infra/output/
 
 # Large agents / archives
 *.jar
