@@ -10,12 +10,13 @@ Already filed, for reference:
 
 - [#4241](https://github.com/apache/logging-log4j2/issues/4241) — `AbstractDatabaseManager` accepts writes after failed startup, and is never shut down
 - [#4242](https://github.com/apache/logging-log4j2/issues/4242) — `log4j-cassandra` leaks the DataStax `Cluster`, so the JVM never exits
+- [#4243](https://github.com/apache/logging-log4j2/issues/4243) — `CsvParameterLayout` NPEs on any event without parameters. **Affects 2.x and 3.x**
 
 ## Drafts
 
 | File | Finding | Confidence | Evidence |
 |---|---|---|---|
-| `csv-parameter-layout-npe.md` | `CsvParameterLayout` NPEs on any event with no parameters | **High** | captured run, 2.26.1 |
+| `csv-parameter-layout-npe.md` | ~~`CsvParameterLayout` NPEs on any event with no parameters~~ | **filed as #4243** | captured run, 2.26.1 |
 | `spring-cloud-config-listener-condition.md` | `@ConditionalOnProperty` has no effect on `Log4j2EventListener` | **High** | captured run, 2.26.1 |
 | `appserver-web-context-entry-dropped.md` | `locateContext`'s parent walk drops the `ServletContext` entry | **Medium** — defect or intended trade-off is a maintainer's call | captured run, 2.26.1 |
 | `configuring-thread-interrupt.md` | Interrupting the configuring thread disables every appender | **Low-medium** | **no captured run** — a race, observed once |
