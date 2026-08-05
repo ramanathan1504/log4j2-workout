@@ -267,18 +267,13 @@ Also: composite configuration (comma-separated files), `ConfigurationBuilder` pr
 ## 16. Coverage gaps in the current workspace
 
 **Exercised:** `Console` · `File` · `RollingFile` · `RollingRandomAccessFile` · `Null` ·
-`JDBC` (DriverManager, PoolingDriver, Column, ColumnMapping) · `PatternLayout` (nearly every
-converter) · `JsonTemplateLayout` (4 built-in templates, inline template, file: template URI) ·
+`JDBC` (DriverManager, PoolingDriver, Column, ColumnMapping) · `PatternLayout` (all 41 converters) · `JsonTemplateLayout` (4 built-in templates, inline template, file: template URI) ·
 `JsonLayout` · `XmlLayout` · `YamlLayout` · `HtmlLayout` · all 16 filters at all 4 scopes ·
 every triggering policy and both rollover strategies · Delete/IfFileName/IfAny/IfAccumulated\* ·
 gz/zip/zstd compression · MDC/NDC · markers · `${docker:}` · async · SLF4J bridge ·
 OTel converters · **all four Log4j 2 config formats** · **both Log4j 1.x config formats** ·
 the 1.x bridge app · servlet container integration (per-webapp `LoggerContext`, `${web:}`) ·
 Spring Boot under both Maven and Gradle.
-
-**Module reach: 33 of 42 shippable 2.x modules** are on some app's classpath.
-`./bench coverage` recomputes this from the source clone and the resolved classpaths, so it
-does not go stale as either moves.
 
 **Every shippable 2.x module is now on some app's classpath — 41 of 41.** `./bench coverage`
 recomputes that from the source clone and the resolved classpaths, so it does not go stale as
@@ -289,12 +284,17 @@ containerised — H2, GreenMail, Tomcat 9, ActiveMQ Artemis, an in-process JNDI 
 Spring Cloud Config server all run inside the bench JVM. So every module is exercised by an
 ordinary `./bench run`, with nothing to start first.
 
-**On a classpath but not yet driven by a config or scenario:** Syslog · Http ·
-Kafka · JeroMQ · SMTP · MongoDB · Cassandra · CouchDB — every one of them a
-network destination needing its container from `infra/docker-compose.yml`, so
-they land with the infra work — plus Ssl/KeyStore, which needs a generated
-keystore, and custom plugin authoring, which needs a compile-time test rather
-than a config.
+**On a classpath but not yet driven by a config or scenario:** `Ssl`/`KeyStore`, which
+needs a generated keystore. That is the whole remaining list — Syslog, Http, Kafka, JeroMQ,
+SMTP, MongoDB, Cassandra and CouchDB are all now driven against real destinations and
+verified by arrival rather than by absence of errors (see `apps/network` and `apps/db`).
+
+**The matrix ledger is much thinner than the capability.** `.bench/coverage.tsv` records only
+what `./bench matrix` has swept — a plain `./bench run` does not write to it. At present that
+is **37 cells across 3 apps** (`core-java`, `java8-baseline`, `log4j1-bridge`) and **3 of the 8
+known Log4j versions**, with 3.x represented by a single cell. Every other app has been run and
+verified individually, but not swept across the axes. Capability and evidence are not the same
+thing, and the ledger is the evidence.
 
 Newly driven, each in every format that can express it, verified identical across formats:
 

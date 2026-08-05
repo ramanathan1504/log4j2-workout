@@ -63,6 +63,7 @@ Configuration:
             repeat           %repeat{=}{20}
             notEmpty         %notEmpty{[%marker] }
             equals           %equals{%level}{INFO}{<-- it was INFO>}
+            equalsIgnoreCase           %equalsIgnoreCase{%level}{info}{<-- matched ignoring case>}
             style            %style{styled text}{bold,magenta}
             --- throwable ---
             throwable        %throwable{short}
