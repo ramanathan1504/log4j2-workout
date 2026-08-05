@@ -40,7 +40,8 @@ testing can fail on the first plain-text message in production.
 
 ## Configuration
 
-**Version:** 2.x @ `04c93c1d33`
+**Version:** reproduced on **2.26.1**; source read at 2.x `04c93c1d33`, where the
+line numbers below match
 
 **Operating system:** macOS 15 (Darwin 25.5.0)
 
@@ -48,14 +49,29 @@ testing can fail on the first plain-text message in production.
 
 ## Logs
 
+Captured against Log4j **2.26.1** on JDK 21, not reconstructed:
+
 ```
-ERROR An exception occurred processing Appender Csv
+──── messages ── All Message types: Simple, Parameterized, Formatted, MessageFormat, Object, Map, StructuredData, ThreadDump, Flow, Supplier
+2026-08-05T18:07:16.257782Z main ERROR An exception occurred processing Appender CsvParams
 java.lang.NullPointerException: Cannot read the array length because "values" is null
-	at org.apache.commons.csv.CSVFormat.printRecord(CSVFormat.java:...)
+	at org.apache.commons.csv.CSVFormat.printRecord(CSVFormat.java:2265)
 	at org.apache.logging.log4j.core.layout.CsvParameterLayout.toSerializable(CsvParameterLayout.java:98)
+	at org.apache.logging.log4j.core.layout.CsvParameterLayout.toSerializable(CsvParameterLayout.java:49)
+	at org.apache.logging.log4j.core.layout.AbstractStringLayout.toByteArray(AbstractStringLayout.java:295)
+	at org.apache.logging.log4j.core.layout.AbstractLayout.encode(AbstractLayout.java:207)
+	at org.apache.logging.log4j.core.layout.AbstractLayout.encode(AbstractLayout.java:36)
+	at org.apache.logging.log4j.core.appender.AbstractOutputStreamAppender.directEncodeEvent(AbstractOutputStreamAppender.java:227)
+	at org.apache.logging.log4j.core.appender.AbstractOutputStreamAppender.tryAppend(AbstractOutputStreamAppender.java:220)
+	at org.apache.logging.log4j.core.appender.AbstractOutputStreamAppender.append(AbstractOutputStreamAppender.java:211)
+	at org.apache.logging.log4j.core.config.AppenderControl.tryCallAppender(AppenderControl.java:160)
+	at org.apache.logging.log4j.core.config.AppenderControl.callAppender0(AppenderControl.java:133)
+--
+23:37:16.280 DEBUG o.a.l.b.s.MessageScenario - Supplier form — expensive value: computed-lazily
+23:37:16.281 INFO  o.a.l.b.s.MessageScenario - Fluent API — LogBuilder with location capture
 ```
 
-## Reproduction
+## ## Reproduction
 
 ```xml
 <Configuration status="warn">
