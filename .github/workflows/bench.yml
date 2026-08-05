@@ -14,7 +14,21 @@ name: bench
 
 on:
   pull_request:
-    branches: [development, main]
+    # development only. main receives nothing except a sync from development,
+    # and that content has already passed this workflow on its way in — running
+    # it again is thirteen minutes spent re-proving the same commits. A change
+    # cannot reach main without having been verified here first.
+    branches: [development]
+    # A documentation-only change cannot alter what the bench does. Skipping
+    # those keeps the signal meaningful rather than habitual.
+    #
+    # Note: if this workflow is ever made a required status check, a skipped run
+    # never reports and the merge blocks. Add a lightweight always-pass job at
+    # that point rather than removing this filter.
+    paths-ignore:
+      - '**.md'
+      - 'docs/**'
+      - '.githooks/**'
   workflow_dispatch:
 
 permissions:
@@ -66,7 +80,7 @@ jobs:
       - name: Run the bench
         run: |
           ./bench matrix \
-            --apps core-java,java8-baseline,log4j1-bridge,bridges-in,bridges-out,bridges-to-jul,custom-plugins,jpa,smtp,jdbc-jndi,jms,spring-cloud-config \
+            --apps core-java,java8-baseline,log4j1-bridge,bridges-in,bridges-out,bridges-to-jul,custom-plugins,jpa,smtp,jdbc-jndi,jms,spring-cloud-config,spring-boot-maven \
             --configs xml/baseline-console,json/baseline-console,yaml/baseline-console,properties/baseline-console,log4j1/log4j.xml,log4j1/log4j.properties \
             --javas 8,17,21 \
             --log4j ${{ matrix.log4j }} \
