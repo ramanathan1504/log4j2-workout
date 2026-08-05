@@ -80,3 +80,15 @@ resolved classpaths, so the number above does not go stale as either moves.
 * xref:running.adoc[Running the bench] — the CLI, and generating a reproduction
 * xref:axes.adoc[The four axes] — how the matrix decides what to run and what to skip
 * xref:findings.adoc[Findings] — Log4j behaviours this bench uncovered, each traced to source
+
+== Documents not mirrored here
+
+Two live only as markdown in the repository, because they are working documents
+rather than reference:
+
+* `docs/HANDOVER.md` — the operator's manual. Overlaps this site's Running,
+  Axes, Applications, Configurations and Backing services pages, and adds the git
+  workflow, CI, and a collected list of traps.
+* `docs/SLACK.md` — paste-ready announcements, and a drafted comment for
+  https://github.com/apache/logging-log4j2/issues/2314[#2314] that has not been
+  posted.

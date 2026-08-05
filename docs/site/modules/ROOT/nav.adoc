@@ -5,3 +5,5 @@
 * xref:configs.adoc[Configurations]
 * xref:infra.adoc[Backing services]
 * xref:findings.adoc[Findings]
+* xref:issues.adoc[Issues raised]
+* xref:gaps.adoc[Open gaps]

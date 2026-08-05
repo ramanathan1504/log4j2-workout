@@ -1,0 +1,75 @@
+////
+Licensed to the Apache Software Foundation (ASF) under one or more
+contributor license agreements. See the NOTICE file distributed with
+this work for additional information regarding copyright ownership.
+The ASF licenses this file to You under the Apache License, Version 2.0
+(the "License"); you may not use this file except in compliance with
+the License. You may obtain a copy of the License at
+
+    https://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+////
+= Open gaps
+
+Everything not done, and what closing it would take. The complete list — nothing
+is recorded only elsewhere.
+
+== Coverage
+
+`log4j-plugin-processor` unreachable on 3.x::
+The one shippable 3.x module the bench does not reach (21 of 22). `@Plugin` moved
+package between the lines, so plugin sources cannot compile against both without
+two source sets. A fact about writing Log4j plugins, not a bench defect — any
+third-party plugin targeting both lines faces it.
+
+`jakarta-web` and `javax-web` skip in sweeps::
+Both serve until interrupted, so they cannot finish a matrix cell. They *are*
+verified, by hand — the appserver/`${web:}` finding came from exactly that.
+Closing it needs a self-test like `SelfTestRunner` in `apps/spring-boot-maven`,
+about 70 lines each.
+
+No full `--all` sweep recorded::
+~37,000 cells; about six hours with `--scenario`, roughly a week without. Run to
+~700 cells and stopped deliberately. A broad matrix is a tripwire, not a
+microscope — every finding came from a targeted run. Worth doing once as a
+baseline to diff a specific Log4j candidate against.
+
+== Samples
+
+Seven modules built and green against `logging-log4j-samples`; eight proposed and
+not built. Three are feasible and simply unwritten (`migration-1x`,
+`garbage-free`, `web`); three are blocked on dependencies that project's parent
+does not manage (`jdbc-appender`, `smtp`, `network-appenders`).
+
+Nothing has been offered upstream. Each module is verified by copying into a
+scratch checkout of the clone, building, and reverting it.
+
+== Environment
+
+Cassandra 5 unreachable::
+`log4j-cassandra` ships DataStax driver 3.11, which negotiates protocol v4 at
+most. Against 5.0 the connection neither completed nor errored. Cassandra *4.1*
+works and is what the compose file pins. Closing it upstream means rebuilding
+`log4j-cassandra` against driver 4.x.
+
+Documentation site has no URL::
+`docs/site/index.html` is self-contained and opens in any browser; publishing
+failed with `init 404`, a service problem rather than a content one.
+
+== What is not a gap
+
+Stated because each looks like one:
+
+* *Ten of nineteen apps cannot run on 3.x* — their Log4j modules were never
+  published for it. Upstream reality.
+* *`SerializedLayout` is not exercised* — deprecated, and refuses to build
+  without `log4j2.enableSerialization`.
+* *`${jndi:}` renders unresolved* — deliberate. The bench never sets
+  `log4j2.enableJndiLookup`.
+* *`appender-composite` emits three errors every run* — deliberate. `Failover`
+  cannot be demonstrated without a primary that fails.
