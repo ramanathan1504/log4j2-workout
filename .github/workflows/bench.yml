@@ -14,7 +14,21 @@ name: bench
 
 on:
   pull_request:
-    branches: [development, main]
+    # development only. main receives nothing except a sync from development,
+    # and that content has already passed this workflow on its way in — running
+    # it again is thirteen minutes spent re-proving the same commits. A change
+    # cannot reach main without having been verified here first.
+    branches: [development]
+    # A documentation-only change cannot alter what the bench does. Skipping
+    # those keeps the signal meaningful rather than habitual.
+    #
+    # Note: if this workflow is ever made a required status check, a skipped run
+    # never reports and the merge blocks. Add a lightweight always-pass job at
+    # that point rather than removing this filter.
+    paths-ignore:
+      - '**.md'
+      - 'docs/**'
+      - '.githooks/**'
   workflow_dispatch:
 
 permissions:
