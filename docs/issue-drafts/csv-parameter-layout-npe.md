@@ -1,4 +1,4 @@
-# DRAFT — not filed
+# FILED — https://github.com/apache/logging-log4j2/issues/4243
 
 **Title:** `CsvParameterLayout` throws NullPointerException on any event without parameters
 
@@ -40,8 +40,13 @@ testing can fail on the first plain-text message in production.
 
 ## Configuration
 
-**Version:** reproduced on **2.26.1**; source read at 2.x `04c93c1d33`, where the
-line numbers below match
+**Version:** reproduced on **2.26.1**. Present on both lines:
+
+- 2.x `04c93c1d33` — `log4j-core/.../core/layout/CsvParameterLayout.java:98`
+- 3.x `main` — `log4j-csv/.../csv/layout/CsvParameterLayout.java:104`
+
+The 3.x copy moved into its own module and gained a recycler, but the null check
+is still absent and the `catch` still handles only `IOException`.
 
 **Operating system:** macOS 15 (Darwin 25.5.0)
 
