@@ -19,7 +19,7 @@ Already filed, for reference:
 |---|---|---|---|
 | `csv-parameter-layout-npe.md` | ~~`CsvParameterLayout` NPEs on any event with no parameters~~ | **filed as #4243** | captured run, 2.26.1 |
 | `spring-cloud-config-listener-condition.md` | ~~`@ConditionalOnProperty` has no effect~~ | **filed as #4244** | captured run, 2.26.1 |
-| `appserver-web-context-entry-dropped.md` | `locateContext`'s parent walk drops the `ServletContext` entry | **Medium** — defect or intended trade-off is a maintainer's call | captured run, 2.26.1 |
+| `appserver-web-context-entry-dropped.md` | `locateContext`'s parent walk drops the `ServletContext` entry | **duplicate of #2314** — comment there instead | captured run, 2.26.1 |
 | `configuring-thread-interrupt.md` | Interrupting the configuring thread disables every appender | **Low-medium** | **no captured run** — a race, observed once |
 
 Source quotes in all four were read back from the clone, not recalled. Line

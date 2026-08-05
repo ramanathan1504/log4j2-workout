@@ -1,4 +1,12 @@
-# DRAFT — not filed
+# DO NOT FILE — duplicate of #2314
+
+[#2314](https://github.com/apache/logging-log4j2/issues/2314), open since
+February 2024, is the same mechanism: `locateContext`'s parent walk returning an
+ancestor's context. It already names #1430 and #2311 as consequences.
+
+What is new here is the `log4j-appserver` + `log4j-web` trigger and a captured
+before/after. That belongs as a **comment on #2314**, drafted in `docs/SLACK.md`,
+not as a new issue.
 
 **Title:** `ClassLoaderContextSelector.locateContext` parent walk returns a context without applying the `ServletContext` entry
 
