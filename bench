@@ -87,6 +87,37 @@ min_java_for() {
   esac
 }
 
+# Apps whose main() is a server: they start a container, print an endpoint and
+# serve until interrupted. They are driven by hand or by an HTTP client, and can
+# never complete a matrix cell — under a bound they burn the whole timeout and
+# then FAIL, which is 300 seconds spent to learn nothing.
+#
+# spring-boot-maven and spring-boot-gradle used to be here too; SelfTestRunner
+# lets them drive their own endpoints and exit, so they sweep normally now. The
+# same treatment would work for these two and is the right fix; until someone
+# writes it, a sweep says so rather than reporting a false failure.
+INTERACTIVE_APPS=(jakarta-web javax-web)
+
+# The appender an app asserts on. An app that checks rows reached a JDBC
+# appender cannot pass under a console-only configuration — it is not a failure,
+# it is a question with no meaning. The sweep's cross product generates plenty
+# of those: `db` under xml/baseline-console produced 81 of them in one run,
+# every one reported as FAIL.
+#
+# Maps app -> a substring every configuration able to satisfy it contains.
+requires_config_for() {
+  case "$1" in
+    db)        echo "appender-jdbc" ;;
+    jdbc-jndi) echo "appender-jdbc-jndi" ;;
+    jpa)       echo "appender-jpa" ;;
+    nosql)     echo "appender-nosql" ;;
+    smtp)      echo "appender-smtp" ;;
+    jms)       echo "appender-jms" ;;
+    network)   echo "appender-network" ;;
+    *)         echo "" ;;
+  esac
+}
+
 # The oldest 2.x line an app can run on, where one of its Log4j modules is
 # younger than the oldest version in VERSIONS. Empty means "any".
 min_log4j_for() {
@@ -123,6 +154,23 @@ cell_skip_reason() {
 
   local min; min="$(min_java_for "$app")"
   [[ "$java" -lt "$min" ]] && { echo "$app is compiled at release $min"; return; }
+
+  # A server app cannot finish a cell. Say so instead of timing it out.
+  local ia
+  for ia in "${INTERACTIVE_APPS[@]}"; do
+    if [[ "$app" == "$ia" ]]; then
+      echo "$app serves until interrupted — drive it by hand, or give it a self-test like SelfTestRunner"
+      return
+    fi
+  done
+
+  # An app that asserts on a specific appender, paired with a config that has
+  # no such appender. The cell cannot pass however correct Log4j is.
+  local needs; needs="$(requires_config_for "$app")"
+  if [[ -n "$needs" && "$config" != *"$needs"* ]]; then
+    echo "$app asserts on $needs; $config cannot satisfy it"
+    return
+  fi
 
   # An app whose Log4j module is younger than the version under test.
   local minv; minv="$(min_log4j_for "$app")"
