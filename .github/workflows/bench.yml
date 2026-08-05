@@ -1,0 +1,82 @@
+# Runs the bench on every pull request.
+#
+# Deliberately not `./bench matrix --all`: that is tens of thousands of forked
+# JVMs and many hours. This runs the axes that actually catch regressions — all
+# four Log4j 2 configuration formats, both 1.x formats, three JDKs and two
+# released Log4j lines — across the apps that need no external infrastructure.
+#
+# apps/network and the NoSQL half of apps/db are excluded: they need Kafka,
+# Mongo, CouchDB and Cassandra containers. They are verified locally against
+# real services rather than mocked here, because mocking them would test the
+# mock. spring-boot-gradle is excluded because it needs a Gradle toolchain and
+# duplicates spring-boot-maven's coverage of Log4j itself.
+name: bench
+
+on:
+  pull_request:
+    branches: [development, main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: bench-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  bench:
+    name: log4j ${{ matrix.log4j }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      matrix:
+        # Released lines only. The repository default is a -SNAPSHOT resolved
+        # from a local build of the Log4j source clone; it does not exist on
+        # Central, so CI must name its versions explicitly.
+        #
+        # 2.24.1 is the oldest line the bench covers, and the one where the
+        # jakarta-jms module does not yet exist — so it exercises the skip
+        # logic as well as the code.
+        log4j: ['2.24.1', '2.26.1']
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install JDKs
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          # 8 for the java8-baseline app, 17 and 21 for everything else.
+          # setup-java exports JAVA_HOME_<major>_<arch>, one of the three
+          # sources java_home_for() understands.
+          java-version: |
+            8
+            17
+            21
+          cache: maven
+
+      - name: Report the JDKs the bench can see
+        run: |
+          echo "JAVA_HOME_8_X64=${JAVA_HOME_8_X64:-unset}"
+          echo "JAVA_HOME_17_X64=${JAVA_HOME_17_X64:-unset}"
+          echo "JAVA_HOME_21_X64=${JAVA_HOME_21_X64:-unset}"
+
+      - name: Run the bench
+        run: |
+          ./bench matrix \
+            --apps core-java,java8-baseline,log4j1-bridge,bridges-in,bridges-out,bridges-to-jul,custom-plugins,jpa,smtp,jdbc-jndi,jms,spring-cloud-config \
+            --configs xml/baseline-console,json/baseline-console,yaml/baseline-console,properties/baseline-console,log4j1/log4j.xml,log4j1/log4j.properties \
+            --javas 8,17,21 \
+            --log4j ${{ matrix.log4j }} \
+            --reuse-builds
+
+      - name: Upload the run log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: bench-${{ matrix.log4j }}
+          path: .bench/matrix-*.log
+          retention-days: 14
+          if-no-files-found: warn
