@@ -30,8 +30,10 @@ traps that cost time.
 `docs/FEATURE-MATRIX.md` is the catalogue: what is covered, what is not, and §17,
 the findings — 56 Log4j behaviours, each traced to source rather than inferred.
 
-`docs/issue-drafts/` holds findings written up to Apache's bug template, ready to
-file by hand. Two are filed already (#4241, #4242); four are drafted and not.
+`docs/ISSUES.md` lists what was raised upstream. `docs/GAPS.md` lists everything
+open — coverage, drafts, samples, infrastructure — with why and what closing each
+would take. `docs/issue-drafts/` holds findings written up to Apache's bug
+template, ready to file by hand. Two are filed already (#4241, #4242); four are drafted and not.
 Nothing here ever touches an upstream project.
 
 ---
