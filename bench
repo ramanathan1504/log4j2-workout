@@ -28,7 +28,10 @@ VERSIONS=(
   2.25.5
   2.26.0
   2.26.1
-  2.27.0
+  # 2.27.0 is deliberately absent: it is unreleased (404 on Central, whose
+  # newest is 2.26.1), so every cell on it fails to resolve rather than
+  # testing anything. Listing it cost ~1/8 of a full matrix in guaranteed
+  # noise. Add it back when it ships.
   2.27.0-SNAPSHOT
   3.0.0-SNAPSHOT
 )
@@ -479,7 +482,14 @@ cmd_matrix() {
   local apps configs javas versions
   if [[ $all -eq 1 ]]; then
     apps="$(printf '%s\n' "${APPS[@]}" | tr '\n' ',')"
-    configs="$(cmd_list --configs | sed 's/\.[a-z]*$//' | tr '\n' ',')"
+    # Strip the extension only where doing so stays unambiguous. configs/log4j1
+    # holds both log4j.xml and log4j.properties, and stripping collapsed them
+    # into one name that resolve_config always answered with the XML — so the
+    # 1.x properties format was never tested and the XML one ran twice.
+    configs="$(cmd_list --configs | awk '
+      { full[NR] = $0; b = $0; sub(/\.[a-z]+$/, "", b); base[NR] = b; seen[b]++ }
+      END { for (i = 1; i <= NR; i++) print (seen[base[i]] > 1 ? full[i] : base[i]) }
+    ' | tr '\n' ',')"
     javas="$(installed_javas | tr '\n' ',')"
     versions="$(printf '%s\n' "${VERSIONS[@]}" | tr '\n' ',')"
   else
