@@ -19,6 +19,49 @@ zip to attach to the issue.
 
 ---
 
+## Setup
+
+**Prerequisites**
+
+| Need | Why |
+|---|---|
+| JDK 17 (and ideally 8, 21, 22) | The JDK axis. `installed_javas()` discovers whatever `/usr/libexec/java_home -V` reports, so extra JDKs widen the matrix and missing ones simply narrow it. JDK 8 exists to test the oldest line Log4j 2 supports. |
+| Maven 3.9+ | Every app but one. |
+| Gradle | `spring-boot-gradle` only — the same app built the other way, to catch differences Maven's dependency resolution hides. |
+| Docker | Only for `apps/network` and `apps/db`. Everything else embeds its infrastructure (H2, GreenMail, Tomcat, Artemis, an in-process JNDI provider, a Spring Cloud Config server). |
+
+**Clone and enable the hooks**
+
+```bash
+git clone git@github.com:ramanathan1504/log4j2-workout.git
+cd log4j2-workout
+git config core.hooksPath .githooks    # required: see Contributing
+./bench list                           # verify it runs
+```
+
+The `core.hooksPath` line is per-clone — git will not set it for you. Skipping it
+costs nothing but a slower failure: the server rejects a direct push to a
+protected branch anyway, just after a round trip instead of instantly.
+
+**Verify a real run**
+
+```bash
+./bench run core-java --config xml/baseline-console
+```
+
+Log4j catches appender exceptions, reports them through `StatusLogger`, and lets
+the JVM exit 0 — so a clean exit proves nothing on its own. Every app here
+asserts on an outcome instead: rows read back, mail consumed, a queue drained.
+When something stores or sends less than expected, raise the status level before
+assuming the configuration is wrong:
+
+```bash
+BENCH_JVM_ARGS='-Dlog4j2.debug=true -Dlog4j2.StatusLogger.level=TRACE' \
+  ./bench run nosql --config xml/appender-nosql
+```
+
+---
+
 ## Layout
 
 ```
@@ -234,6 +277,19 @@ docker compose -f infra/docker-compose.yml up -d mongodb postgres
 docker compose -f infra/docker-compose.yml --profile observability up -d
 ```
 
+**Cassandra needs `cassandra-init`, not just `cassandra`:**
+
+```bash
+docker compose -f infra/docker-compose.yml up -d mongodb couchdb cassandra-init
+```
+
+The appender cannot create its own keyspace. Its DataStax driver pulls in Netty,
+whose `InternalLoggerFactory` acquires a Log4j logger *while the driver is
+initialising* — which configures Log4j, which starts the Cassandra appender,
+which connects to a keyspace no in-JVM bootstrap has reached yet. `cassandra-init`
+applies `infra/cql/cassandra-init.cql` once the node is healthy, before anything
+touches the driver. Details in `docs/site` → Findings.
+
 ---
 
 ## Coverage
@@ -241,3 +297,47 @@ docker compose -f infra/docker-compose.yml --profile observability up -d
 `docs/FEATURE-MATRIX.md` is the authoritative catalog — 293 plugins across 59
 modules, extracted from the source clone rather than from documentation, with a
 gap list in §16 tracking what the bench does not yet exercise.
+
+---
+
+## Contributing
+
+`main` and `development` both carry GitHub branch protection: a pull request is
+required, `enforce_admins` is on, force pushes and branch deletion are disabled,
+and linear history is required. A direct push is refused by the server with
+`GH006` even under `--no-verify`.
+
+Changes flow one way:
+
+```
+feature branch  ->  PR  ->  development  ->  PR  ->  main
+```
+
+```bash
+git switch development && git pull
+git switch -c my-change
+# ... work, commit ...
+git push -u origin my-change
+gh pr create --base development
+```
+
+`.githooks/pre-push` refuses a direct push to either protected branch locally,
+so the mistake costs a second rather than a round trip. It is a convenience, not
+the control — bypassing it only moves the rejection to the server.
+
+**Merge commits are rejected.** Linear history is required, so use squash or
+rebase:
+
+```bash
+gh pr merge --squash --delete-branch   # feature -> development
+gh pr merge --rebase                   # development -> main, keeps the commits
+```
+
+`required_approving_review_count` is 0 on purpose: at 1 a solo maintainer cannot
+approve their own pull request and the branch deadlocks. Direct pushes are still
+refused; you just do not need a second person to merge.
+
+**Never set `BENCH_REUSE_BUILDS=1` while editing app sources.** It reuses a
+cached classpath and will happily run stale classes — precisely the failure the
+always-build default exists to prevent. It is for sweeps, where nothing between
+cells changes the sources.
