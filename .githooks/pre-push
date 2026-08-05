@@ -2,22 +2,20 @@
 #
 # Refuse a direct push to a protected branch.
 #
-# GitHub's own branch protection and rulesets both require GitHub Pro on a
-# PRIVATE repository, and this repo is private on a Free plan — the API answers
-# 403 "Upgrade to GitHub Pro or make this repository public". So the rule lives
-# here instead.
+# The real enforcement is server-side: main and development both carry GitHub
+# branch protection requiring a pull request, with enforce_admins on, force
+# pushes and deletions disabled, and linear history required. A direct push is
+# refused with GH006 even under `--no-verify`.
 #
-# Be clear about what this is: a client-side guard against habit and accident,
-# not a security control. `--no-verify` skips it, and it only runs on machines
-# that have `core.hooksPath` pointed at this directory. Anyone pushing from a
-# fresh clone without running the setup below has no guard at all.
+# This hook is the fast local echo of that rule. It fails in a second with a
+# usable message instead of after a round trip to GitHub, and it keeps the
+# workflow discoverable in the repository itself. It is a convenience, not the
+# control — `--no-verify` skips it, and it only runs where core.hooksPath points
+# here. Nothing depends on it: bypassing it just moves the rejection to the
+# server.
 #
 # Enable (once per clone):
 #   git config core.hooksPath .githooks
-#
-# For enforcement the server actually applies, either upgrade to GitHub Pro and
-# add a ruleset requiring pull requests on main and development, or make the
-# repository public, where protection is free.
 
 set -euo pipefail
 
