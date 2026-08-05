@@ -69,12 +69,29 @@ reasonable one: appserver exists precisely to capture container logging.
 1. Deploy a webapp with `log4j-web` **and** `log4j-appserver` on the container
    classpath.
 2. Use `${web:contextPath}` or `${web:servletContextName}` in the configuration.
-3. Observe the lookup rendering unresolved, and the context named after the
-   webapp's display name rather than scoped to it.
-4. Remove `log4j-appserver` and redeploy: the same configuration resolves.
+3. Ask the running webapp what context it got.
 
-A control is useful here — the same application without appserver behaves
-correctly, which isolates the interaction from ordinary webapp misconfiguration.
+Captured on Log4j **2.26.1**, JDK 21, Tomcat 9 (`javax`):
+
+```
+LoggerContext class : org.apache.logging.log4j.core.LoggerContext
+LoggerContext name  : log4j-bench-javax
+Configuration       : baseline-console
+Appenders           : [Console]
+ServletContext bound: false
+WebLoggerContextUtils.getServletContext(): null
+```
+
+Two symptoms in that output:
+
+- `ServletContext bound: false` — the entry was supplied to `locateContext` and
+  discarded, so `${web:}` cannot resolve.
+- `LoggerContext name : log4j-bench-javax` — the *shared* container context has
+  been renamed to this webapp's display name, which also affects anything else
+  using it.
+
+Removing `log4j-appserver` and redeploying makes the same configuration resolve.
+That control matters: it separates this from ordinary webapp misconfiguration.
 
 ## Note on classification
 
