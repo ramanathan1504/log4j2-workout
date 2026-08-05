@@ -130,6 +130,8 @@
     <li><a href="#configs">Configurations</a></li>
     <li><a href="#infra">Backing services</a></li>
     <li><a href="#findings">Findings</a></li>
+    <li><a href="#issues">Issues raised</a></li>
+    <li><a href="#gaps">Open gaps</a></li>
   </ol>
 </nav>
 
@@ -331,6 +333,47 @@ delta.</p>
   <li><strong>log4j-couchdb cannot work with modern Gson.</strong> LightCouch 0.2.0 calls <code>registerTypeAdapter(JsonObject.class, …)</code>, which Gson 2.11 forbids, so the provider cannot be constructed — and the message names neither Gson's version nor log4j-couchdb.</li>
   <li><strong>EclipseLink 2.7 cannot drive H2 2.x.</strong> Its DDL emits H2 1.x syntax and it treats the failure as a warning, so deployment reports success and every insert fails with "table not found".</li>
 </ul>
+
+
+<h2 id="issues">Issues raised</h2>
+<p>Defects found with this bench and reported to
+<a href="https://github.com/apache/logging-log4j2">apache/logging-log4j2</a>. Every one is
+<strong>silent in production</strong> — Log4j catches appender exceptions, reports them through the
+<code>StatusLogger</code>, and lets the JVM exit 0.</p>
+<div class="scroll"><table>
+<thead><tr><th>Issue</th><th>Defect</th><th>Lines</th></tr></thead>
+<tbody>
+<tr><td><a href="https://github.com/apache/logging-log4j2/issues/4241">#4241</a></td>
+<td><code>AbstractDatabaseManager</code> ignores <code>isRunning()</code> on write and honours it on shutdown — a failed-startup manager keeps accepting events and NPEs per event, and is never cleaned up</td><td>2.x + 3.x</td></tr>
+<tr><td><a href="https://github.com/apache/logging-log4j2/issues/4242">#4242</a></td>
+<td><code>log4j-cassandra</code> leaks the DataStax <code>Cluster</code>; its threads are non-daemon, so the JVM never exits</td><td>2.x</td></tr>
+<tr><td><a href="https://github.com/apache/logging-log4j2/issues/4243">#4243</a></td>
+<td><code>CsvParameterLayout</code> NPEs on any event without parameters — <code>getParameters()</code> is null for <code>SimpleMessage</code></td><td>2.x + 3.x</td></tr>
+<tr><td><a href="https://github.com/apache/logging-log4j2/issues/4244">#4244</a></td>
+<td><code>Log4j2EventListener</code>'s <code>@ConditionalOnProperty</code> has no effect; <code>spring.factories</code> bypasses conditions</td><td>2.x</td></tr>
+</tbody></table></div>
+<p><strong>Not filed:</strong> the <code>locateContext</code> finding duplicates
+<a href="https://github.com/apache/logging-log4j2/issues/2314">#2314</a> (open since Feb 2024) — the new
+material is the appserver+web trigger, which belongs as a comment there. And the configuring-thread
+interrupt, which reproduced once but is a race with no deterministic trigger, held rather than filed
+with a hypothesis attached.</p>
+
+<h2 id="gaps">Open gaps</h2>
+<ul>
+  <li><strong><code>log4j-plugin-processor</code> unreachable on 3.x</strong> — 21 of 22 shippable
+  modules reached. <code>@Plugin</code> moved package, so plugin sources cannot compile against both
+  lines without two source sets. A fact about writing Log4j plugins, not a bench defect.</li>
+  <li><strong><code>jakarta-web</code> and <code>javax-web</code> skip in sweeps</strong> — both serve
+  until interrupted. Verified by hand; a self-test like the Spring app's would close it.</li>
+  <li><strong>No full sweep recorded</strong> — ~37,000 cells, about six hours with
+  <code>--scenario</code>. A tripwire, not a microscope; every finding came from a targeted run.</li>
+  <li><strong>Eight samples modules unbuilt</strong> — three feasible, three blocked on dependencies
+  the samples parent does not manage.</li>
+  <li><strong>Cassandra 5 unreachable</strong> — driver 3.11 negotiates protocol v4 at most. 4.1 works.</li>
+</ul>
+<p><em>Not gaps, though they look like them:</em> ten apps cannot run on 3.x because those modules were
+never published; <code>SerializedLayout</code> is deprecated; <code>${jndi:}</code> is unresolved
+deliberately; <code>appender-composite</code> fails on purpose.</p>
 
 <footer>
   <p>Source: <code>~/apache/log4j2-workout</code>. The AsciiDoc originals live in <code>docs/site/</code> in Antora layout, matching Log4j's own documentation toolchain. The full findings table is <code>docs/FEATURE-MATRIX.md</code> §17.</p>
