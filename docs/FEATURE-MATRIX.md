@@ -289,12 +289,24 @@ needs a generated keystore. That is the whole remaining list — Syslog, Http, K
 SMTP, MongoDB, Cassandra and CouchDB are all now driven against real destinations and
 verified by arrival rather than by absence of errors (see `apps/network` and `apps/db`).
 
-**The matrix ledger is much thinner than the capability.** `.bench/coverage.tsv` records only
-what `./bench matrix` has swept — a plain `./bench run` does not write to it. At present that
-is **37 cells across 3 apps** (`core-java`, `java8-baseline`, `log4j1-bridge`) and **3 of the 8
-known Log4j versions**, with 3.x represented by a single cell. Every other app has been run and
-verified individually, but not swept across the axes. Capability and evidence are not the same
-thing, and the ledger is the evidence.
+**The matrix ledger is thinner than the capability, and deliberately so.** `.bench/coverage.tsv`
+records only what `./bench matrix` has swept — a plain `./bench run` does not write to it. It
+currently holds ~2,500 rows from partial sweeps.
+
+A full `--all` sweep is 37,240 cells and was measured at roughly a week of wall clock with all
+seven scenarios per cell, or ~6 hours with `--scenario messages`. It was run to ~700 cells (450
+pass, 0 fail) and then stopped deliberately: a broad matrix is a tripwire, not a microscope. It
+is poor at discovery and decent at noticing when something that used to work stops working.
+
+Every finding in §17 came from a targeted run while building a specific app, not from a sweep.
+What the sweeps did find was four defects in the bench itself — an unbounded cell that stalled
+for two hours, a Spring app that could never terminate, and both directions of app/config
+validity. Those are recorded here because they shaped the tool, not because they are Log4j
+behaviour.
+
+The regression gate is `.github/workflows/bench.yml`: ~200 cells in 13 minutes on every pull
+request. The full sweep earns its keep once as a baseline, and then only against a specific
+Log4j change.
 
 Newly driven, each in every format that can express it, verified identical across formats:
 

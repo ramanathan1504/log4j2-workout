@@ -113,3 +113,39 @@ Appenders that catch their own exceptions report through the StatusLogger and
 leave the exit code at 0, so a run that looks clean at `WARN` can be doing
 nothing at all. When a scenario stores or sends less than expected, raise the
 level before assuming the configuration is wrong.
+
+
+== What the matrix will not run
+
+`./bench matrix` prunes its cross product before running anything, and a cell
+that cannot pass is a `SKIP` with its reason rather than a failure. A failing
+cell that could never have passed is noise, and it buries the failures that
+matter — one 698-cell sweep produced 98 failures, none of them Log4j defects.
+
+* `min_java_for` — everything is compiled at release 17 except `java8-baseline`
+* `min_log4j_for` — `jms` needs Log4j 2.25.0+, since `log4j-jakarta-jms` did not
+  exist before it
+* `is_2x_only` — eleven apps have no 3.x release path
+* `INTERACTIVE_APPS` — `jakarta-web` and `javax-web` serve until interrupted and
+  cannot finish a cell
+* `requires_config_for` — an app asserting on an appender its config lacks
+  (`db` under `baseline-console`)
+* `requires_app_for` — a config needing infrastructure its app never starts
+  (`appender-network` outside `apps/network`)
+
+=== Sweep knobs
+
+[source,bash]
+----
+./bench matrix --all --scenario messages     # one scenario per cell, not all seven
+./bench matrix --all --reuse-builds          # reuse the cached classpath per (app, version)
+BENCH_CELL_TIMEOUT=600 ./bench matrix --all  # per-cell wall clock, default 300s
+----
+
+IMPORTANT: `--scenario` is the one that matters. Without it every cell runs all
+seven scenarios, and `rollover` writes 2000 lines — against a JDBC appender that
+is 2000 inserts per cell. It is the difference between hours and a week.
+
+WARNING: Never set `BENCH_REUSE_BUILDS=1` while editing app sources. It reuses a
+cached classpath and will run stale classes, which is what the always-build
+default exists to prevent.

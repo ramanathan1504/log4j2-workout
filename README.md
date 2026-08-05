@@ -300,6 +300,77 @@ gap list in §16 tracking what the bench does not yet exercise.
 
 ---
 
+## What the matrix will not run, and why
+
+`./bench matrix` prunes its cross product before running anything. A cell that
+cannot pass is reported as `SKIP` with the reason, never as a failure — a
+failing cell that could never have passed is noise, and worse, it buries the
+failures that matter. One 698-cell sweep produced 98 failures, none of them
+Log4j defects; all were the matrix asking questions with no meaning.
+
+The rules, all in `bench`:
+
+| Rule | What it prunes |
+|---|---|
+| `min_java_for` | Everything is compiled at release 17 except `java8-baseline`, so java8 cells skip for every other app. |
+| `min_log4j_for` | An app whose Log4j module is younger than the version under test. `jms` needs 2.25.0+, because `log4j-jakarta-jms` did not exist before it. |
+| `is_2x_only` | Eleven apps have no 3.x release path — `log4j-1.2-api`, `log4j-jakarta-web` and friends were never published for 3.x. |
+| `INTERACTIVE_APPS` | `jakarta-web` and `javax-web` start a container, print an endpoint and serve until interrupted. They cannot finish a cell. Drive them by hand, or give them a self-test like `SelfTestRunner`. |
+| `requires_config_for` | An app that asserts on a specific appender. `db` checks rows reached a JDBC appender, so `db` under `baseline-console` is meaningless. |
+| `requires_app_for` | The mirror: a config whose destinations only one app provides. `appender-network` posts to listeners `apps/network` opens in-process; anything else gets `Connection refused`. |
+
+`appender-nosql` is deliberately not pinned to an app: Mongo, CouchDB and
+Cassandra run in containers, so any app can write to them. Only in-process
+infrastructure creates that coupling.
+
+### Sweep knobs
+
+```bash
+./bench matrix --all --scenario messages     # one scenario per cell, not all seven
+./bench matrix --all --reuse-builds          # reuse the cached classpath per (app, version)
+BENCH_CELL_TIMEOUT=600 ./bench matrix --all  # per-cell wall clock, default 300s
+BENCH_SPRING_SELFTEST=0 ./bench run spring-boot-maven   # interactive server, not the self-test
+```
+
+**`--scenario` is the one that matters for a full sweep.** Without it every cell
+runs all seven scenarios, and `rollover` writes 2000 lines — paired with a JDBC
+appender that is 2000 inserts per cell. It is the difference between a sweep
+taking hours and taking a week.
+
+**Never set `BENCH_REUSE_BUILDS=1` while editing app sources.** It reuses a
+cached classpath and will run stale classes, which is exactly what the
+always-build default exists to prevent.
+
+Every cell is bounded. A non-terminating app fails with a stated cause rather
+than stalling the sweep — a sweep once sat on one for two hours looking like
+slow progress.
+
+### Continuous integration
+
+`.github/workflows/bench.yml` runs a slice of the matrix on every pull request
+into `development`: all four Log4j 2 configuration formats plus both 1.x
+formats, JDK 8/17/21, Log4j 2.24.1 and 2.26.1, across the thirteen apps that
+need no external infrastructure. About 200 cells in 13 minutes.
+
+It is a regression gate, not a discovery tool. A full sweep re-proves things
+that rarely change; this catches the things that do.
+
+Two details worth knowing:
+
+* **It does not run on `development` → `main` syncs.** Nothing reaches `main`
+  without passing here first, so a second run would re-prove the same commits.
+  `workflow_dispatch` still runs it on demand.
+* **It skips `**.md`, `docs/**` and `.githooks/**`.** If it is ever made a
+  *required* status check, a skipped run never reports and the merge blocks
+  forever — the fix then is a lightweight always-pass job, not removing the
+  filter.
+
+`apps/network` and the NoSQL half of `apps/db` are excluded: they need Kafka,
+Mongo, CouchDB and Cassandra containers, and mocking them would test the mock.
+Those stay verified locally against real services.
+
+---
+
 ## Contributing
 
 `main` and `development` both carry GitHub branch protection: a pull request is
