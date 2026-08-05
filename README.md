@@ -62,6 +62,49 @@ BENCH_JVM_ARGS='-Dlog4j2.debug=true -Dlog4j2.StatusLogger.level=TRACE' \
 
 ---
 
+## Status
+
+Ready for maintainer work: investigate an issue or PR here, then emit a
+standalone reproduction to attach to it.
+
+**Verified working**
+
+| | |
+|---|---|
+| Module reach | 41 of 41 shippable 2.x modules on some app's classpath (`./bench coverage` recomputes it) |
+| Config formats | every config in XML, JSON, YAML and properties, plus both Log4j 1.x formats |
+| Axes | 19 app targets · 70 configs · JDK 8/17/21/22 · 2.24.1 → 3.0.0-SNAPSHOT |
+| Pattern converters | all 41 |
+| Layouts | every layout Log4j ships except `SerializedLayout`, which is deprecated and refuses to build without `log4j2.enableSerialization` |
+| Appenders needing infrastructure | JDBC, JPA, SMTP, JMS, JNDI, Kafka, Syslog, Socket, HTTP, JeroMQ, MongoDB, CouchDB, Cassandra — all verified by outcome against real services |
+| Reproduction zips | generated, extracted outside the repo and run standalone |
+| CI | ~200 cells in 13 minutes on every pull request into `development` |
+
+**Known open**
+
+- `jakarta-web` and `javax-web` skip in matrix sweeps. Both serve until
+  interrupted, so they cannot finish a cell. The fix is a self-test like
+  `SelfTestRunner` in `apps/spring-boot-maven`; nobody has written it. Drive them
+  by hand meanwhile.
+- No full `--all` sweep has been recorded. It is ~37,000 cells, measured at about
+  six hours with `--scenario` and roughly a week without. The CI slice is the
+  regression gate; a full sweep is worth running once as a baseline, and then
+  only against a specific Log4j change.
+
+**Filed upstream from findings here**
+
+- [apache/logging-log4j2#4241](https://github.com/apache/logging-log4j2/issues/4241) —
+  `AbstractDatabaseManager` keeps accepting writes after a failed startup, and is
+  never shut down. Affects 2.x and 3.x.
+- [apache/logging-log4j2#4242](https://github.com/apache/logging-log4j2/issues/4242) —
+  `log4j-cassandra` leaks the DataStax `Cluster` on failed startup, so the JVM
+  never exits. 2.x only.
+
+`docs/FEATURE-MATRIX.md` §17 holds the full findings table — around 25 Log4j
+behaviours, each traced to source rather than inferred.
+
+---
+
 ## Layout
 
 ```
