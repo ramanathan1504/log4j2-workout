@@ -55,11 +55,26 @@ is_2x_only() {
 # ── The JDK axis ────────────────────────────────────────────────────────────
 # Major versions of every JDK installed, oldest first. Derived rather than
 # hard-coded, so the axis reflects this machine.
+# Every JDK major version this machine can run, for the --all matrix axis.
+# Same three sources as java_home_for, for the same reason.
 installed_javas() {
-  /usr/libexec/java_home -V 2>&1 \
-    | sed -n 's/^ *\([0-9][0-9.]*[0-9_]*\).*/\1/p' \
-    | sed -e 's/^1\.\([0-9][0-9]*\).*/\1/' -e 's/^\([0-9][0-9]*\)\..*/\1/' \
-    | sort -un
+  {
+    if [[ -x /usr/libexec/java_home ]]; then
+      /usr/libexec/java_home -V 2>&1 \
+        | sed -n 's/^ *\([0-9][0-9.]*[0-9_]*\).*/\1/p' \
+        | sed -e 's/^1\.\([0-9][0-9]*\).*/\1/' -e 's/^\([0-9][0-9]*\)\..*/\1/'
+    fi
+
+    # actions/setup-java exports one of these per JDK it installed.
+    env | sed -n 's/^JAVA_HOME_\([0-9][0-9]*\)_[A-Z0-9]*=.*/\1/p'
+
+    # Conventional Linux layout: java-17-openjdk-amd64, jdk-21, temurin-8-jdk...
+    local d
+    for d in /usr/lib/jvm/*; do
+      [[ -x "$d/bin/java" ]] || continue
+      basename "$d" | sed -n 's/.*[^0-9]\([0-9][0-9]*\).*/\1/p'
+    done
+  } 2>/dev/null | grep -E '^[0-9]+$' | sort -un
 }
 
 # The oldest JDK an app's own bytecode can run on. Everything is compiled at
@@ -135,11 +150,42 @@ die()  { printf '\033[31merror:\033[0m %s\n' "$*" >&2; exit 1; }
 info() { printf '\033[36m▸\033[0m %s\n' "$*" >&2; }
 
 # ── JDK selection ───────────────────────────────────────────────────────────
+# Resolve a JDK home for a major version. macOS has java_home; Linux does not,
+# and CI needs to work there — GitHub's ubuntu runners are a tenth the cost of
+# macOS ones, and a maintainer tool that only runs on one OS is half a tool.
+#
+# Three sources, in order of how specific they are: java_home on macOS,
+# the JAVA_HOME_<major>_<arch> variables actions/setup-java exports, and the
+# conventional /usr/lib/jvm layout.
 java_home_for() {
   local want="$1"
-  [[ -z "$want" ]] && { echo "${JAVA_HOME:-$(/usr/libexec/java_home 2>/dev/null)}"; return; }
-  /usr/libexec/java_home -v "$want" 2>/dev/null \
-    || die "no JDK $want installed (see: /usr/libexec/java_home -V)"
+  if [[ -z "$want" ]]; then
+    echo "${JAVA_HOME:-$(/usr/libexec/java_home 2>/dev/null)}"
+    return
+  fi
+
+  if [[ -x /usr/libexec/java_home ]]; then
+    local home
+    if home="$(/usr/libexec/java_home -v "$want" 2>/dev/null)"; then
+      echo "$home"; return
+    fi
+  fi
+
+  local var
+  for var in "JAVA_HOME_${want}_X64" "JAVA_HOME_${want}_ARM64" "JAVA_HOME_${want}_AARCH64"; do
+    if [[ -n "${!var:-}" && -x "${!var}/bin/java" ]]; then
+      echo "${!var}"; return
+    fi
+  done
+
+  local d
+  for d in /usr/lib/jvm/*"${want}"*; do
+    if [[ -x "$d/bin/java" ]]; then
+      echo "$d"; return
+    fi
+  done
+
+  die "no JDK $want found (looked at java_home, JAVA_HOME_${want}_*, /usr/lib/jvm)"
 }
 
 # ── Maven flags for a given Log4j version ───────────────────────────────────
@@ -575,6 +621,12 @@ cmd_matrix() {
   done
 
   printf '\n%d pass, %d fail, %d skip\nFull output: %s\n' "$pass" "$fail" "$skip" "$results"
+
+  # Exit non-zero when any cell failed. Without this a sweep is green whatever
+  # happens, which is fine to read by eye and useless to a CI job — the whole
+  # point of running it on a pull request is that a failure stops the merge.
+  # A SKIP is not a failure: it is a cell that cannot exist, with a reason.
+  [[ $fail -eq 0 ]]
 }
 
 csv_split()  { printf '%s' "$1" | tr ',' ' '; }
