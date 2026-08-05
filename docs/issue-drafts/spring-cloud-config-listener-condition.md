@@ -1,4 +1,4 @@
-# DRAFT — not filed
+# FILED — https://github.com/apache/logging-log4j2/issues/4244
 
 **Title:** `Log4j2EventListener`'s `@ConditionalOnProperty` has no effect — the listener always runs
 

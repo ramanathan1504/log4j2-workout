@@ -54,11 +54,10 @@ The CI slice is the regression gate for everything else.
 
 ## 2. Issues drafted but not filed
 
-In `docs/issue-drafts/`. Three filed already — see `docs/ISSUES.md`.
+In `docs/issue-drafts/`. Four filed already — see `docs/ISSUES.md`.
 
 | Draft | Evidence | Blocked on |
 |---|---|---|
-| `@ConditionalOnProperty` has no effect on `Log4j2EventListener` | captured run, 2.26.1 | nothing — ready to file |
 | `locateContext` drops the `ServletContext` entry | captured both sides | a judgement: defect, or the intended trade-off? The draft argues the *silence* is the real problem either way |
 | Interrupting the configuring thread disables every appender | **none** | a deterministic reproduction. It is a race; observed once, two unrelated healthy appenders went silent after a worker was interrupted mid-configuration |
 
