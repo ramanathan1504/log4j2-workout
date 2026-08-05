@@ -43,9 +43,15 @@ The property reads as the documented off switch. Setting it to `false` and
 observing that reconfiguration still happens gives no clue why, since nothing is
 logged and the annotation is right there in the source saying otherwise.
 
-There is also a second-order effect: with both registrations active in a context
-where the condition *does* pass, the class is registered as a listener twice, so
-`publishEvent()` may be invoked more than once per change event.
+There may also be a second-order effect, which I have **not** verified: if an
+application both component-scans `org.apache.logging.log4j.spring.cloud.config.client`
+*and* sets the property, the class would be registered as a listener twice, and
+`publishEvent()` could be invoked more than once per change event.
+
+That combination is uncommon — few applications scan the Log4j package — so in
+practice the `spring.factories` entry is usually the only registration, which is
+exactly why the condition appears to do nothing. Treat the double-registration
+point as a question rather than a report.
 
 ## Configuration
 
@@ -70,7 +76,13 @@ Change the served configuration and publish an `EnvironmentChangeEvent` — for
 example by POSTing to `/actuator/refresh`.
 
 Expected: nothing, because the watch is disabled. Actual, captured on Log4j
-**2.26.1**, JDK 21, Spring Boot 3.4.3:
+**2.26.1**, JDK 21, Spring Boot 3.4.3.
+
+The lines below come from a purpose-built harness, not from Log4j — it embeds a
+Spring Cloud Config server, serves a Log4j configuration from it, sets
+`monitorInterval` to 300s, and then reports whether a reload arrived before that
+interval elapsed. That design is what makes the result meaningful: a reload seen
+298 seconds early cannot be the timer.
 
 ```
   WatchEventService impl   org.apache.logging.log4j.spring.cloud.config.client.WatchEventManager
