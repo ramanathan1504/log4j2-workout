@@ -1,0 +1,53 @@
+////
+Licensed to the Apache Software Foundation (ASF) under one or more
+contributor license agreements. See the NOTICE file distributed with
+this work for additional information regarding copyright ownership.
+The ASF licenses this file to You under the Apache License, Version 2.0
+(the "License"); you may not use this file except in compliance with
+the License. You may obtain a copy of the License at
+
+    https://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+////
+= Arbiters
+
+One configuration file that resolves differently per environment, without
+string-substituting your way through it.
+
+== When they run, and why it matters
+
+An arbiter is evaluated **once, while the configuration is built** — not per
+event, and not again afterwards. Three consequences, all of which catch people:
+
+. **The branch not taken is never built.** A typo inside it is never reported,
+  because Log4j never constructs those elements. A configuration can be broken
+  for production and perfectly quiet in development.
+. **Changing the property later changes nothing.** The decision is baked into the
+  built configuration; only a reconfiguration re-evaluates it.
+. **Two branches may declare the same appender name.** That is the point —
+  exactly one survives arbitration, so `AppenderRef` names it unconditionally.
+
+== Not available in every format
+
+The properties configuration format supports **no arbiters at all**. The nearest
+spelling fails with `ConfigurationException: No name attribute provided for
+Appender`, which names neither arbiters nor the format. XML, JSON and YAML all
+support them.
+
+== What the tests assert
+
+* the matching branch is the one that exists — and the file belonging to the
+  branch not taken is absent entirely, not merely empty
+* `DefaultArbiter` inside `Select` supplies the fallback when nothing matches
+
+== Running it
+
+[source,bash]
+----
+./mvnw --projects log4j-samples-arbiters test
+----
