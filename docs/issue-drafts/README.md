@@ -13,12 +13,17 @@ Already filed, for reference:
 
 ## Drafts
 
-| File | Finding | Confidence |
-|---|---|---|
-| `csv-parameter-layout-npe.md` | `CsvParameterLayout` NPEs on any event with no parameters | **High** — source-verified, trivially reproducible |
-| `spring-cloud-config-listener-condition.md` | `@ConditionalOnProperty` has no effect on `Log4j2EventListener` | **High** — source-verified, mechanism is unambiguous |
-| `appserver-web-context-entry-dropped.md` | `locateContext`'s parent walk drops the `ServletContext` entry | **Medium** — source-verified; whether it is a defect or the intended trade-off is a maintainer's call |
-| `configuring-thread-interrupt.md` | Interrupting the configuring thread disables every appender | **Medium** — reproduced here, but the boundary between this and ordinary interrupt semantics needs a second opinion |
+| File | Finding | Confidence | Evidence |
+|---|---|---|---|
+| `csv-parameter-layout-npe.md` | `CsvParameterLayout` NPEs on any event with no parameters | **High** | captured run, 2.26.1 |
+| `spring-cloud-config-listener-condition.md` | `@ConditionalOnProperty` has no effect on `Log4j2EventListener` | **High** | captured run, 2.26.1 |
+| `appserver-web-context-entry-dropped.md` | `locateContext`'s parent walk drops the `ServletContext` entry | **Medium** — defect or intended trade-off is a maintainer's call | captured run, 2.26.1 |
+| `configuring-thread-interrupt.md` | Interrupting the configuring thread disables every appender | **Low-medium** | **no captured run** — a race, observed once |
+
+Source quotes in all four were read back from the clone, not recalled. Line
+numbers match: `CsvParameterLayout:98`, `CSVFormat:2265`,
+`Log4j2EventListener:26-27`, `spring.factories:17`,
+`ClassLoaderContextSelector:185,201`.
 
 All verified against `04c93c1d33` (branch `2.x`). Re-check before filing —
 `main` moves.

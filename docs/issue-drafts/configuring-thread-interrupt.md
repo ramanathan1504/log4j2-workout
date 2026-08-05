@@ -65,6 +65,14 @@ LogManager.getLogger("anything").info("this may go nowhere");
 Reliability depends on winning a race with configuration, so it may need a few
 attempts or a deliberately narrow timeout.
 
+**This is the one draft here without a captured run.** The other three carry
+output pasted from a reproduction; this one does not, because the failure is a
+race and I have no deterministic trigger for it. What was observed was a single
+occurrence: two unrelated appenders, healthy and writing minutes earlier, stored
+nothing after a worker was interrupted during configuration. That is suggestive,
+not proof. Treat the mechanism described above as a hypothesis until someone
+reproduces it on demand.
+
 ## What would help
 
 I am not proposing a specific fix — restoring a half-built context safely is
