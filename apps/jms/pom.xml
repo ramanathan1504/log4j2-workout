@@ -51,6 +51,18 @@
     <dependency>
       <groupId>org.apache.logging.log4j</groupId>
       <artifactId>log4j-jakarta-jms</artifactId>
+      <!--
+        Pinned rather than left to log4j-bom, which does not manage this
+        artifact before 2.25.x. Without an explicit version the POM is
+        model-invalid at 2.24.1, and Maven validates every module in the
+        reactor even under `-pl`, so ONE unbuildable app broke `./bench run`
+        for every other app at that version. That is most of why the matrix
+        ledger had no 2.24.1 cells outside three apps.
+
+        The module itself first shipped at 2.25.0, so cells below that are
+        skipped by min_log4j_for() in ./bench rather than failing here.
+      -->
+      <version>${log4j.version}</version>
     </dependency>
 
     <dependency>
