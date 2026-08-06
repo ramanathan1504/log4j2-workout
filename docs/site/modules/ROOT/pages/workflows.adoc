@@ -1,0 +1,283 @@
+= Workflows
+:navtitle: Workflows
+:description: What this bench is for — reviewing a pull request, and reproducing then fixing an issue, end to end.
+
+This bench exists for two jobs. They are not the same job, so they are written
+separately.
+
+[cols="1,3"]
+|===
+| Job | Starts from, and asks
+
+| xref:workflows.adoc#review[Reviewing a pull request]
+| A diff. Does it do what it claims, and what else does it break?
+
+| xref:workflows.adoc#reproduce[Reproducing and fixing an issue]
+| A report. Does it reproduce at all, on which versions, and does the fix close it?
+|===
+
+Both stay in the terminal end to end: `gh` reads the report or the diff,
+`./bench` runs it, `gh` posts back. Every command below is in
+xref:cli.adoc[Command reference]; the markdown originals are `docs/BY-HAND.md`
+and `docs/GH-COMMANDS.md`.
+
+== What the bench gives you that a unit test does not
+
+[cols="1,3"]
+|===
+| |
+
+| *A real application*
+| Not a test harness. A Spring Boot app, a servlet container, a JPA persistence unit, a JMS queue — where classpath order, service loaders and static initialisers behave as they do in production
+
+| *A real classpath*
+| Resolved per Log4j version and run in a forked JVM, never inside Maven's own classpath. What executes is exactly what a reproduction zip ships
+
+| *Every version at once*
+| One command runs the same test across 2.24.1 → 3.0.0-SNAPSHOT, so "when did this change" is an observation rather than a bisect
+
+| *An outcome, not an exit code*
+| Rows read back, mail consumed, a queue drained, a topic polled. Log4j catches appender exceptions and exits 0, so absence of error proves nothing
+
+| *Something to attach*
+| `repro` emits a standalone Maven project that builds and reproduces with the bench nowhere in sight
+|===
+
+[#review]
+== Reviewing a pull request
+
+=== 1. Read it, and decide what it touches
+
+[source,bash]
+----
+./bench pr 4240              # metadata, files and log4j-* modules touched, checks, reviews
+./bench pr 4240 --diff       # the patch itself
+----
+
+Three questions, before running anything:
+
+[cols="1,2"]
+|===
+| Question | Where the answer is
+
+| Which Log4j module? | the changed paths in the diff
+| Which app puts that module on a classpath? | `./bench coverage`
+| Which configuration exercises it? | `./bench list --configs`, xref:configs.adoc[Configurations]
+|===
+
+If no app reaches the module, *that is the finding*. Say so on the pull request,
+and record the gap.
+
+=== 2. Build the branch, and take the baseline in the right order
+
+[source,bash]
+----
+./bench run core-java --config xml/layout-pattern-full --log4j 2.26.1   # baseline FIRST
+./bench pr 4240 --checkout --install                                    # then overwrite the snapshot
+./bench run core-java --config xml/layout-pattern-full                  # = 2.27.0-SNAPSHOT = the PR
+----
+
+[WARNING]
+====
+The order matters and is easy to get wrong. `--install` publishes the pull
+request *over* `2.27.0-SNAPSHOT` in `~/.m2`, which is the version `./bench`
+resolves by default. A baseline taken after that step measures the pull request
+twice and agrees with itself perfectly.
+
+`--3x` uses the 3.x clone and publishes `3.0.0-SNAPSHOT` instead.
+====
+
+=== 3. Sweep for what it broke elsewhere
+
+The same test on every version, then widened only where the diff plausibly
+reaches:
+
+[source,bash]
+----
+./bench matrix --apps core-java --configs xml/layout-pattern-full \
+  --javas 17 --scenario exceptions
+
+./bench matrix --apps core-java,db,spring-boot-maven --javas 8,17,21 \
+  --scenario messages
+----
+
+A `SKIP` is information — the reason is printed. Read it; it is neither a pass
+nor a problem. See xref:cli.adoc#_why_a_cell_is_skipped[why a cell is skipped].
+
+=== 4. Attach the evidence, and say what you ran
+
+[source,bash]
+----
+./bench repro 4240 --pr \
+  --scenario exceptions --config xml/layout-pattern-full \
+  --log4j 2.26.1 --log4j 2.27.0-SNAPSHOT
+
+gh pr comment 4240 -R apache/logging-log4j2 --body-file repros/pr-4240/README.md
+----
+
+Say what you ran, on which versions and JDKs, and what you saw — not just a
+verdict. A verdict with no matrix behind it is worth less than the matrix with
+no verdict.
+
+Then put the clone back — `git -C ~/apache/logging-log4j2 switch main` — and
+rebuild the snapshot before the next unrelated run, because `~/.m2` still holds
+the pull request's build until you do.
+
+[#reproduce]
+== Reproducing and fixing an issue
+
+=== 1. Read the report, then run the version it names
+
+[source,bash]
+----
+./bench issue 4143 --comments
+./bench run core-java --config xml/layout-jsontemplate --log4j 2.24.1
+----
+
+Nothing obvious? Raise the status level before assuming the report is wrong.
+Log4j swallows appender failures, so a clean run means little:
+
+[source,bash]
+----
+BENCH_JVM_ARGS='-Dlog4j2.debug=true -Dlog4j2.StatusLogger.level=TRACE' \
+  ./bench run nosql --config xml/appender-nosql
+----
+
+This is how the Cassandra finding was captured: the appender had already failed
+at startup, and the per-event NPE was burying the one line that named the cause.
+
+Still nothing? The configuration is probably wrong for the report, rather than
+the report wrong for Log4j. A configuration that never loads the layout under
+discussion reproduces nothing and looks exactly like a pass.
+
+=== 2. Find the boundaries
+
+[source,bash]
+----
+./bench matrix --apps core-java --configs xml/layout-jsontemplate \
+  --javas 17 --scenario exceptions
+----
+
+The first version that fails and the last that passes are the single most useful
+thing you can put in the issue. Then check the other axes *one at a time* — a
+bug that appears only on JDK 8, or only under the properties format, is a
+different bug:
+
+[source,bash]
+----
+./bench matrix --apps core-java --configs xml/layout-jsontemplate \
+  --javas 8,17,21 --scenario exceptions
+
+./bench matrix --apps core-java --javas 17 --scenario exceptions \
+  --configs xml/layout-jsontemplate,json/layout-jsontemplate,yaml/layout-jsontemplate
+----
+
+=== 3. Write the reproduction, and run it somewhere else
+
+[source,bash]
+----
+./bench repro 4143 --scenario exceptions --config xml/layout-jsontemplate \
+  --log4j 2.24.1 --log4j 2.25.4 --log4j 2.26.1 --log4j 2.27.0-SNAPSHOT
+----
+
+Extract the zip *outside* this repository and run `./run.sh` once yourself
+before attaching it. That is the whole point of it being standalone.
+
+=== 4. File it, from a draft you have read
+
+New findings are written to Apache's bug template under `docs/issue-drafts/`
+first, then filed from the file rather than from an inline heredoc you cannot
+re-read:
+
+[source,bash]
+----
+gh issue create -R apache/logging-log4j2 \
+  --title "<one line naming the class and the symptom>" \
+  --body-file docs/issue-drafts/<draft>.md --label bug
+
+gh issue comment 4143 -R apache/logging-log4j2 --body-file repros/issue-4143/README.md
+----
+
+NOTE: The zip cannot be attached from the command line — GitHub has no API for issue attachments. Drag it into the comment box.
+
+See xref:issues.adoc[Issues raised] for what has been filed, and
+xref:gaps.adoc[Open gaps] for what is still open.
+
+=== 5. Fix it upstream, and verify both halves
+
+The fix goes in the Log4j clone. Nothing in this repository is ever pushed to an
+Apache project.
+
+[source,bash]
+----
+cd ~/apache/logging-log4j2
+git switch main && git pull --ff-only
+git switch -c fix-4143
+# edit, and add a test in the Log4j module's own test source set
+mvn install -DskipTests
+----
+
+Then re-run step 2 against the patched snapshot:
+
+[source,bash]
+----
+./bench matrix --apps core-java --configs xml/layout-jsontemplate \
+  --javas 8,17,21 --scenario exceptions
+----
+
+[IMPORTANT]
+====
+Both halves have to hold. Every version that failed must now pass, *and every
+version that passed must still pass*. The second half is the reason to sweep
+rather than re-run the one failing cell.
+====
+
+Widen once more before opening the pull request, to catch collateral damage:
+
+[source,bash]
+----
+./bench matrix --apps core-java,db,spring-boot-maven,log4j1-bridge \
+  --javas 17 --scenario messages
+----
+
+== Changing the bench itself
+
+`main` and `development` both carry branch protection: a direct push is refused
+with `GH006`, even under `--no-verify`.
+
+[source,bash]
+----
+git config core.hooksPath .githooks     # once per clone; git will not do it for you
+git switch development && git pull --ff-only
+git switch -c my-change
+git push -u origin my-change
+gh pr create --base development
+----
+
+[cols="1,1,3"]
+|===
+| Direction | Merge with | Because
+
+| feature → `development`
+| `--squash`
+| `development` keeps a linear history
+
+| `development` → `main`
+| `--merge`
+| `--rebase` duplicates every commit under a new SHA and the branches diverge until a sync conflicts. That happened; it is why linear history is off for `main`
+|===
+
+CI runs ~200 cells in ~13 minutes on every pull request into `development`, so
+batch related work into one branch rather than opening a pull request per fix.
+It skips `+**.md+`, `docs/**`, `.githooks/**`, `.gitignore`, `.gitattributes`,
+`infra/output/**` and `log4j-samples/**` — a docs-only pull request reports no
+run at all, which is the filter working rather than a stuck check.
+
+[source,bash]
+----
+gh pr checks                    # CI on the current branch
+gh run watch                    # follow it
+gh run view <id> --log-failed   # only what failed
+----
+
+NOTE: `git branch --merged` under-reports here. Squash merges mean branch commits never become ancestors of `main` — ask GitHub instead: `gh pr list --state merged`.

@@ -64,8 +64,8 @@ Every app in this bench therefore asserts on an outcome rather than an absence:
 | XML, JSON, YAML, properties, plus both Log4j 1.x formats
 
 | Log4j versions
-| 8
-| 2.24.1 through 2.27.0, plus local 2.x and 3.x snapshots
+| 7
+| 2.24.1 through 2.26.1, plus the local 2.x and 3.x snapshots. `./bench list --versions`
 
 | JDKs
 | 4
@@ -75,20 +75,57 @@ Every app in this bench therefore asserts on an outcome rather than an absence:
 `./bench coverage` recomputes module reach from the source clone and the
 resolved classpaths, so the number above does not go stale as either moves.
 
+== What it helps you do
+
+Two jobs, written up end to end in xref:workflows.adoc[Workflows]:
+
+[cols="1,3"]
+|===
+| Job | The loop
+
+| *Review a pull request*
+| Read the diff, work out which app reaches the module it changes, build the
+branch into your local repository so `./bench` can select it, baseline against a
+release, run it, sweep for what it broke elsewhere, attach a verification matrix
+
+| *Reproduce and fix an issue*
+| Read the report, run the version it names, find the first version that fails
+and the last that passes, emit a standalone reproduction, fix it upstream, then
+prove both halves — what failed now passes, and what passed still does
+|===
+
+Both stay in the terminal from beginning to end. `./bench issue` and
+`./bench pr` read GitHub, `./bench run` and `./bench matrix` run it, and
+`./bench repro` produces the thing you attach.
+
 == Where to go next
 
-* xref:running.adoc[Running the bench] — the CLI, and generating a reproduction
-* xref:axes.adoc[The four axes] — how the matrix decides what to run and what to skip
-* xref:findings.adoc[Findings] — Log4j behaviours this bench uncovered, each traced to source
+[cols="1,3"]
+|===
+| Page | For
+
+| xref:workflows.adoc[Workflows] | A pull request or issue number in front of you, right now
+| xref:cli.adoc[Command reference] | Every command, flag, environment variable and output path
+| xref:running.adoc[Running the bench] | The CLI in prose — configurations, scenarios, failure detection
+| xref:axes.adoc[The four axes] | How the matrix decides what to run and what to skip
+| xref:apps.adoc[Applications] | What each application exists to reach, and why they cannot be merged
+| xref:configs.adoc[Configurations] | The four formats, and where one genuinely cannot express another
+| xref:infra.adoc[Backing services] | What needs Docker, and what runs inside the bench JVM
+| xref:findings.adoc[Findings] | 56 Log4j behaviours, each traced to source rather than inferred
+| xref:issues.adoc[Issues raised] | What was filed upstream, and what was deliberately not
+| xref:gaps.adoc[Open gaps] | What is unfinished, with what closing it would take
+|===
 
 == Documents not mirrored here
 
-Two live only as markdown in the repository, because they are working documents
-rather than reference:
+Three live only as markdown in the repository, because they are working
+documents rather than reference:
 
 * `docs/HANDOVER.md` — the operator's manual. Overlaps this site's Running,
   Axes, Applications, Configurations and Backing services pages, and adds the git
   workflow, CI, and a collected list of traps.
+* `docs/BY-HAND.md` and `docs/GH-COMMANDS.md` — the markdown originals of
+  xref:workflows.adoc[Workflows], plus the full `gh` command reference.
 * `docs/SLACK.md` — paste-ready announcements, and a drafted comment for
   https://github.com/apache/logging-log4j2/issues/2314[#2314] that has not been
   posted.

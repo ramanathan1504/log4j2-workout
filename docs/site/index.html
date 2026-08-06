@@ -116,15 +116,17 @@
 <div class="stats">
   <div class="stat"><span class="n">41/41</span><span class="l">shippable 2.x modules on a classpath</span></div>
   <div class="stat"><span class="n">18</span><span class="l">application modules, 19 run targets</span></div>
-  <div class="stat"><span class="n">23</span><span class="l">configurations, most in 4 formats</span></div>
-  <div class="stat"><span class="n">8</span><span class="l">Log4j versions</span></div>
+  <div class="stat"><span class="n">24</span><span class="l">configurations, mirrored across 4 formats</span></div>
+  <div class="stat"><span class="n">7</span><span class="l">Log4j versions</span></div>
   <div class="stat"><span class="n">4</span><span class="l">JDKs (8, 17, 21, 22)</span></div>
 </div>
 
 <nav class="toc">
   <p>Contents</p>
   <ol>
+    <li><a href="#workflows">What it helps you do</a></li>
     <li><a href="#running">Running it</a></li>
+    <li><a href="#cli">Command reference</a></li>
     <li><a href="#axes">The four axes</a></li>
     <li><a href="#apps">Applications</a></li>
     <li><a href="#configs">Configurations</a></li>
@@ -134,6 +136,43 @@
     <li><a href="#gaps">Open gaps</a></li>
   </ol>
 </nav>
+
+<h2 id="workflows">What it helps you do</h2>
+
+<p>Two jobs. They start from different places and ask different questions, so they are kept separate — and both stay in the terminal from beginning to end.</p>
+
+<div class="scroll">
+<table>
+  <thead><tr><th>Reviewing a pull request</th><th>Reproducing and fixing an issue</th></tr></thead>
+  <tbody>
+    <tr>
+      <td>Starts from a diff: <em>does it do what it claims, and what else does it break?</em></td>
+      <td>Starts from a report: <em>does it reproduce at all, on which versions, and does the fix close it?</em></td>
+    </tr>
+    <tr>
+      <td><code>./bench pr 4240 --diff</code> — the patch, the files, and the <code>log4j-*</code> modules it touches</td>
+      <td><code>./bench issue 4143 --comments</code> — the report and whatever the discussion already ruled out</td>
+    </tr>
+    <tr>
+      <td><code>./bench coverage</code> — which application puts that module on a classpath. If none does, <strong>that is the finding</strong></td>
+      <td><code>./bench run core-java --config … --log4j 2.24.1</code> — the version the reporter named, first</td>
+    </tr>
+    <tr>
+      <td>Baseline against a release, <em>then</em> <code>./bench pr 4240 --checkout --install</code> — it publishes the PR over <code>2.27.0-SNAPSHOT</code>, so a baseline taken afterwards measures the PR twice</td>
+      <td><code>./bench matrix … --scenario exceptions</code> — the first version that fails and the last that passes is the single most useful line in the issue</td>
+    </tr>
+    <tr>
+      <td><code>./bench matrix --apps a,b --javas 8,17,21</code> — what it broke elsewhere</td>
+      <td>Fix upstream, then sweep again: what failed must pass, <strong>and what passed must still pass</strong></td>
+    </tr>
+    <tr>
+      <td colspan="2"><code>./bench repro &lt;n&gt; [--pr]</code> — a standalone Maven project that builds and reproduces with the bench nowhere in sight, plus a filled-in verification matrix to paste in</td>
+    </tr>
+  </tbody>
+</table>
+</div>
+
+<p>What this gives you that a unit test does not: a <strong>real application</strong> — Spring Boot, a servlet container, a JPA persistence unit, a JMS queue — on a <strong>real classpath</strong> resolved per version and run in a forked JVM, across <strong>every version at once</strong>, judged by an <strong>outcome</strong> rather than an exit code.</p>
 
 <h2 id="running">Running it</h2>
 
@@ -149,6 +188,64 @@
 
 <pre><code>./bench run core-java --config yaml/filter-all
 ./bench run core-java --config xml/baseline-console,xml/custom-levels</code></pre>
+
+<h2 id="cli">Command reference</h2>
+
+<p>Nine commands. There is no global flag — every flag belongs to a command, and an unknown one is an error rather than a silent no-op. The exception is <code>run</code>, which forwards what it does not recognise to the <em>application</em>; that is the reason <code>BENCH_JVM_ARGS</code> exists.</p>
+
+<div class="scroll">
+<table>
+  <thead><tr><th>Command</th><th>Flags</th><th>Does</th></tr></thead>
+  <tbody>
+    <tr><td><code>list</code></td><td><code>--apps</code> <code>--versions</code> <code>--configs</code></td><td>Enumerate what exists. Line-oriented, so it pipes</td></tr>
+    <tr><td><code>run</code></td><td><code>--config</code> <code>--log4j</code> <code>--java</code> <code>--</code></td><td>One app, one configuration, one JDK, one version. Scenarios are positional</td></tr>
+    <tr><td><code>matrix</code></td><td><code>--apps</code> <code>--configs</code> <code>--javas</code> <code>--log4j</code> <code>--scenario</code> <code>--all</code> <code>--reuse-builds</code></td><td>Sweep app × config × JDK × version, invalid cells pruned. Exits non-zero if any cell failed</td></tr>
+    <tr><td><code>coverage</code></td><td><code>--2x</code> <code>--3x</code></td><td>Module reach, recomputed from the source clone rather than a checked-in list</td></tr>
+    <tr><td><code>repro</code></td><td><code>--pr</code> <code>--scenario</code> <code>--config</code> <code>--title</code> <code>--log4j</code></td><td>A standalone reproduction zip plus a verification matrix</td></tr>
+    <tr><td><code>issue</code></td><td><code>--comments</code> <code>--repo</code></td><td>Read an upstream issue. Read-only</td></tr>
+    <tr><td><code>pr</code></td><td><code>--diff</code> <code>--files</code> <code>--checkout</code> <code>--install</code> <code>--3x</code> <code>--clone</code></td><td>Read a pull request; with <code>--checkout</code>, put it on your classpath</td></tr>
+    <tr><td><code>clean</code></td><td>—</td><td>Discard <code>.bench/</code>. Slow to recover from, never destructive</td></tr>
+    <tr><td><code>help</code></td><td>—</td><td>The header block of the script itself</td></tr>
+  </tbody>
+</table>
+</div>
+
+<h3>The two flags that decide whether a sweep is usable</h3>
+<ul>
+  <li><span class="tag warn">time</span> <strong><code>--scenario</code> on any sweep.</strong> Without it every cell runs all seven scenarios, and <code>rollover</code> writes 2000 lines — against a JDBC appender that is 2000 inserts, per cell. It is the difference between hours and a week. Measured, not estimated.</li>
+  <li><span class="tag bad">correctness</span> <strong>Never <code>--reuse-builds</code> while editing app sources.</strong> It reuses a cached classpath and runs stale classes, which is exactly what the always-build default prevents. It is for sweeps, where nothing between cells changes sources.</li>
+</ul>
+
+<h3>Environment</h3>
+<div class="scroll">
+<table>
+  <thead><tr><th>Variable</th><th>Default</th><th>Effect</th></tr></thead>
+  <tbody>
+    <tr><td><code>BENCH_JVM_ARGS</code></td><td>empty</td><td>Flags for the forked JVM — necessary because unrecognised <code>run</code> arguments go to the app, not the JVM</td></tr>
+    <tr><td><code>BENCH_CELL_TIMEOUT</code></td><td><code>300</code></td><td>Per-cell wall clock. A cell that outruns it fails with a stated cause instead of hanging the sweep</td></tr>
+    <tr><td><code>BENCH_REUSE_BUILDS</code></td><td>unset</td><td>What <code>--reuse-builds</code> sets</td></tr>
+    <tr><td><code>BENCH_SPRING_SELFTEST</code></td><td><code>1</code></td><td><code>0</code> runs the Spring app as an interactive server</td></tr>
+    <tr><td><code>LOG4J_2X_CLONE</code>, <code>LOG4J_3X_CLONE</code></td><td><code>~/apache/logging-log4j2</code>, <code>~/apache/log4j-main</code></td><td>The source clones <code>coverage</code> reads, and <code>pr --checkout</code> fetches into</td></tr>
+  </tbody>
+</table>
+</div>
+
+<p>The single most useful invocation turns the StatusLogger all the way up, because an appender that catches its own exceptions reports there and leaves the exit code at 0 — so a run that looks clean at <code>WARN</code> can be doing nothing at all:</p>
+
+<pre><code>BENCH_JVM_ARGS='-Dlog4j2.debug=true -Dlog4j2.StatusLogger.level=TRACE' \
+  ./bench run nosql --config xml/appender-nosql</code></pre>
+
+<h3>Where output goes</h3>
+<div class="scroll">
+<table>
+  <thead><tr><th>Path</th><th>Contains</th></tr></thead>
+  <tbody>
+    <tr><td><code>logs/&lt;config&gt;/</code></td><td>What the appenders actually produced — where a finding is usually confirmed</td></tr>
+    <tr><td><code>.bench/</code></td><td>Cached classpaths, per-sweep logs, and the append-only cell ledger. Disposable; this is what <code>clean</code> removes</td></tr>
+    <tr><td><code>repros/&lt;kind&gt;-&lt;n&gt;/</code></td><td>The zip, the verification matrix, the per-version logs</td></tr>
+  </tbody>
+</table>
+</div>
 
 <h2 id="axes">The four axes</h2>
 
@@ -371,7 +468,7 @@ with a hypothesis attached.</p>
   the samples parent does not manage.</li>
   <li><strong>Cassandra 5 unreachable</strong> — driver 3.11 negotiates protocol v4 at most. 4.1 works.</li>
 </ul>
-<p><em>Not gaps, though they look like them:</em> ten apps cannot run on 3.x because those modules were
+<p><em>Not gaps, though they look like them:</em> eleven apps cannot run on 3.x because those modules were
 never published; <code>SerializedLayout</code> is deprecated; <code>${jndi:}</code> is unresolved
 deliberately; <code>appender-composite</code> fails on purpose.</p>
 
