@@ -1,0 +1,442 @@
+= Command reference
+:navtitle: Command reference
+:description: Every ./bench command, flag, environment variable and output path, in one page.
+
+Every command, flag and environment variable `./bench` accepts. For the
+narrative version — what to run and why — see
+xref:running.adoc[Running the bench] and xref:workflows.adoc[Workflows].
+
+[source,bash]
+----
+./bench <command> [arguments]
+----
+
+[cols="1,3,1"]
+|===
+| Command | Does | Touches
+
+| `list`
+| Enumerate apps, versions, configurations, scenarios
+| nothing
+
+| `run`
+| One app, one configuration, one JDK, one Log4j version
+| `logs/`
+
+| `matrix`
+| The same test across an axis, with invalid cells pruned
+| `.bench/`, `logs/`
+
+| `coverage`
+| Which Log4j modules reach a classpath, and which cells have run
+| nothing
+
+| `repro`
+| A standalone reproduction zip for an issue or a pull request
+| `repros/`
+
+| `issue`
+| Read an upstream issue
+| nothing
+
+| `pr`
+| Read an upstream pull request, and put it on your classpath
+| the *Log4j clone*, with `--checkout`
+
+| `clean`
+| Discard the classpath cache
+| `.bench/`
+
+| `help`
+| The header block of `./bench` itself
+| nothing
+|===
+
+There is no global flag. Every flag belongs to a command, and an unknown one is
+an error rather than a silent no-op — except on `run`, which forwards what it
+does not recognise to the *application*. That exception is the reason
+`BENCH_JVM_ARGS` exists.
+
+== list
+
+[source,bash]
+----
+./bench list                # everything, grouped
+./bench list --apps         # app targets, one per line
+./bench list --versions     # Log4j versions, oldest first
+./bench list --configs      # every configuration file, as format/name.ext
+----
+
+[cols="1,3"]
+|===
+| Flag | Effect
+
+| _(none)_   | Apps, versions, configurations and scenarios, in one grouped listing
+| `--apps`     | The 19 app targets. `apps` also works
+| `--versions` | The 7 Log4j versions, oldest first. `versions` also works
+| `--configs`  | Every file under `configs/`, as `format/name.ext`. `configs` also works
+|===
+
+The scenario list is not hard-coded — it comes from running `core-java` with
+`--list`, so it cannot drift from what the code actually offers.
+
+TIP: The output is line-oriented on purpose. `./bench list --versions | sed 's/^/--log4j /' | tr '\n' ' '` builds a `repro` invocation covering every version.
+
+== run
+
+[source,bash]
+----
+./bench run [app] [--config CFG] [--log4j VERSION] [--java MAJOR] [scenario...] [-- app-args]
+----
+
+Resolves a real classpath for that (app, version) and forks a JVM. Nothing runs
+inside Maven's own classpath, so what executes is exactly what a reproduction
+zip would ship.
+
+[cols="1,1,3"]
+|===
+| Flag | Default | Effect
+
+| _positional 1_
+| `core-java`
+| The app target. `./bench list --apps`
+
+| `--config`
+| the app's own default
+| `format/name`, a bare name for the XML one, or a comma-separated list for a composite
+
+| `--log4j`
+| `2.27.0-SNAPSHOT`
+| Any value from `./bench list --versions`
+
+| `--java`
+| the machine's default JDK
+| Major version — `8`, `17`, `21`, `22`. Resolved through `java_home`
+
+| `--quiet-banner`
+| off
+| Suppress the banner. Used internally by `list`
+
+| `--`
+| —
+| Everything after it goes to the application verbatim
+
+| _anything else_
+| —
+| Treated as a scenario name, or forwarded to the app
+|===
+
+Scenarios are positional, and more than one may be given:
+
+[source,bash]
+----
+./bench run core-java --config xml/baseline-console exceptions
+./bench run core-java --config xml/layout-pattern-full messages lookups
+----
+
+[cols="1,3"]
+|===
+| Scenario | Covers
+
+| `messages`      | Every `Message` type, lambda and `Supplier` forms, flow tracing
+| `lookups`       | All 18 built-in lookups, through a live `StrSubstitutor`
+| `context`       | MDC, NDC, marker hierarchies, propagation across a thread pool
+| `exceptions`    | Nested causes, suppressed, circular, deep stacks, colliding `equals`, mutating `hashCode`
+| `rollover`      | Drives size, time, cron and onStartup rollovers, then reports what rolled and what compressed
+| `programmatic`  | `ConfigurationBuilder` — a whole configuration built in code, no file
+| `custom-levels` | `Level.forName`, and the levels the custom-levels configurations declare
+|===
+
+Script languages are enabled for every run
+(`-Dlog4j2.Script.enableLanguages=groovy,js,javascript`), because `ScriptFilter`,
+`ScriptPatternSelector`, `ScriptCondition` and `ScriptAppenderSelector` otherwise
+refuse to run and report only "Script support is not enabled". A real deployment
+should not do this — it lets anyone who can write the configuration run code.
+
+== matrix
+
+[source,bash]
+----
+./bench matrix [--apps A,B] [--configs C,D] [--javas 17,21] [--log4j V,W] [--scenario S] [--all] [--reuse-builds]
+----
+
+Sweeps *app × configuration × JDK × Log4j version*, pruning the cells that
+cannot pass before running anything.
+
+[cols="1,1,3"]
+|===
+| Flag | Default | Effect
+
+| `--apps`
+| `core-java`
+| Comma-separated. `--app` also works
+
+| `--configs`
+| `xml/baseline-console`
+| Comma-separated. `--config` also works
+
+| `--javas`
+| the machine's default JDK
+| Comma-separated majors. `--java` also works
+
+| `--log4j`
+| *every version*
+| Comma-separated. The one axis that defaults to the whole list
+
+| `--scenario`
+| _all seven_
+| One scenario per cell. **Pass this.** See the warning below
+
+| `--all`
+| off
+| Open every axis at once — every app, every config, every installed JDK, every version
+
+| `--reuse-builds`
+| off
+| Reuse the cached classpath per (app, version). Exports `BENCH_REUSE_BUILDS=1`
+|===
+
+IMPORTANT: `--scenario` is the flag that decides whether a sweep takes hours or a week. Without it every cell runs all seven scenarios, and `rollover` writes 2000 lines — against a JDBC appender that is 2000 inserts, per cell. Measured, not estimated.
+
+An explicit `--apps`/`--configs`/`--javas`/`--log4j` overrides `--all` for that
+axis, so `--all --javas 17` is "everything, on one JDK".
+
+=== Exit status
+
+`matrix` exits non-zero when any cell failed, which is what makes it usable as a
+CI gate. A `SKIP` is not a failure — it is a cell that could not exist, with a
+reason printed.
+
+[cols="1,3"]
+|===
+| Result | Meaning
+
+| `PASS` | The cell ran and the app's own assertion held
+| `FAIL` | Non-zero exit, a `StatusLogger` error, or the cell outran `BENCH_CELL_TIMEOUT`
+| `SKIP` | Pruned before running, with the rule that pruned it
+|===
+
+=== Why a cell is skipped
+
+A failing cell that could never have passed is noise, and it buries the failures
+that matter — one 698-cell sweep produced 98 failures, none of them Log4j
+defects.
+
+[cols="1,3"]
+|===
+| Rule | Prunes
+
+| `min_java_for`      | Everything is compiled at release 17 except `java8-baseline`
+| `min_log4j_for`     | `jms` needs 2.25.0+; `log4j-jakarta-jms` did not exist before it
+| `is_2x_only`        | Eleven apps have no 3.x release path, so eight of the nineteen run there
+| `INTERACTIVE_APPS`  | `jakarta-web` and `javax-web` serve until interrupted, so no cell can finish
+| `requires_config_for` | An app asserting on an appender its configuration lacks
+| `requires_app_for`  | A configuration needing infrastructure its app never starts
+|===
+
+Log4j 3 with a JDK below 17, and the properties format on 3.x, are pruned the
+same way — the properties format does not exist on that line at all.
+
+== coverage
+
+[source,bash]
+----
+./bench coverage           # against the 2.x clone
+./bench coverage --3x      # against the 3.x clone
+----
+
+Answers two questions that fail differently: which Log4j modules are on some
+app's classpath at all, and which axis cells have actually been run. It reads
+the module list from your source clone rather than a checked-in list, so the
+number cannot go stale as the clone moves.
+
+[cols="1,3"]
+|===
+| Flag | Effect
+
+| `--2x` | Read `LOG4J_2X_CLONE`, default `~/apache/logging-log4j2`. The default
+| `--3x` | Read `LOG4J_3X_CLONE`, default `~/apache/log4j-main`
+|===
+
+The run ledger comes from `.bench/coverage.tsv`, appended by every `matrix`
+cell, so `clean` resets it.
+
+== repro
+
+[source,bash]
+----
+./bench repro <number> [--pr] [--scenario S] [--config CFG] [--title T] [--log4j V]...
+----
+
+[cols="1,1,3"]
+|===
+| Flag | Default | Effect
+
+| _positional 1_ | — | The issue or pull request number. Required
+| `--pr`       | issue | Treat the number as a pull request: output goes to `repros/pr-<n>/` and links to `/pull/<n>`
+| `--scenario` | `exceptions` | The scenario to embed
+| `--config`   | `xml/baseline-console.xml` | The configuration to ship
+| `--title`    | `Log4j <kind> #<n> reproduction` | Title in the generated README
+| `--log4j`    | `2.24.1`, `2.25.4`, `2.26.1`, `2.27.0-SNAPSHOT` | Repeatable — one flag per version
+|===
+
+Produces `repros/issue-<n>/` (or `pr-<n>/`):
+
+[cols="1,3"]
+|===
+| Path | What it is
+
+| `log4j-issue-<n>-repro.zip` | Standalone Maven project — no parent POM, no reference to this workspace. Attach this
+| `README.md` | A filled-in verification matrix, ready to paste into the issue
+| `output/<version>.log` | The full run against each version
+| `<project>/run.sh` | Inside the zip: build and run, one command
+|===
+
+Dependencies are derived from the configuration it ships, so a
+`JsonTemplateLayout` reproduction pulls in `log4j-layout-template-json` rather
+than silently falling back to the default configuration and reproducing nothing.
+
+NOTE: Generation writes only to `repros/`. The bench itself is never mutated, so there is nothing to revert afterwards.
+
+== issue
+
+[source,bash]
+----
+./bench issue <number> [--comments] [--repo OWNER/NAME]
+----
+
+Reads an upstream issue through `gh`, so the report and the run stay in one
+terminal. Read-only.
+
+[cols="1,1,3"]
+|===
+| Flag | Default | Effect
+
+| _positional 1_ | — | Issue number. Required
+| `--comments` | off | Append the discussion
+| `--repo` | `apache/logging-log4j2` | Any repository
+|===
+
+Given a pull request number it says so and names `./bench pr` rather than
+printing a bare 404 — the REST API treats both as issues, `gh issue view` does
+not.
+
+== pr
+
+[source,bash]
+----
+./bench pr <number> [--diff] [--files] [--checkout] [--install] [--3x] [--repo OWNER/NAME] [--clone PATH]
+----
+
+Prints the pull request, the files and the `log4j-*` modules it touches, its
+checks and its reviews — then, on request, makes it something `./bench` can
+select.
+
+[cols="1,1,3"]
+|===
+| Flag | Default | Effect
+
+| _positional 1_ | — | Pull request number. Required
+| `--diff`     | off | The patch itself
+| `--files`    | off | Changed paths only
+| `--checkout` | off | Fetch `pull/<n>/head` into the Log4j clone as `pr-<n>` and switch to it
+| `--install`  | off | With `--checkout`: `mvn install -DskipTests`, publishing the snapshot
+| `--3x`       | off | Use the 3.x clone; the snapshot becomes `3.0.0-SNAPSHOT`
+| `--repo`     | `apache/logging-log4j2` | Any repository
+| `--clone`    | `~/apache/logging-log4j2` | Where that repository is checked out. `BENCH_LOG4J_CLONE` also sets it
+|===
+
+WARNING: `--install` publishes the pull request over `2.27.0-SNAPSHOT` in `~/.m2`, which is where `./bench` resolves that version from. Take your baseline against a *release* first — a baseline measured after the overwrite measures the pull request twice.
+
+Everything except `--checkout` is read-only. `--checkout` touches the *Log4j
+clone*, never this repository, and refuses outright when that clone has
+uncommitted changes rather than moving branches out from under them.
+
+== clean
+
+[source,bash]
+----
+./bench clean
+----
+
+Removes `.bench/` — the cached classpaths, the matrix logs and the coverage
+ledger. Nothing in `logs/`, `repros/` or the applications is touched. The next
+run re-resolves every classpath, which is slow rather than destructive.
+
+== Environment variables
+
+[cols="1,1,3"]
+|===
+| Variable | Default | Effect
+
+| `BENCH_JVM_ARGS`
+| _empty_
+| Space-separated flags for the forked JVM. Necessary because unrecognised `run` arguments go to the *app*, not the JVM
+
+| `BENCH_CELL_TIMEOUT`
+| `300`
+| Per-cell wall clock, in seconds. A cell that outruns it is a `FAIL` with a stated cause
+
+| `BENCH_REUSE_BUILDS`
+| unset
+| Reuse the cached classpath per (app, version). `--reuse-builds` sets it
+
+| `BENCH_SPRING_SELFTEST`
+| `1`
+| `0` runs the Spring app as an interactive server instead of a self-test
+
+| `LOG4J_2X_CLONE`
+| `~/apache/logging-log4j2`
+| Source clone `coverage` reads for the 2.x module list
+
+| `LOG4J_3X_CLONE`
+| `~/apache/log4j-main`
+| Source clone `coverage --3x` reads
+
+| `BENCH_LOG4J_CLONE`
+| _as above_
+| Where `./bench pr --checkout` fetches into
+|===
+
+WARNING: Never set `BENCH_REUSE_BUILDS=1` while editing application sources. It reuses a cached classpath and runs stale classes — precisely what the always-build default prevents. It is for sweeps, where nothing between cells changes sources.
+
+The single most useful invocation of `BENCH_JVM_ARGS` turns the StatusLogger all
+the way up. Appenders that catch their own exceptions report there and leave the
+exit code at 0, so a run that looks clean at `WARN` can be doing nothing at all:
+
+[source,bash]
+----
+BENCH_JVM_ARGS='-Dlog4j2.debug=true -Dlog4j2.StatusLogger.level=TRACE' \
+  ./bench run nosql --config xml/appender-nosql
+----
+
+== Where output goes
+
+[cols="1,3"]
+|===
+| Path | Written by | Contains
+
+| `logs/<config>/`  | `run`, `matrix` | What the appenders actually produced — the files to inspect
+| `.bench/cp-<app>-<version>.txt` | `run` | Cached resolved classpath
+| `.bench/matrix-<stamp>.log` | `matrix` | Full per-cell output of one sweep
+| `.bench/coverage.tsv` | `matrix` | Append-only ledger of every cell run
+| `repros/<kind>-<n>/` | `repro` | The zip, the verification matrix, the per-version logs
+|===
+
+`.bench/` is disposable — that is what `clean` removes. `logs/` is the evidence
+a run produced, and is where a finding is usually confirmed.
+
+== Requirements
+
+[cols="1,3"]
+|===
+| Need | Why
+
+| JDK 17 | Everything but `java8-baseline` is compiled at release 17
+| JDK 8, 21, 22 | Widen the JDK axis. `java_home` is asked what exists; missing ones narrow the matrix rather than failing it
+| Maven 3.9+ | Every app but one
+| Gradle | `spring-boot-gradle` only — the same app built the other way, to catch what Maven's resolution hides
+| Docker | Only `apps/network` and `apps/db`. See xref:infra.adoc[Backing services]
+| `gh` | Only `issue` and `pr`
+| `timeout`/`gtimeout` | Optional. Without it a sweep runs unbounded and says so
+|===

@@ -52,10 +52,10 @@ bean definition to suppress — so the documented off switch does nothing.
 == Not filed
 
 `locateContext` drops the `ServletContext` entry::
-Duplicate of
-https://github.com/apache/logging-log4j2/issues/2314[#2314], open since February
-2024. What this bench adds is the `log4j-appserver` + `log4j-web` trigger and a
-captured before/after, which belongs as a comment there.
+Duplicate of https://github.com/apache/logging-log4j2/issues/2314[#2314], open
+since February 2024. What this bench adds is the `log4j-appserver` and
+`log4j-web` trigger and a captured before/after, which belongs as a comment
+there.
 
 Interrupting the configuring thread disables every appender::
 Reproduced once, but it is a race with no deterministic trigger. Held until it
