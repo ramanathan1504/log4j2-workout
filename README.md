@@ -27,6 +27,10 @@ reference. It covers the daily commands, reviewing an issue, producing a
 reproduction, what needs Docker, the git workflow, and a collected list of the
 traps that cost time.
 
+`docs/BY-HAND.md` is the step-by-step playbook for the two jobs this bench exists
+for, kept separate: reviewing a pull request, and reproducing then fixing an
+issue. Start there when you have a specific PR or issue number in front of you.
+
 `docs/FEATURE-MATRIX.md` is the catalogue: what is covered, what is not, and §17,
 the findings — 56 Log4j behaviours, each traced to source rather than inferred.
 
