@@ -16,6 +16,7 @@ drafted here and filed by hand; fixes go in the Log4j clone, never here.
 | Every `gh` command | `docs/GH-COMMANDS.md` |
 | Every `./bench` flag, env var, output path | `docs/site/modules/ROOT/pages/cli.adoc` |
 | The operator's manual, and the collected traps | `docs/HANDOVER.md` |
+| One app's flags, services and quirks | `docs/BENCH-NOTES.md` |
 | What is covered, and the 56 findings | `docs/FEATURE-MATRIX.md` (§17 findings, §19 3.x) |
 | What was filed upstream / what is still open | `docs/ISSUES.md`, `docs/GAPS.md` |
 
@@ -37,7 +38,9 @@ drafted here and filed by hand; fixes go in the Log4j clone, never here.
   whole 3.x column can pass while testing nothing.
 - **The Log4j 2 properties format does not exist on 3.x.**
 - **Cassandra needs the `cassandra-init` compose service,** not `cassandra`. The
-  appender cannot create its own keyspace.
+  appender cannot create its own keyspace, so the bare node stores nothing
+  silently. Per-app requirements like this one live in `docs/BENCH-NOTES.md`;
+  keep them there rather than growing this list.
 - **`./bench repro <arg>` treats its first argument as the issue number** — there
   is no `--help`. `./bench repro --help` scaffolds and runs `repros/issue---help/`.
 - A matrix `SKIP` is information, with the pruning rule printed. It is neither a

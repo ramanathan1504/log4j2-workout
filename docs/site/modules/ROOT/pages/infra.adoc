@@ -18,7 +18,7 @@ across a socket by definition.
 docker compose -f infra/docker-compose.yml up -d kafka syslog mailhog
 
 # The NoSQL appenders
-docker compose -f infra/docker-compose.yml up -d mongodb couchdb cassandra
+docker compose -f infra/docker-compose.yml up -d mongodb couchdb cassandra-init
 ----
 
 [cols="1,1,3"]

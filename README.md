@@ -53,7 +53,7 @@ Nothing here ever touches an upstream project.
 | JDK 17 (and ideally 8, 21, 22) | The JDK axis. `installed_javas()` discovers whatever `/usr/libexec/java_home -V` reports, so extra JDKs widen the matrix and missing ones simply narrow it. JDK 8 exists to test the oldest line Log4j 2 supports. |
 | Maven 3.9+ | Every app but one. |
 | Gradle | `spring-boot-gradle` only — the same app built the other way, to catch differences Maven's dependency resolution hides. |
-| Docker | Only for `apps/network` and `apps/db`. Everything else embeds its infrastructure (H2, GreenMail, Tomcat, Artemis, an in-process JNDI provider, a Spring Cloud Config server). |
+| Docker | Only for `apps/network` and `apps/nosql`. Everything else embeds its infrastructure (H2, GreenMail, Tomcat, Artemis, an in-process JNDI provider, a Spring Cloud Config server) — `apps/db` runs on embedded H2, whatever its POM also carries drivers for. |
 
 **Clone and enable the hooks**
 
