@@ -461,6 +461,6 @@ reports registrations on whichever line it finds. It was compiling against the
 already been located — the plugin machinery was fine, the bench's own
 introspection was not.
 
-**Nine of nineteen app targets run on 3.x.** The other ten cannot: their Log4j
+**Eight of nineteen app targets run on 3.x.** The other eleven cannot: their Log4j
 modules were never published for it, or — in the custom-plugins case — the
 annotations they compile against moved.
