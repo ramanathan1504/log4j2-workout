@@ -7,21 +7,32 @@ Two playbooks, no assistant involved. Copy the commands, read the output, decide
 
 Both assume the one-time setup in [`../README.md`](../README.md#setup) is done:
 JDK 17, Maven, `git config core.hooksPath .githooks`, and `./bench list` runs.
+Both also stay in the terminal: `gh` reads the report and the diff, `./bench`
+runs them, `gh` posts back. [`GH-COMMANDS.md`](GH-COMMANDS.md) is the full
+command reference; the commands below are the subset each step needs.
 
 Everything here writes to `repros/` and `logs/` only. Nothing in this repository
 is ever pushed to an Apache project.
 
 ---
 
-## The three commands you need
+## The commands you need
 
 ```bash
 ./bench list                                   # apps, configs, versions, scenarios
+./bench issue <n>                              # read an upstream issue
+./bench pr    <n> [--diff] [--checkout]        # read a PR, and put it on your classpath
 ./bench run  <app> --config <cfg> [scenario]   # one app, one config, one version
 ./bench matrix --apps <a> --configs <c> \
                --javas 17 --scenario <s>       # the same test across every version
 ./bench repro <number> [--pr] ...              # standalone zip to attach upstream
 ```
+
+`issue` and `pr` are thin wrappers over `gh`
+([`../scripts/gh-issue.sh`](../scripts/gh-issue.sh),
+[`../scripts/gh-pr.sh`](../scripts/gh-pr.sh)). They default to
+`apache/logging-log4j2` and are read-only, except `./bench pr --checkout`, which
+switches the **Log4j clone** to the PR branch and leaves this repository alone.
 
 Two rules that save the most time:
 
@@ -43,6 +54,11 @@ Two rules that save the most time:
 
 ### A1. Read the PR and decide what it touches
 
+```bash
+./bench pr 4240                    # metadata, files and modules touched, checks, reviews
+./bench pr 4240 --diff             # the patch itself
+```
+
 From the diff, work out three things before running anything:
 
 | Question | Where the answer lives |
@@ -60,6 +76,14 @@ The bench resolves Log4j from your local Maven repository, so a local install of
 the PR branch becomes a version the bench can select.
 
 ```bash
+./bench pr 4240 --checkout --install         # 2.x → publishes 2.27.0-SNAPSHOT
+./bench pr 4240 --3x --checkout --install    # 3.x → publishes 3.0.0-SNAPSHOT
+```
+
+It refuses to run if the Log4j clone has uncommitted changes, rather than
+switching branches out from under them. By hand, it is:
+
+```bash
 cd ~/apache/logging-log4j2
 git fetch origin pull/<PR>/head:pr-<PR>
 git switch pr-<PR>
@@ -67,7 +91,8 @@ mvn install -DskipTests                 # publishes 2.27.0-SNAPSHOT
 ```
 
 For a 3.x pull request, use `~/apache/log4j-main`, which publishes
-`3.0.0-SNAPSHOT`.
+`3.0.0-SNAPSHOT`. Set `BENCH_LOG4J_CLONE` or pass `--clone PATH` if your clones
+live elsewhere.
 
 ### A3. Establish the "before"
 
@@ -128,11 +153,25 @@ Say what you ran, on what versions and JDKs, and what you saw — not just a
 verdict. Anything the PR does not cover but should goes in the review as a
 question, not as a change request you make yourself.
 
+```bash
+gh pr comment 4240 -R apache/logging-log4j2 --body-file repros/pr-4240/README.md
+gh pr review  4240 -R apache/logging-log4j2 --comment --body-file notes.md
+```
+
+Then put the clone back: `git -C ~/apache/logging-log4j2 switch main`, and
+rebuild the snapshot before your next unrelated run — `~/.m2` still holds the
+PR's build until you do.
+
 ---
 
 ## B. Reproducing and fixing an issue
 
-### B1. Reproduce on the version reported
+### B1. Read the report, then reproduce on the version named
+
+```bash
+./bench issue 4143                 # the report, with the version and config in it
+./bench issue 4143 --comments      # plus whatever the discussion already ruled out
+```
 
 Pick the app and config nearest the reporter's setup, then run exactly the
 version they named:
@@ -189,9 +228,24 @@ the default configuration.
 ### B4. File it, or draft it first
 
 New findings get written to Apache's bug template under `docs/issue-drafts/`
-before anything is filed. `docs/ISSUES.md` records what was raised;
-`docs/GAPS.md` records what is still open. See `docs/issue-drafts/README.md` for
-the template and the four drafts already there.
+before anything is filed — read the draft once as text, then file it from the
+file rather than from an inline heredoc you cannot re-read:
+
+```bash
+gh issue create -R apache/logging-log4j2 \
+  --title "<one line that names the class and the symptom>" \
+  --body-file docs/issue-drafts/<draft>.md --label bug
+
+# an existing report instead: post the verification matrix as a comment
+gh issue comment 4143 -R apache/logging-log4j2 --body-file repros/issue-4143/README.md
+```
+
+The zip cannot be attached from the CLI — GitHub has no API for issue
+attachments. Drag it into the comment box.
+
+`docs/ISSUES.md` records what was raised; `docs/GAPS.md` records what is still
+open. See `docs/issue-drafts/README.md` for the template and the four drafts
+already there.
 
 ### B5. Fix it in the Log4j clone
 
@@ -252,6 +306,17 @@ gh pr create --base development
 Squash into `development`, plain merge from `development` into `main`. CI runs
 ~200 cells in ~13 minutes on every PR into `development`, so batch related work
 into one branch rather than opening a PR per fix.
+
+```bash
+gh pr checks                                  # CI on the current branch
+gh run watch                                  # follow it to completion
+gh run view <id> --log-failed                 # only what failed
+gh pr merge <n> --squash --delete-branch
+```
+
+A docs-only PR reports no run at all — CI skips `**.md` and `docs/**`. That is
+the filter working, not a stuck check. The rest is in
+[`GH-COMMANDS.md`](GH-COMMANDS.md) §3–§4.
 
 ---
 

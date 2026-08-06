@@ -30,6 +30,8 @@ traps that cost time.
 `docs/BY-HAND.md` is the step-by-step playbook for the two jobs this bench exists
 for, kept separate: reviewing a pull request, and reproducing then fixing an
 issue. Start there when you have a specific PR or issue number in front of you.
+`docs/GH-COMMANDS.md` is the `gh` reference that goes with it, so the whole loop
+— read the report, run it, file the finding, watch CI — stays in the terminal.
 
 `docs/FEATURE-MATRIX.md` is the catalogue: what is covered, what is not, and §17,
 the findings — 56 Log4j behaviours, each traced to source rather than inferred.
