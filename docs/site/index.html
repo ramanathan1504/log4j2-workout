@@ -313,7 +313,7 @@
 <p>Almost nothing needs a container. H2, GreenMail, Tomcat 9 and 10, ActiveMQ Artemis, an in-process JNDI provider and a Spring Cloud Config server all run <em>inside the bench JVM</em>. Two applications are the exception, because their appenders speak across a socket by definition.</p>
 
 <pre><code>docker compose -f infra/docker-compose.yml up -d kafka syslog mailhog
-docker compose -f infra/docker-compose.yml up -d mongodb couchdb cassandra</code></pre>
+docker compose -f infra/docker-compose.yml up -d mongodb couchdb cassandra-init</code></pre>
 
 <div class="scroll">
 <table>
