@@ -2,7 +2,14 @@
 <!--
   The NoSQL appenders: MongoDB, Cassandra and CouchDB. Feature matrix §1.
 
-    docker compose -f infra/docker-compose.yml up -d mongodb cassandra couchdb
+    docker compose -f infra/docker-compose.yml up -d mongodb couchdb cassandra-init
+
+  cassandra-init, NOT cassandra: it applies infra/cql/cassandra-init.cql once
+  the node is healthy. The appender cannot create its own keyspace — the
+  DataStax driver's own Netty acquires a Log4j logger while the driver is
+  initialising, which configures Log4j, which starts this appender, which
+  connects to a keyspace the bootstrap code has not reached yet. Start the
+  bare node instead and the appender stores nothing, silently.
 
   Cassandra takes 60–90 seconds to accept connections after the container
   starts, which is much longer than everything else here. A run started too
