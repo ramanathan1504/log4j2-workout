@@ -122,9 +122,11 @@ That is an upstream change, not a bench one.
 
 Stated because each looks like one:
 
-- **Ten of nineteen apps cannot run on 3.x.** Their Log4j modules were never
-  published for it — `log4j-1.2-api`, `log4j-jakarta-web`, `log4j-spring-boot`,
-  `log4j-jpa`, the JUL/JCL/SLF4J bridges, SMTP, JMS. Upstream reality.
+- **Eleven of nineteen apps cannot run on 3.x**, so eight do. Ten of the eleven
+  because their Log4j modules were never published for it — `log4j-1.2-api`,
+  `log4j-jakarta-web`, `log4j-spring-boot`, `log4j-jpa`, the JUL/JCL/SLF4J
+  bridges, SMTP, JMS. Upstream reality. The eleventh is `custom-plugins`, for
+  the annotation package move in §1. `APPS_2X_ONLY` in `bench` is the list.
 - **`SerializedLayout` is not exercised.** Deprecated, and refuses to build
   without `log4j2.enableSerialization`.
 - **`${jndi:}` renders unresolved.** Deliberate. The bench never sets
