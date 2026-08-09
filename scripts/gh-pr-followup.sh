@@ -60,7 +60,12 @@ if [[ -n $SYNC ]]; then
   ledger_field "$SYNC" 1 | grep -q . || die "PR $SYNC is not in the ledger"
   head=$(gh pr view "$SYNC" -R "$REPO" --json headRefOid --jq .headRefOid) \
     || die "could not read PR $SYNC from $REPO"
-  today=$(date -u +%Y-%m-%d)
+  # A full UTC timestamp, not a date. The badge test compares this against a
+  # comment's createdAt, and "2026-08-09T15:18:04Z" > "2026-08-09" lexically --
+  # so a date alone can never clear a badge raised by activity earlier the same
+  # day, and the row looks permanently stuck. Date-only rows still compare
+  # correctly, so old ledgers keep working.
+  today=$(date -u +%Y-%m-%dT%H:%M:%SZ)
   tmp=$(mktemp)
   awk -F'\t' -v OFS='\t' -v pr="$SYNC" -v h="$head" -v d="$today" \
     '/^[[:space:]]*(#|$)/ {print; next} $1==pr {$3=d; $4=h} {print}' "$LEDGER" > "$tmp"
