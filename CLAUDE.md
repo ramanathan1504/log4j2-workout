@@ -69,8 +69,12 @@ it:
 | Which apps are 2.x-only | `APPS_2X_ONLY` in `bench` (eleven; so eight of nineteen run on 3.x) |
 | Module reach | `./bench coverage`, which reads the source clone |
 
-`./bench list --configs` prints 71 files, but one is a layout template, not a
-configuration — 70 configs, 24 of them in XML, which is the superset.
+`./bench list --configs` prints 74 files, but one (`templates/bench-custom.json`)
+is a JsonTemplateLayout template, not a configuration — 73 configs, 27 of them in
+XML, which is the superset.
+
+Three of those are `repro-*`, written for one named PR and hand-run. `matrix`
+skips them with a reason rather than sweeping them, because one is built to fail.
 
 ## Local clones and the version axis
 

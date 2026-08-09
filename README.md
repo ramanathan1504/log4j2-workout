@@ -30,6 +30,11 @@ traps that cost time.
 `docs/BY-HAND.md` is the step-by-step playbook for the two jobs this bench exists
 for, kept separate: reviewing a pull request, and reproducing then fixing an
 issue. Start there when you have a specific PR or issue number in front of you.
+`docs/PR-REVIEW.md` is the other half of the first job: how to judge whether a
+contributor's pull request should be merged at all, and how to follow it after
+you comment. `docs/pr-reviews/` holds the reviews already written, and
+`./bench followup` says what has moved on them since.
+
 `docs/GH-COMMANDS.md` is the `gh` reference that goes with it, so the whole loop
 — read the report, run it, file the finding, watch CI — stays in the terminal.
 
@@ -99,7 +104,7 @@ standalone reproduction to attach to it.
 | Module reach (2.x) | 41 of 41 shippable modules on some app's classpath (`./bench coverage` recomputes it) |
 | Module reach (3.x) | 21 of 22 shippable modules on a classpath. The exception is `log4j-plugin-processor`: `@Plugin` moved package between the lines, so plugin sources cannot compile against both and `apps/custom-plugins` is 2.x-only. Catalogued in `FEATURE-MATRIX` §19 |
 | Config formats | every config in XML, JSON, YAML and properties, plus both Log4j 1.x formats |
-| Axes | 19 app targets · 70 configs · JDK 8/17/21/22 · 2.24.1 → 3.0.0-SNAPSHOT. **8 of the 19 apps run on 3.x** — eleven are 2.x-only (`APPS_2X_ONLY` in `bench`), either because their Log4j module has no 3.x release (`log4j-1.2-api`, `log4j-jakarta-web`, `log4j-spring-boot`, `log4j-jpa`, the JUL/JCL/SLF4J bridges, SMTP, JMS) or because the sources cannot compile against both lines (`custom-plugins`) |
+| Axes | 19 app targets · 73 configs · JDK 8/17/21/22 · 2.24.1 → 3.0.0-SNAPSHOT. **8 of the 19 apps run on 3.x** — eleven are 2.x-only (`APPS_2X_ONLY` in `bench`), either because their Log4j module has no 3.x release (`log4j-1.2-api`, `log4j-jakarta-web`, `log4j-spring-boot`, `log4j-jpa`, the JUL/JCL/SLF4J bridges, SMTP, JMS) or because the sources cannot compile against both lines (`custom-plugins`) |
 | Pattern converters | all 41 |
 | Layouts | every layout Log4j ships except `SerializedLayout`, which is deprecated and refuses to build without `log4j2.enableSerialization` |
 | Appenders needing infrastructure | JDBC, JPA, SMTP, JMS, JNDI, Kafka, Syslog, Socket, HTTP, JeroMQ, MongoDB, CouchDB, Cassandra — all verified by outcome against real services |

@@ -38,7 +38,7 @@ Two deliberate exceptions, so you are not confused when you meet them:
 ```
 bench                     the CLI — the only entry point
 apps/                     18 application modules, 19 run targets
-configs/                  70 configurations, shared by every app
+configs/                  73 configurations, shared by every app
   xml/ json/ yaml/ properties/    the same configs in four formats
   log4j1/                 log4j.xml and log4j.properties for the 1.x bridge
   templates/              JsonTemplateLayout event templates
@@ -61,7 +61,7 @@ logs/                     runtime output (gitignored)
 ```bash
 ./bench list                      # apps, configs, versions, scenarios
 ./bench list --apps               # just the app targets
-./bench list --configs            # all 70 configs
+./bench list --configs            # all 73 configs
 ./bench list --versions           # the 7 Log4j versions
 ./bench coverage                  # module reach, recomputed from source
 ```
@@ -120,6 +120,33 @@ taking a week. Measured, not estimated.
    ```
 
 4. Write your notes wherever suits. A markdown file is enough.
+
+### Reviewing a *pull request* is a different job
+
+An issue asks "does this reproduce". A pull request asks "should this be
+merged", and the second does not follow from the first — a change can reproduce
+its bug perfectly and still fix the wrong problem, or fix it by removing
+behaviour three other callers depend on.
+
+That job has its own playbook: **`docs/PR-REVIEW.md`**. The parts that are not
+obvious from this file:
+
+- **Check who filed the linked issue, and when.** Hours after you filed it
+  yourself, from an account with no history, means the PR was written from your
+  issue text — so its passing tests assert *your* specification, not the fix's
+  correctness.
+- **Read every implementation of what is being changed**, not only the one that
+  motivated the PR. One change fixed a per-event NPE in a base class when the
+  NPE existed in exactly one of four subclasses; the other three already handled
+  it correctly and lost that behaviour.
+- **Build a control into the config.** Two appenders differing in one attribute
+  turn "seems slow" into 2.996 s against 0.000118 s.
+- **Follow it afterwards.** `./bench followup` reports what moved since you
+  reviewed — a push, a maintainer reply, a merge. `./bench pr` cannot: it is a
+  snapshot with nothing to compare against.
+
+Reviews already written live in `docs/pr-reviews/`, each ending in a
+paste-ready comment. None have been posted yet.
 
 ---
 
@@ -377,6 +404,19 @@ you will meet first:
   `cmd="list --apps"` passes one argument, not two.
 - `git add -A` once committed a container's output file. `infra/output/` is now
   ignored.
+- `gh pr list --limit N` is newest-**`OPEN`**. It drops everything merged or
+  closed in the same window and says nothing about doing so — once, ten of
+  twenty-four. Use `--state all --search "created:>=<date>"` when the window is
+  what you mean. The closed ones state the bar more clearly than the open ones.
+- **A reproduction can report PASS having done nothing.** `commons-compress`
+  dispatches to a codec backend, and a missing one fails on the *rollover
+  thread* as a WARN — which the "no StatusLogger error" check reads as success.
+  `scripts/repro.sh` shipped `.zst` repros that way until it was fixed to add
+  `zstd-jni`/`xz`. Verify the artefact (`zstd -t`, `unzip -t`), not the exit
+  code.
+- BSD `sed` has no `\+` in basic regexes, so a validator written with one passes
+  everything silently. The first site-`xref` checker here did exactly that; it
+  was rewritten before its green result was believed.
 
 ---
 

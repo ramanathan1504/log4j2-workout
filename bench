@@ -213,6 +213,17 @@ cell_skip_reason() {
     return
   fi
 
+  # Reproductions are hand-run against one named PR or issue, and some of them
+  # are built to FAIL — repro-jpa-failed-startup names a persistence unit that
+  # does not exist, because a manager whose startup failed is the thing under
+  # test. In a sweep that is a failure with no stated reason, which is the exact
+  # noise every rule above exists to remove. They stay selectable by name for
+  # `./bench run` and `./bench repro`; only the cross product skips them.
+  if [[ "$config" == */repro-* ]]; then
+    echo "$config is a hand-run reproduction, not a sweep cell (see docs/PR-REVIEW.md)"
+    return
+  fi
+
   # The 1.x config formats are only readable where log4j-1.2-api is present.
   if [[ "$config" == log4j1/* && "$app" != log4j1-bridge ]]; then
     echo "1.x config needs the log4j-1.2-api bridge, which only log4j1-bridge has"
