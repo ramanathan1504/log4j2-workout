@@ -12,6 +12,7 @@
 #   ./bench repro 4143 --log4j 2.26.0               build a standalone repro zip
 #   ./bench issue 4143                              read an upstream issue
 #   ./bench pr 4133 --checkout --install            read a PR, and run it here
+#   ./bench followup                                what moved since you reviewed
 #
 # Every run forks a real JVM with an explicit classpath rather than running
 # inside Maven's, so what executes here is exactly what a repro zip would ship.
@@ -209,6 +210,17 @@ cell_skip_reason() {
   local minv; minv="$(min_log4j_for "$app")"
   if [[ -n "$minv" && "$version" != 3.* ]] && log4j_version_lt "$version" "$minv"; then
     echo "$app needs Log4j >= $minv (its module did not exist at $version)"
+    return
+  fi
+
+  # Reproductions are hand-run against one named PR or issue, and some of them
+  # are built to FAIL — repro-jpa-failed-startup names a persistence unit that
+  # does not exist, because a manager whose startup failed is the thing under
+  # test. In a sweep that is a failure with no stated reason, which is the exact
+  # noise every rule above exists to remove. They stay selectable by name for
+  # `./bench run` and `./bench repro`; only the cross product skips them.
+  if [[ "$config" == */repro-* ]]; then
+    echo "$config is a hand-run reproduction, not a sweep cell (see docs/PR-REVIEW.md)"
     return
   fi
 
@@ -756,6 +768,7 @@ java_major_of() {
 cmd_repro() { exec "$ROOT/scripts/repro.sh" "$@"; }
 cmd_issue() { exec "$ROOT/scripts/gh-issue.sh" "$@"; }
 cmd_pr()    { exec "$ROOT/scripts/gh-pr.sh" "$@"; }
+cmd_followup() { exec "$ROOT/scripts/gh-pr-followup.sh" "$@"; }
 
 # Where the bench actually reaches, as opposed to where it is meant to reach.
 #
@@ -863,6 +876,7 @@ case "${1:-help}" in
   repro)    shift; cmd_repro "$@" ;;
   issue)    shift; cmd_issue "$@" ;;
   pr)       shift; cmd_pr "$@" ;;
+  followup) shift; cmd_followup "$@" ;;
   clean)  rm -rf "$CACHE"; info "cleared $CACHE" ;;
   help|--help|-h) usage ;;
   *) die "unknown command '$1' (try: ./bench help)" ;;

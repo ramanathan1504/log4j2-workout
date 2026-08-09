@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Reproduction for PR #4246 (skip writes and still shut down after failed DB
+  manager startup) — https://github.com/apache/logging-log4j2/pull/4246
+  and for the underlying issue #4241.
+
+  Why JPA rather than Cassandra or NoSQL:
+
+    CassandraManager   startupInternal CAN fail, writeInternal has NO guard   -> NPEs (the bug)
+    JpaDatabaseManager startupInternal CAN fail, writeInternal HAS a guard    -> throws, correctly
+    NoSqlDatabaseManager  startupInternal is empty, so it cannot fail this way
+    JdbcDatabaseManager   startupInternal is empty, so it cannot fail this way
+
+  JPA is the only manager that both fails startup for real WITHOUT any external
+  service being down, and already handles the aftermath correctly. That makes it
+  the vehicle for showing what PR #4246 would take away.
+
+  persistenceUnitName is deliberately a name that does not exist in
+  apps/jpa/src/main/resources/META-INF/persistence.xml. Persistence
+  .createEntityManagerFactory throws, AbstractDatabaseManager.startup() catches
+  it and leaves running=false.
+
+  What happens next, on every released 2.x:
+
+    write() -> writeThrough() -> connectAndStart()/writeInternal()
+    JpaDatabaseManager.writeInternal:
+        if (!isRunning() || entityManagerFactory == null || ...)
+            throw new AppenderLoggingException(
+                "Cannot write logging event; JPA manager not connected to the database.");
+
+  ignoreExceptions="false" is the whole point of this config: it is what turns
+  that AppenderLoggingException into something the APPLICATION sees, on the
+  calling thread, rather than a StatusLogger line nobody reads.
+
+  After PR #4246, AbstractDatabaseManager.write() returns early on !isRunning(),
+  so writeInternal is never reached, the exception is never constructed, and the
+  application is never told. One StatusLogger warning, then silence.
+
+  Usable only with the jpa app, which owns the entity and the persistence unit.
+-->
+<Configuration status="WARN" name="repro-jpa-failed-startup">
+
+  <Appenders>
+    <Console name="Console" target="SYSTEM_OUT">
+      <PatternLayout pattern="%d{HH:mm:ss.SSS} %-5level %logger{1.} - %msg%n"/>
+    </Console>
+
+    <!-- "benchLoggingDoesNotExist" is not declared in persistence.xml. That is
+         the failure being induced, and it is induced inside Log4j's own startup
+         path rather than by taking a database down. -->
+    <JPA name="Jpa"
+         persistenceUnitName="benchLoggingDoesNotExist"
+         entityClassName="org.apache.logging.bench.jpa.BenchLogEntity"
+         bufferSize="0"
+         ignoreExceptions="false"/>
+  </Appenders>
+
+  <Loggers>
+    <Logger name="org.apache.logging.bench" level="TRACE"/>
+    <Root level="INFO">
+      <AppenderRef ref="Console"/>
+      <AppenderRef ref="Jpa"/>
+    </Root>
+  </Loggers>
+
+</Configuration>

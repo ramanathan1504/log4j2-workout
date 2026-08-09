@@ -1,0 +1,27 @@
+log4j-api  2.24.1
+log4j-core 2.24.1
+java       17.0.14
+
+
+Rollover result under /Users/ramanathan/apache/log4j2-workout/repros/pr-4234/log4j-pr-4234-repro/logs
+  18 file(s): 15 compressed, 3 uncompressed
+    repro-zstd-level/zip-level-zero/app-1.log.zip                  8393 bytes  2026-08-09T07:00:54.929630299Z
+    repro-zstd-level/zip-level-zero/app-2.log.zip                  8393 bytes  2026-08-09T07:00:54.932671978Z
+    repro-zstd-level/zip-level-zero/app-3.log.zip                  8393 bytes  2026-08-09T07:00:54.935277988Z
+    repro-zstd-level/zip-level-zero/app-4.log.zip                  8393 bytes  2026-08-09T07:00:54.937882123Z
+    repro-zstd-level/zip-level-zero/app-5.log.zip                  8393 bytes  2026-08-09T07:00:54.940577675Z
+    repro-zstd-level/zip-level-zero/app.log                        3706 bytes  2026-08-09T07:00:54.995569389Z
+    repro-zstd-level/zstd-default/app-1.log.zst                     198 bytes  2026-08-09T07:00:54.928402461Z
+    repro-zstd-level/zstd-default/app-2.log.zst                     199 bytes  2026-08-09T07:00:54.931422639Z
+    repro-zstd-level/zstd-default/app-3.log.zst                     199 bytes  2026-08-09T07:00:54.934316609Z
+    repro-zstd-level/zstd-default/app-4.log.zst                     200 bytes  2026-08-09T07:00:54.936874452Z
+    repro-zstd-level/zstd-default/app-5.log.zst                     198 bytes  2026-08-09T07:00:54.939446629Z
+    repro-zstd-level/zstd-default/app.log                          3706 bytes  2026-08-09T07:00:54.995559055Z
+    repro-zstd-level/zstd-level-zero/app-1.log.zst                  198 bytes  2026-08-09T07:00:54.927658791Z
+    repro-zstd-level/zstd-level-zero/app-2.log.zst                  199 bytes  2026-08-09T07:00:54.930679887Z
+    repro-zstd-level/zstd-level-zero/app-3.log.zst                  199 bytes  2026-08-09T07:00:54.933671690Z
+    repro-zstd-level/zstd-level-zero/app-4.log.zst                  200 bytes  2026-08-09T07:00:54.936224325Z
+    repro-zstd-level/zstd-level-zero/app-5.log.zst                  198 bytes  2026-08-09T07:00:54.938808335Z
+    repro-zstd-level/zstd-level-zero/app.log                       3706 bytes  2026-08-09T07:00:54.995543139Z
+
+Completed without error.
