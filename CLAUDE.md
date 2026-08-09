@@ -13,6 +13,8 @@ drafted here and filed by hand; fixes go in the Log4j clone, never here.
 | Need | Read |
 |---|---|
 | A PR or issue number in front of you | `docs/BY-HAND.md` |
+| **Judging** a contributor PR, and following it after | `docs/PR-REVIEW.md` |
+| Reviews already written, and what moved since | `docs/pr-reviews/`, `./bench followup` |
 | Every `gh` command | `docs/GH-COMMANDS.md` |
 | Every `./bench` flag, env var, output path | `docs/site/modules/ROOT/pages/cli.adoc` |
 | The operator's manual, and the collected traps | `docs/HANDOVER.md` |
@@ -45,6 +47,16 @@ drafted here and filed by hand; fixes go in the Log4j clone, never here.
   is no `--help`. `./bench repro --help` scaffolds and runs `repros/issue---help/`.
 - A matrix `SKIP` is information, with the pruning rule printed. It is neither a
   pass nor a failure.
+- **`gh pr list --limit N` is newest-`OPEN`,** not "the last N". It drops
+  everything merged or closed in the same window, and says nothing about doing
+  so. Answering "what arrived recently" with it returned ten of twenty-four once.
+  Use `--state all --search "created:>=<date>"` when the window is what you mean.
+- **A repro can report PASS having done nothing.** `commons-compress` dispatches
+  to a codec backend, and a missing one fails on the *rollover thread* as a WARN,
+  which the "no StatusLogger error" check reads as success. Fixed in
+  `scripts/repro.sh` for zstd and xz; the shape recurs wherever a plugin resolves
+  a backend at runtime. Verify the artefact (`zstd -t`, `unzip -t`), not the exit
+  code — and see `docs/PR-REVIEW.md` §3.
 
 ## Numbers: read them from the source, not the prose
 

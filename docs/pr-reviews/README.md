@@ -1,4 +1,24 @@
-# Triage of the ten most recent PRs on `apache/logging-log4j2`
+# Contributor PR reviews — `apache/logging-log4j2`
+
+> **Working set, not a snapshot.** Each file below ends in a paste-ready
+> comment. [`ledger.tsv`](ledger.tsv) records the head SHA each PR was at when it
+> was reviewed, so the obvious question on a second visit is answerable:
+>
+> ```bash
+> ./bench followup             # every reviewed PR, one line each
+> ./bench followup --changed   # only the ones that moved
+> ./bench followup 4234        # one, in full
+> ```
+>
+> A `pushed` badge means the verdict on file describes code that is no longer
+> there — re-read, then `./bench followup --sync <n>`. That step is manual on
+> purpose; automating it would erase the signal.
+>
+> How to judge a PR in the first place: [`../PR-REVIEW.md`](../PR-REVIEW.md).
+> None of these comments have been posted yet — every `posted` column reads `no`.
+
+## Triage
+
 
 Read on 2026-08-08. Nothing here has been posted anywhere. Each row links to a
 file with the full reasoning and a paste-ready comment at the bottom.

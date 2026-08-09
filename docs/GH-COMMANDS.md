@@ -9,6 +9,7 @@ Two wrappers cover the commands you type most; the rest is raw `gh`.
 |---|---|
 | `./bench issue <n>` | `gh issue view` with the fields that matter, and a nudge to the bench commands |
 | `./bench pr <n>` | `gh pr view` + `diff --name-only` + `checks` + `reviews`, and `--checkout --install` to make the PR selectable by `./bench` |
+| `./bench followup` | nothing — `gh` has no notion of *what changed since you reviewed*. See [§5](#5-following-a-pr-after-you-reviewed-it) |
 
 Source: [`../scripts/gh-issue.sh`](../scripts/gh-issue.sh),
 [`../scripts/gh-pr.sh`](../scripts/gh-pr.sh). Both are read-only unless you pass
@@ -108,6 +109,20 @@ gh pr list -R apache/logging-log4j2 --limit 30
 gh pr list -R apache/logging-log4j2 --search "review-requested:@me"
 ```
 
+> `gh pr list` defaults to **`--state open`**, and `--limit` truncates by count,
+> not by date. "The last N PRs" and "the PRs from the last N days" are different
+> questions, and the first one silently drops everything merged or closed in the
+> window. Once, that was ten of twenty-four. When the window is what you mean:
+>
+> ```bash
+> gh pr list -R apache/logging-log4j2 --state all --limit 60 \
+>   --search "created:>=2026-07-25" \
+>   --json number,title,author,state,createdAt \
+>   --jq 'sort_by(.createdAt)|reverse|.[]|"\(.number)\t\(.state)\t\(.createdAt[0:10])\t\(.author.login)\t\(.title[0:58])"'
+> ```
+>
+> The closed ones state the bar more clearly than the open ones do.
+
 Getting the branch by hand — what `--checkout` does:
 
 ```bash
@@ -203,7 +218,60 @@ gh pr checks 4240 -R apache/logging-log4j2 --watch
 
 ---
 
-## 5. Recipes worth keeping
+## 5. Following a PR after you reviewed it
+
+`gh` can tell you what a PR looks like now. It cannot tell you what changed since
+you last looked, because it has nothing to compare against.
+[`../docs/pr-reviews/ledger.tsv`](pr-reviews/ledger.tsv) records the head SHA each
+PR was at when it was reviewed, and `./bench followup` diffs against it.
+
+```bash
+./bench followup                 # every reviewed PR, one line each
+./bench followup --changed       # only the ones that moved
+./bench followup --mine          # only where the last word is not yours
+./bench followup 4234            # one PR, in full
+./bench followup --sync 4234     # re-record, AFTER re-reading it
+```
+
+```
+  4185  stale-approval SebTardif        pushed,reply:SebTardif
+  4234  blocked        katstack         —
+```
+
+`pushed` is the one that matters most: the head moved, so your recorded verdict
+describes code that is no longer there. The case it exists for is an approval
+that went stale — GitHub keeps showing the green check as the branch advances,
+so whoever merges reads it as covering code no review ever saw.
+
+`--sync` is deliberately manual. Running it automatically would erase the signal
+it exists to show.
+
+The raw equivalents, if you want one without the ledger:
+
+```bash
+gh pr view 4234 -R apache/logging-log4j2 --json headRefOid,state,mergedAt
+
+# everything said on it, oldest first
+gh pr view 4234 -R apache/logging-log4j2 --json comments,reviews \
+  --jq '[(.comments[]|{at:.createdAt,by:.author.login,kind:"comment"}),
+         (.reviews[]|{at:.submittedAt,by:.author.login,kind:.state})] | sort_by(.at)[]
+        | "\(.at)  \(.kind)  \(.by)"'
+
+# unresolved inline threads — REST cannot express this, GraphQL can
+gh api graphql -f query='
+{ repository(owner:"apache", name:"logging-log4j2") {
+    pullRequest(number:4234) {
+      reviewThreads(last:20) { nodes { isResolved isOutdated path
+        comments(first:1) { nodes { author{login} body } } } } } } }' \
+  --jq '.data.repository.pullRequest.reviewThreads.nodes[]
+        | select(.isResolved|not) | "UNRESOLVED \(.path): \(.comments.nodes[0].body[0:80])"'
+```
+
+The full playbook this belongs to is [`PR-REVIEW.md`](PR-REVIEW.md).
+
+---
+
+## 6. Recipes worth keeping
 
 Open issues touching a module you just changed:
 
