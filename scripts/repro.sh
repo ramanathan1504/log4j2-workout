@@ -106,6 +106,16 @@ grep -q '<JeroMQ'                             "$CONFIG_FILE" && dep org.zeromq j
 grep -qE '<(Script|ScriptFilter|ScriptRef)'   "$CONFIG_FILE" && dep org.codehaus.groovy groovy-jsr223 3.0.23
 grep -qE 'AsyncLogger|AsyncRoot'              "$CONFIG_FILE" && dep com.lmax disruptor 4.0.0
 grep -qE '\.(zst|xz|bz2)"'                    "$CONFIG_FILE" && dep org.apache.commons commons-compress 1.27.1
+# commons-compress dispatches to a codec backend, and only bzip2 and deflate are
+# pure Java inside it. zstd and xz need a separate artifact at RUNTIME, and it is
+# the same trap as commons-csv below, one layer further out: the appender builds
+# fine, the run exits 0, and the compression fails on the rollover thread with
+# NoClassDefFoundError: com/github/luben/zstd/ZstdOutputStream. RollingFileManager
+# reports that as a WARN from an async action, so the "no StatusLogger error"
+# check below still says PASS while nothing was ever compressed. Versions match
+# apps/core-java/pom.xml so the zip behaves like the bench it came from.
+grep -qE '\.zst"'                             "$CONFIG_FILE" && dep com.github.luben zstd-jni 1.5.6-9
+grep -qE '\.xz"'                              "$CONFIG_FILE" && dep org.tukaani xz 1.10
 # CsvLogEventLayout and CsvParameterLayout live in log4j-core on the 2.x line but
 # need commons-csv at RUNTIME. Without it the plugin cannot be created at all -
 # NoClassDefFoundError: org/apache/commons/csv/QuoteMode - so the appender is

@@ -1,0 +1,6 @@
+2026-08-09T05:30:28.729388Z main DEBUG Initializing triggering policy CronTriggeringPolicy(schedule=0 0 0 ? * SUN)
+2026-08-09T05:30:31.724997Z main DEBUG LastRollForFile null, LastRegularRole 2026-08-09T00:00:00.000+0530
+2026-08-09T05:30:31.734795Z main DEBUG Initializing triggering policy CronTriggeringPolicy(schedule=0 0 0 ? * SUN)
+2026-08-09T05:30:34.495394Z main DEBUG LastRollForFile null, LastRegularRole 2026-08-09T00:00:00.000+0530
+2026-08-09T05:30:34.499716Z main DEBUG Initializing triggering policy CronTriggeringPolicy(schedule=0 0 0 ? * SUN)
+2026-08-09T05:30:34.499843Z main DEBUG LastRollForFile 2026-08-09T00:00:00.000+0530, LastRegularRole 2026-08-09T00:00:00.000+0530

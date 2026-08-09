@@ -1,0 +1,89 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Reproduction for PR #4226 (Fix multi-second startup delay in
+  CronTriggeringPolicy) — https://github.com/apache/logging-log4j2/pull/4226
+  and, for the file NAMES it produces, PR #4227.
+
+  Three conditions have to hold together, which is why rollover-full.xml does not
+  show this even though it has a Cron appender:
+
+    1. CronTriggeringPolicy       -> initialize() calls getPrevFireTime
+    2. NO fileName attribute      -> direct write, so RollingFileManager
+                                     .getFileTime() returns 0 until the file
+                                     exists, and the lookup runs against the epoch
+    3. a coarse schedule          -> findMinIncrement() returns a day-sized step,
+                                     which is the worst case for the backward walk
+
+  rollover-full.xml's Cron appender HAS a fileName, so getFileTime() is non-zero
+  and the pathological path is never entered. Its DirectWrite appender has no
+  fileName but uses TimeBased+SizeBased policies, not cron. Neither triggers it.
+
+  What goes wrong, per appender, on every released 2.x:
+
+    CronExpression.getTimeBefore() walks backwards one increment at a time
+    calling getTimeAfter(). getTimeAfter() clamps its result to 1970, so for a
+    target at the epoch the loop's exit condition can never be satisfied: every
+    iteration returns the same 1970 date, which is neither null, nor before
+    MIN_DATE, nor before the target. The search grinds back through millennia
+    until the calendar's YEAR > 2999 guard finally trips.
+
+    Cost: ~3 seconds of 100%-CPU main thread, per appender, before the
+    application has logged anything.
+
+  Two appenders here, so the delay is additive and unmistakable — roughly six
+  seconds rather than three. Both must start from a clean directory: once the
+  files exist, getFileTime() is non-zero and the delay disappears. Delete
+  logs/repro-cron-directwrite between runs.
+
+  Weekly schedules, so nothing actually rolls during a short run. This config is
+  about STARTUP, not about rollover.
+-->
+<Configuration status="WARN" name="repro-cron-directwrite">
+
+  <Properties>
+    <Property name="dir">${sys:bench.log.dir:-logs}/repro-cron-directwrite</Property>
+    <Property name="pattern">%d{HH:mm:ss.SSS} %-5level %logger{1.} - %msg%n</Property>
+  </Properties>
+
+  <Appenders>
+
+    <!-- ══ No fileName: direct write. This is condition 2. ══════════════════
+         The %d granularity is a day, and the schedule is weekly, so the file
+         name also demonstrates PR #4227: it should be named after the START of
+         the current week (the previous Sunday), not after the moment this
+         process happened to start. -->
+    <RollingFile name="DirectCronA"
+                 filePattern="${dir}/error-a.log-%d{yyyyMMdd}">
+      <PatternLayout pattern="${pattern}"/>
+      <CronTriggeringPolicy schedule="0 0 0 ? * SUN" evaluateOnStartup="true"/>
+    </RollingFile>
+
+    <RollingFile name="DirectCronB"
+                 filePattern="${dir}/error-b.log-%d{yyyyMMdd}">
+      <PatternLayout pattern="${pattern}"/>
+      <CronTriggeringPolicy schedule="0 0 0 ? * SUN" evaluateOnStartup="true"/>
+    </RollingFile>
+
+    <!-- ══ Control: same cron schedule, but WITH a fileName. ════════════════
+         getFileTime() is non-zero once app.log exists, so this appender must
+         start promptly on both sides of the PR. If this one also becomes slow,
+         the diagnosis above is wrong. -->
+    <RollingFile name="CronWithFileName"
+                 fileName="${dir}/control/app.log"
+                 filePattern="${dir}/control/app-%d{yyyyMMdd}.log">
+      <PatternLayout pattern="${pattern}"/>
+      <CronTriggeringPolicy schedule="0 0 0 ? * SUN" evaluateOnStartup="true"/>
+    </RollingFile>
+
+  </Appenders>
+
+  <Loggers>
+    <Logger name="org.apache.logging.bench" level="TRACE"/>
+    <Root level="INFO">
+      <AppenderRef ref="DirectCronA"/>
+      <AppenderRef ref="DirectCronB"/>
+      <AppenderRef ref="CronWithFileName"/>
+    </Root>
+  </Loggers>
+
+</Configuration>

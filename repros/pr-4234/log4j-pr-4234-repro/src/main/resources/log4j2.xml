@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Reproduction for PR #4234 (Add ZstdCompressAction to support configurable
+  Zstandard compression levels) — https://github.com/apache/logging-log4j2/pull/4234
+
+  The question this config answers: does compressionLevel="0" on a .zst rollover
+  still work?
+
+  compressionLevel is the shared DefaultRolloverStrategy attribute, documented in
+  that class as "The compression level, 0 (less) through 9 (more)". It is passed
+  unchanged to whichever FileExtension the filePattern suffix selects
+  (DefaultRolloverStrategy.java:686,690), including ZSTD.
+
+  On every released 2.x, FileExtension.ZSTD routes to
+  CommonsCompressAction("zstd", ...), which has no level parameter and ignores
+  the value entirely. So "0" is inert and the rollover succeeds.
+
+  PR #4234 replaces that with ZstdCompressAction, which validates the level
+  against [1, ZstdConstants.ZSTD_CLEVEL_MAX] and throws IllegalArgumentException
+  outside it. FileExtension.ZSTD maps only -1 to the zstd default, so "0" reaches
+  the constructor and throws — from inside the rollover, not at configuration
+  time.
+
+  Three appenders, so one run distinguishes "zstd is broken" from "level 0 is
+  broken":
+
+    ZstdLevelZero  .zst  compressionLevel="0"   <- the regression case
+    ZstdDefault    .zst  no compressionLevel    <- control: must keep working
+    ZipLevelZero   .zip  compressionLevel="0"   <- control: 0 is legal for zip
+
+  Run with the "rollover" scenario, which reports rolled vs compressed files.
+  Thresholds are tiny so a short run rolls. Do not copy these numbers.
+-->
+<Configuration status="WARN" name="repro-zstd-level">
+
+  <Properties>
+    <Property name="dir">${sys:bench.log.dir:-logs}/repro-zstd-level</Property>
+    <Property name="pattern">%d{HH:mm:ss.SSS} %-5level %logger{1.} - %msg%n</Property>
+  </Properties>
+
+  <Appenders>
+
+    <!-- ══ The regression case ══════════════════════════════════════════════
+         Works on 2.24.1 .. 2.26.1 (level ignored). Expected to throw
+         IllegalArgumentException during rollover once #4234 is installed. -->
+    <RollingFile name="ZstdLevelZero"
+                 fileName="${dir}/zstd-level-zero/app.log"
+                 filePattern="${dir}/zstd-level-zero/app-%i.log.zst">
+      <PatternLayout pattern="${pattern}"/>
+      <SizeBasedTriggeringPolicy size="8KB"/>
+      <DefaultRolloverStrategy max="5" compressionLevel="0"/>
+    </RollingFile>
+
+    <!-- ══ Control: zstd with no level. -1 sentinel, which #4234 does map. ══ -->
+    <RollingFile name="ZstdDefault"
+                 fileName="${dir}/zstd-default/app.log"
+                 filePattern="${dir}/zstd-default/app-%i.log.zst">
+      <PatternLayout pattern="${pattern}"/>
+      <SizeBasedTriggeringPolicy size="8KB"/>
+      <DefaultRolloverStrategy max="5"/>
+    </RollingFile>
+
+    <!-- ══ Control: level 0 against zip, where it is the documented minimum
+         and is genuinely honoured. Must be unaffected by #4234. ══ -->
+    <RollingFile name="ZipLevelZero"
+                 fileName="${dir}/zip-level-zero/app.log"
+                 filePattern="${dir}/zip-level-zero/app-%i.log.zip">
+      <PatternLayout pattern="${pattern}"/>
+      <SizeBasedTriggeringPolicy size="8KB"/>
+      <DefaultRolloverStrategy max="5" compressionLevel="0"/>
+    </RollingFile>
+
+  </Appenders>
+
+  <Loggers>
+    <Logger name="org.apache.logging.bench" level="TRACE"/>
+    <Root level="INFO">
+      <AppenderRef ref="ZstdLevelZero"/>
+      <AppenderRef ref="ZstdDefault"/>
+      <AppenderRef ref="ZipLevelZero"/>
+    </Root>
+  </Loggers>
+
+</Configuration>
