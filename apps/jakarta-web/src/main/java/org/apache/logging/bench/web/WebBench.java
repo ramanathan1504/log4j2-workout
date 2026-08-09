@@ -1,8 +1,14 @@
 package org.apache.logging.bench.web;
 
 import java.io.File;
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.Duration;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.apache.catalina.startup.Tomcat;
 
@@ -25,6 +31,11 @@ import org.apache.catalina.startup.Tomcat;
  *   curl http://localhost:8082/bench/log
  *   curl http://localhost:8082/bench/context
  * </pre>
+ *
+ * <p>With {@code -Dbench.selfTest=true} the app drives those endpoints itself
+ * and exits, which is what lets it appear in a matrix sweep — see
+ * {@link #selfTest()}. {@code ./bench} passes that flag by default; unset it
+ * with {@code BENCH_WEB_SELFTEST=0} to get the interactive server back.
  */
 public final class WebBench {
 
@@ -88,19 +99,130 @@ public final class WebBench {
         System.out.println("  config        "
                 + System.getProperty("log4j.configurationFile", "<default>"));
         System.out.println();
+
+        final AtomicBoolean stopped = new AtomicBoolean();
+        Runtime.getRuntime().addShutdownHook(new Thread(() -> shutdown(tomcat, base, stopped)));
+
+        if (Boolean.getBoolean("bench.selfTest")) {
+            final int status = selfTest();
+            // Through the container's own shutdown, not straight out of main:
+            // stopping the webapp is what fires Log4jServletContextListener,
+            // which stops the webapp's LoggerContext and flushes its appenders.
+            // Exiting without it can leave the last events in a buffer, so a
+            // cell would pass with an empty log file underneath it.
+            shutdown(tomcat, base, stopped);
+            System.exit(status);
+        }
+
         System.out.println("Ctrl-C to stop.");
-
-        Runtime.getRuntime().addShutdownHook(new Thread(() -> {
-            try {
-                tomcat.stop();
-                tomcat.destroy();
-                deleteRecursively(base.toFile());
-            } catch (final Exception e) {
-                System.err.println("shutdown failed: " + e);
-            }
-        }));
-
         tomcat.getServer().await();
+    }
+
+    /**
+     * Drives the endpoints over real HTTP and reports whether each said what it
+     * must, so the app can finish a matrix cell instead of serving forever.
+     *
+     * <p>Without this the app cannot appear in a sweep at all: {@code main}
+     * ends in {@code Server.await()}, so a bounded cell burns the whole timeout
+     * and then FAILs — 300 seconds spent to learn nothing. It exercises the
+     * servlet stack rather than skipping it, which is the point of having a web
+     * app in the bench.
+     *
+     * <p>Status codes alone would be too weak an assertion. Log4j catches
+     * appender exceptions and reports them through {@code StatusLogger}, so a
+     * webapp whose logging is entirely broken still answers 200 — the same trap
+     * as a clean exit proving nothing. The response bodies are checked instead.
+     *
+     * @return 0 when every check held, 1 otherwise — the cell's exit status
+     */
+    private static int selfTest() {
+        System.out.println("self-test: driving the endpoints over HTTP");
+        // Not try-with-resources: HttpClient only became AutoCloseable in Java
+        // 21, and this module is compiled at release 17.
+        final HttpClient client = HttpClient.newBuilder()
+                .connectTimeout(Duration.ofSeconds(5)).build();
+        int status = 0;
+        try {
+            status = Math.max(status,
+                    expect(get(client, "/log"), "logged 4 events on thread"));
+
+            final String context = get(client, "/context");
+            // The per-webapp LoggerContext, which is the whole reason this
+            // module exists. This app is the CONTROL for the log4j-appserver
+            // finding in FEATURE-MATRIX §17: nothing logs before Tomcat starts
+            // here, so the ServletContext must bind and every ${web:} lookup
+            // must resolve. apps/javax-web deliberately does not assert this —
+            // there it is known-broken, and asserting it would turn an upstream
+            // bug into a red cell on every sweep.
+            status = Math.max(status,
+                    expect(context, "ServletContext bound to LoggerContext : true"));
+            status = Math.max(status, expectResolved(context, "${web:contextPath}"));
+            status = Math.max(status, expectResolved(context, "${web:servletContextName}"));
+        } catch (final Exception e) {
+            System.err.println("  self-test failed: " + e);
+            return 1;
+        }
+        return status;
+    }
+
+    private static String get(final HttpClient client, final String path) throws Exception {
+        final HttpResponse<String> res = client.send(
+                HttpRequest.newBuilder(URI.create("http://localhost:" + PORT + CONTEXT_PATH + path))
+                        .timeout(Duration.ofSeconds(20)).GET().build(),
+                HttpResponse.BodyHandlers.ofString());
+        System.out.printf("  GET %-10s -> %d%n", CONTEXT_PATH + path, res.statusCode());
+        if (res.statusCode() >= 400) {
+            throw new IllegalStateException(path + " returned " + res.statusCode());
+        }
+        return res.body();
+    }
+
+    private static int expect(final String body, final String marker) {
+        final boolean ok = body.contains(marker);
+        System.out.printf("  %-4s %s%n", ok ? "ok" : "FAIL", marker);
+        return ok ? 0 : 1;
+    }
+
+    /**
+     * Checks a {@code ${web:}} lookup came back with a value.
+     *
+     * <p>The servlet prints the expression and its result on one line, writing
+     * {@code <unresolved>} when the substitutor handed the expression straight
+     * back — which is how a missing {@code ServletContext} binding shows up at
+     * the lookup site.
+     */
+    private static int expectResolved(final String body, final String expr) {
+        for (final String line : body.lines().toList()) {
+            final String trimmed = line.trim();
+            if (trimmed.startsWith(expr)) {
+                final String value = trimmed.substring(expr.length()).trim();
+                final boolean ok = !value.isEmpty() && !"<unresolved>".equals(value);
+                System.out.printf("  %-4s %s -> %s%n",
+                        ok ? "ok" : "FAIL", expr, value.isEmpty() ? "<empty>" : value);
+                return ok ? 0 : 1;
+            }
+        }
+        System.out.printf("  FAIL %s was not reported at all%n", expr);
+        return 1;
+    }
+
+    /**
+     * Stops the container exactly once, whether the self-test finished or Ctrl-C
+     * did. Both paths run it, and Tomcat's {@code stop} on an already-stopped
+     * server throws — which the hook would then report as a failed shutdown on
+     * every self-test run.
+     */
+    private static void shutdown(final Tomcat tomcat, final Path base, final AtomicBoolean stopped) {
+        if (!stopped.compareAndSet(false, true)) {
+            return;
+        }
+        try {
+            tomcat.stop();
+            tomcat.destroy();
+            deleteRecursively(base.toFile());
+        } catch (final Exception e) {
+            System.err.println("shutdown failed: " + e);
+        }
     }
 
     /**

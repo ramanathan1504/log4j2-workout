@@ -1,8 +1,14 @@
 package org.apache.logging.bench.javaxweb;
 
 import java.io.File;
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.Duration;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.apache.catalina.startup.Tomcat;
 
@@ -32,6 +38,11 @@ import org.apache.catalina.startup.Tomcat;
  *   curl http://localhost:8083/bench/context
  *   curl http://localhost:8083/bench/index.jsp
  * </pre>
+ *
+ * <p>With {@code -Dbench.selfTest=true} the app drives those endpoints itself
+ * and exits, which is what lets it appear in a matrix sweep — see
+ * {@link #selfTest()}. {@code ./bench} passes that flag by default; unset it
+ * with {@code BENCH_WEB_SELFTEST=0} to get the interactive server back.
  */
 public final class JavaxWebBench {
 
@@ -77,19 +88,131 @@ public final class JavaxWebBench {
         System.out.println("  config        "
                 + System.getProperty("log4j.configurationFile", "<default>"));
         System.out.println();
+
+        final AtomicBoolean stopped = new AtomicBoolean();
+        Runtime.getRuntime().addShutdownHook(new Thread(() -> shutdown(tomcat, base, stopped)));
+
+        if (Boolean.getBoolean("bench.selfTest")) {
+            final int status = selfTest();
+            // Through the container's own shutdown, not straight out of main:
+            // stopping the webapp is what fires log4j-web's context listener,
+            // which stops the webapp's LoggerContext and flushes its appenders
+            // — the ServletAppender in particular writes through
+            // ServletContext.log(), which is gone once Tomcat has been killed.
+            shutdown(tomcat, base, stopped);
+            System.exit(status);
+        }
+
         System.out.println("Ctrl-C to stop.");
-
-        Runtime.getRuntime().addShutdownHook(new Thread(() -> {
-            try {
-                tomcat.stop();
-                tomcat.destroy();
-                deleteRecursively(base.toFile());
-            } catch (final Exception e) {
-                System.err.println("shutdown failed: " + e);
-            }
-        }));
-
         tomcat.getServer().await();
+    }
+
+    /**
+     * Drives the endpoints over real HTTP and reports whether each said what it
+     * must, so the app can finish a matrix cell instead of serving forever.
+     *
+     * <p>Without this the app cannot appear in a sweep at all: {@code main}
+     * ends in {@code Server.await()}, so a bounded cell burns the whole timeout
+     * and then FAILs — 300 seconds spent to learn nothing.
+     *
+     * <p>What it asserts is narrower than the jakarta app's self-test, and
+     * deliberately so. The {@code ${web:}} lookups do <em>not</em> resolve here
+     * and the {@code ServletContext} does not bind — that is the known
+     * log4j-appserver interaction in FEATURE-MATRIX §17, a duplicate of
+     * upstream #2314. Asserting on it would paint every sweep red for a bug
+     * that is already filed, and asserting the <em>broken</em> state would turn
+     * an upstream fix into a failure. So the binding is reported and the checks
+     * are on what must hold regardless: the servlet answers and logs, JULI is
+     * routed into Log4j, and the taglib page compiles and renders.
+     *
+     * @return 0 when every check held, 1 otherwise — the cell's exit status
+     */
+    private static int selfTest() {
+        System.out.println("self-test: driving the endpoints over HTTP");
+        // Not try-with-resources: HttpClient only became AutoCloseable in Java
+        // 21, and this module is compiled at release 17.
+        final HttpClient client = HttpClient.newBuilder()
+                .connectTimeout(Duration.ofSeconds(5)).build();
+        int status = 0;
+        try {
+            status = Math.max(status,
+                    expect(get(client, "/log"), "logged 3 events on thread"));
+
+            final String context = get(client, "/context");
+            // log4j-appserver's entire surface: it is selected by ServiceLoader,
+            // so the class JULI hands back is the only unambiguous answer. If
+            // this is Tomcat's own DirectJDK14Log the module is not doing
+            // anything and the app is testing nothing.
+            status = Math.max(status,
+                    expect(context, "JULI Log impl       : org.apache.logging.log4j.appserver"));
+
+            // Reported, not asserted — see the note above.
+            report(context, "ServletContext bound: ");
+            report(context, "${web:contextPath}");
+
+            // log4j-taglib: the tags are nothing without a JSP engine, so the
+            // page must actually compile through Jasper and run. A taglib
+            // failure surfaces as a 500 from the compile, which get() rejects.
+            status = Math.max(status,
+                    expect(get(client, "/index.jsp"),
+                            "tags rendered: setLogger, info, warn, error, debug, ifEnabled, entry, exit"));
+        } catch (final Exception e) {
+            System.err.println("  self-test failed: " + e);
+            return 1;
+        }
+        return status;
+    }
+
+    private static String get(final HttpClient client, final String path) throws Exception {
+        final HttpResponse<String> res = client.send(
+                HttpRequest.newBuilder(URI.create("http://localhost:" + PORT + CONTEXT_PATH + path))
+                        .timeout(Duration.ofSeconds(20)).GET().build(),
+                HttpResponse.BodyHandlers.ofString());
+        System.out.printf("  GET %-16s -> %d%n", CONTEXT_PATH + path, res.statusCode());
+        if (res.statusCode() >= 400) {
+            throw new IllegalStateException(path + " returned " + res.statusCode());
+        }
+        return res.body();
+    }
+
+    private static int expect(final String body, final String marker) {
+        final boolean ok = body.contains(marker);
+        System.out.printf("  %-4s %s%n", ok ? "ok" : "FAIL", marker);
+        return ok ? 0 : 1;
+    }
+
+    /**
+     * Prints what a line of the report currently says, without judging it. Used
+     * for the facts this app cannot assert on — see {@link #selfTest()}.
+     */
+    private static void report(final String body, final String prefix) {
+        for (final String line : body.lines().toList()) {
+            final String trimmed = line.trim();
+            if (trimmed.startsWith(prefix)) {
+                System.out.printf("  --   %s%n", trimmed);
+                return;
+            }
+        }
+        System.out.printf("  --   %s was not reported at all%n", prefix.trim());
+    }
+
+    /**
+     * Stops the container exactly once, whether the self-test finished or Ctrl-C
+     * did. Both paths run it, and Tomcat's {@code stop} on an already-stopped
+     * server throws — which the hook would then report as a failed shutdown on
+     * every self-test run.
+     */
+    private static void shutdown(final Tomcat tomcat, final Path base, final AtomicBoolean stopped) {
+        if (!stopped.compareAndSet(false, true)) {
+            return;
+        }
+        try {
+            tomcat.stop();
+            tomcat.destroy();
+            deleteRecursively(base.toFile());
+        } catch (final Exception e) {
+            System.err.println("shutdown failed: " + e);
+        }
     }
 
     /**
