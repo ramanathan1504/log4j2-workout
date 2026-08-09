@@ -214,7 +214,7 @@ sweep produced 98 failures, none of them Log4j defects.
 | `min_java_for` | everything is compiled at release 17 except `java8-baseline` |
 | `min_log4j_for` | `jms` needs 2.25.0+; `log4j-jakarta-jms` did not exist before it |
 | `is_2x_only` | eleven apps have no 3.x release path |
-| `INTERACTIVE_APPS` | `jakarta-web`, `javax-web` serve until interrupted |
+| `INTERACTIVE_APPS` | Empty — every server app self-tests and exits. Kept for the next one that cannot |
 | `requires_config_for` | an app asserting on an appender its config lacks |
 | `requires_app_for` | a config needing infrastructure its app never starts |
 
@@ -255,7 +255,8 @@ both without two source sets.
 
 ### Known open
 
-- `jakarta-web` and `javax-web` skip in sweeps. Both serve until interrupted, so
+- `jakarta-web` and `javax-web` used to skip in sweeps because both served until
+  interrupted. They now self-test and exit, so they sweep. Historically:
   they cannot finish a cell. The fix is a self-test like `SelfTestRunner` in
   `apps/spring-boot-maven`; nobody has written it. They *are* verified — by hand,
   which is where the appserver/`${web:}` finding came from.

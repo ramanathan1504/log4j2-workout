@@ -233,7 +233,7 @@ defects.
 | `min_java_for`      | Everything is compiled at release 17 except `java8-baseline`
 | `min_log4j_for`     | `jms` needs 2.25.0+; `log4j-jakarta-jms` did not exist before it
 | `is_2x_only`        | Eleven apps have no 3.x release path, so eight of the nineteen run there
-| `INTERACTIVE_APPS`  | `jakarta-web` and `javax-web` serve until interrupted, so no cell can finish
+| `INTERACTIVE_APPS`  | Empty. Every server app now drives its own endpoints and exits, so none are pruned; kept for the next app that cannot
 | `requires_config_for` | An app asserting on an appender its configuration lacks
 | `requires_app_for`  | A configuration needing infrastructure its app never starts
 |===

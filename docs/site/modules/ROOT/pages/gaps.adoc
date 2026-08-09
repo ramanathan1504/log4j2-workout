@@ -27,11 +27,10 @@ package between the lines, so plugin sources cannot compile against both without
 two source sets. A fact about writing Log4j plugins, not a bench defect — any
 third-party plugin targeting both lines faces it.
 
-`jakarta-web` and `javax-web` skip in sweeps::
-Both serve until interrupted, so they cannot finish a matrix cell. They *are*
-verified, by hand — the appserver/`${web:}` finding came from exactly that.
-Closing it needs a self-test like `SelfTestRunner` in `apps/spring-boot-maven`,
-about 70 lines each.
+`jakarta-web` and `javax-web` skip in sweeps:: *CLOSED.*
+Both used to serve until interrupted, so no cell could finish one. Each launcher
+now has a `selfTest()` that drives its own endpoints over real HTTP and exits
+with a status, and `INTERACTIVE_APPS` is empty — both sweep to `PASS`.
 
 No full `--all` sweep recorded::
 ~37,000 cells; about six hours with `--scenario`, roughly a week without. Run to
