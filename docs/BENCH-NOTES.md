@@ -14,7 +14,7 @@ script disagree, **the script is right**.
 | Term | Meaning |
 |---|---|
 | **2.x-only** | No 3.x release path. A 3.x cell is a `SKIP` with that reason |
-| **Interactive** | `main()` serves until interrupted, so no matrix cell can finish it |
+| **Interactive** | `main()` served until interrupted. None remain — every server app self-tests under `-Dbench.selfTest=true` and exits |
 | **Needs config** | Asserts on one appender; any other configuration is a meaningless cell, not a failure |
 | **Config-locked** | Its configuration's destinations are supplied in-process by this app, so no other app can load them |
 | **Auto flags** | `bench` adds these itself. Listed because they explain what breaks without them |
@@ -92,7 +92,9 @@ off (the CVE-2024-56337 fix), and they confirm it by reflectively writing a
 static final field in `java.io`. Without both the app dies at startup. This is
 what Tomcat's own `catalina.sh` exports.
 
-**Both skip in sweeps** — they serve until interrupted, so a cell would burn the
+**Both now sweep.** `selfTest()` drives their own endpoints over HTTP and exits;
+`./bench` passes `-Dbench.selfTest=true`. Unset it to serve interactively. Before
+that they served until interrupted, so a cell would burn the
 full timeout and then FAIL, which is 300 seconds spent to learn nothing. They
 *are* verified, by hand, and that is where the appserver/`${web:}` finding came
 from. The fix is a self-test like `SelfTestRunner`; nobody has written it.

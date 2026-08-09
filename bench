@@ -95,11 +95,13 @@ min_java_for() {
 # never complete a matrix cell — under a bound they burn the whole timeout and
 # then FAIL, which is 300 seconds spent to learn nothing.
 #
-# spring-boot-maven and spring-boot-gradle used to be here too; SelfTestRunner
-# lets them drive their own endpoints and exit, so they sweep normally now. The
-# same treatment would work for these two and is the right fix; until someone
-# writes it, a sweep says so rather than reporting a false failure.
-INTERACTIVE_APPS=(jakarta-web javax-web)
+# Empty, and kept for the next app that needs it. Every server app in the bench
+# now drives its own endpoints and exits: spring-boot-maven and
+# spring-boot-gradle through SelfTestRunner, jakarta-web and javax-web through
+# the selfTest() in each launcher. See extra_jvm_args_for, which is what turns
+# the mode on. A server app added without one belongs here, so a sweep states
+# the reason rather than reporting a false failure.
+INTERACTIVE_APPS=()
 
 # The appender an app asserts on. An app that checks rows reached a JDBC
 # appender cannot pass under a console-only configuration — it is not a failure,
@@ -183,8 +185,10 @@ cell_skip_reason() {
   [[ "$java" -lt "$min" ]] && { echo "$app is compiled at release $min"; return; }
 
   # A server app cannot finish a cell. Say so instead of timing it out.
+  # ${arr[@]+"${arr[@]}"}: the list is empty now, and bash 3.2 under `set -u`
+  # treats an empty array as unbound.
   local ia
-  for ia in "${INTERACTIVE_APPS[@]}"; do
+  for ia in ${INTERACTIVE_APPS[@]+"${INTERACTIVE_APPS[@]}"}; do
     if [[ "$app" == "$ia" ]]; then
       echo "$app serves until interrupted — drive it by hand, or give it a self-test like SelfTestRunner"
       return
@@ -372,6 +376,11 @@ extra_jvm_args_for() {
       # Tomcat's own catalina.sh exports. Without them the app dies at startup.
       EXTRA_JVM_ARGS+=(--add-opens=java.base/java.io=ALL-UNNAMED
                        -Dsun.io.useCanonCaches=false)
+      # Without this the launcher starts Tomcat and serves until interrupted, so
+      # every sweep cell burns BENCH_CELL_TIMEOUT and then FAILs. selfTest()
+      # drives the bench endpoints over real HTTP and exits with a status, which
+      # is what lets these two off the INTERACTIVE_APPS list.
+      EXTRA_JVM_ARGS+=(-Dbench.selfTest=true)
       ;;
     jpa)
       # log4j-jpa's ThrowableAttributeConverter reflects into java.lang.Throwable

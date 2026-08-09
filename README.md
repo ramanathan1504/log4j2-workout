@@ -389,7 +389,7 @@ The rules, all in `bench`:
 | `min_java_for` | Everything is compiled at release 17 except `java8-baseline`, so java8 cells skip for every other app. |
 | `min_log4j_for` | An app whose Log4j module is younger than the version under test. `jms` needs 2.25.0+, because `log4j-jakarta-jms` did not exist before it. |
 | `is_2x_only` | Eleven apps have no 3.x release path — `log4j-1.2-api`, `log4j-jakarta-web` and friends were never published for 3.x. |
-| `INTERACTIVE_APPS` | `jakarta-web` and `javax-web` start a container, print an endpoint and serve until interrupted. They cannot finish a cell. Drive them by hand, or give them a self-test like `SelfTestRunner`. |
+| `INTERACTIVE_APPS` | Empty. Every server app drives its own endpoints under `-Dbench.selfTest=true` and exits, so none are pruned. Kept for the next app that cannot. |
 | `requires_config_for` | An app that asserts on a specific appender. `db` checks rows reached a JDBC appender, so `db` under `baseline-console` is meaningless. |
 | `requires_app_for` | The mirror: a config whose destinations only one app provides. `appender-network` posts to listeners `apps/network` opens in-process; anything else gets `Connection refused`. |
 
