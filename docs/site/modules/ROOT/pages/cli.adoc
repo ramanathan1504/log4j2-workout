@@ -43,6 +43,10 @@ xref:running.adoc[Running the bench] and xref:workflows.adoc[Workflows].
 | Read an upstream pull request, and put it on your classpath
 | the *Log4j clone*, with `--checkout`
 
+| `followup`
+| What moved on a reviewed pull request since you reviewed it
+| `docs/pr-reviews/ledger.tsv`, with `--sync`
+
 | `clean`
 | Discard the classpath cache
 | `.bench/`
@@ -229,7 +233,7 @@ defects.
 | `min_java_for`      | Everything is compiled at release 17 except `java8-baseline`
 | `min_log4j_for`     | `jms` needs 2.25.0+; `log4j-jakarta-jms` did not exist before it
 | `is_2x_only`        | Eleven apps have no 3.x release path, so eight of the nineteen run there
-| `INTERACTIVE_APPS`  | `jakarta-web` and `javax-web` serve until interrupted, so no cell can finish
+| `INTERACTIVE_APPS`  | Empty. Every server app now drives its own endpoints and exits, so none are pruned; kept for the next app that cannot
 | `requires_config_for` | An app asserting on an appender its configuration lacks
 | `requires_app_for`  | A configuration needing infrastructure its app never starts
 |===
@@ -351,6 +355,62 @@ WARNING: `--install` publishes the pull request over `2.27.0-SNAPSHOT` in `~/.m2
 Everything except `--checkout` is read-only. `--checkout` touches the *Log4j
 clone*, never this repository, and refuses outright when that clone has
 uncommitted changes rather than moving branches out from under them.
+
+== followup
+
+[source,bash]
+----
+./bench followup [<number>] [--changed] [--mine] [--sync <number>] [--repo OWNER/NAME]
+----
+
+What moved on a reviewed pull request since you reviewed it.
+
+`./bench pr` is a snapshot: it says what a pull request looks like now. It cannot
+say whether the author pushed after you commented, whether a maintainer replied,
+or whether what you asked for was done — it has nothing to compare against.
+`docs/pr-reviews/ledger.tsv`
+records the head SHA each pull request was at when it was reviewed, and this
+diffs against it.
+
+[cols="1,1,3"]
+|===
+| Flag | Default | Effect
+
+| _positional 1_ | — | One pull request, reported in full. Omit for every row in the ledger
+| `--changed`  | off | Only the ones that moved
+| `--mine`     | off | Only where the last word is not yours
+| `--sync`     | — | Re-record that pull request at its current head, dated today
+| `--repo`     | `apache/logging-log4j2` | Any repository
+|===
+
+----
+  4185  stale-approval SebTardif        pushed,reply:SebTardif
+  4234  blocked        katstack         —
+----
+
+[cols="1,3"]
+|===
+| Badge | Means
+
+| `pushed` | The head moved, so the recorded verdict describes code that is no longer there
+| `reply:<who>` | Someone else spoke last; a maintainer may have decided something
+| `merged` / `closed` | It resolved. If you had a blocking finding, check it was addressed
+| `ci-fail` | Red, which may be your own finding reproducing in their CI
+|===
+
+The case this exists for is an approval going stale. GitHub keeps showing a green
+check as the branch advances, so whoever merges reads it as covering code no
+review ever saw. `followup` reports that as `pushed` against a `stale-approval`
+verdict.
+
+NOTE: `--sync` is deliberately manual, and only correct after actually re-reading the pull request at its new head. Running it automatically would erase the signal it exists to show.
+
+Read-only apart from `--sync`, which writes the ledger and nothing else. Set
+`BENCH_PR_LEDGER` to point at a different ledger; `BENCH_GH_USER` overrides whose
+comments count as yours.
+
+The playbook this belongs to is
+`docs/PR-REVIEW.md`.
 
 == clean
 

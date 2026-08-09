@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Reproduction config for PR #4235.
+
+  A File appender rather than a Syslog appender on purpose: the finding is about
+  what Rfc5424Layout WRITES, not about how it is transported. Writing to a file
+  makes the record boundaries inspectable with `cat`, and removes the need for a
+  syslog listener on the other end.
+
+  Rfc5424Layout is the same class either way: a SyslogAppender with
+  format="RFC5424" wraps exactly this layout.
+-->
+<Configuration status="WARN" name="pr-4235-repro">
+
+  <Appenders>
+    <File name="Rfc5424" fileName="logs/rfc5424/syslog.log" append="false">
+      <!-- newLine="true" so each record is one line and the injected newline is
+           visible as a record boundary rather than being lost in a blob.
+           mdcId/enterpriseNumber are the defaults, spelled out so the expected
+           output in README.md is reproducible. -->
+      <Rfc5424Layout enterpriseNumber="32473"
+                     includeMDC="true"
+                     mdcId="mdc"
+                     newLine="true"
+                     appName="repro"/>
+    </File>
+
+    <Console name="Console" target="SYSTEM_OUT">
+      <PatternLayout pattern="%-5level %logger{1.} - %msg%n"/>
+    </Console>
+  </Appenders>
+
+  <Loggers>
+    <Root level="INFO">
+      <AppenderRef ref="Rfc5424"/>
+      <AppenderRef ref="Console"/>
+    </Root>
+  </Loggers>
+
+</Configuration>

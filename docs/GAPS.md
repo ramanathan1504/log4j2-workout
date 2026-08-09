@@ -25,18 +25,18 @@ exercised on 3.x.
 third-party plugin targeting both lines faces it. Recorded in `FEATURE-MATRIX`
 §17 and §19.
 
-### `jakarta-web` and `javax-web` skip in sweeps
+### ~~`jakarta-web` and `javax-web` skip in sweeps~~ — CLOSED
 
-Both start a servlet container, print an endpoint, and serve until interrupted.
-They cannot finish a matrix cell — under a bound they burn the whole timeout and
-then fail, which is 300 seconds spent to learn nothing.
+Both used to start a servlet container, print an endpoint and serve until
+interrupted, so no matrix cell could finish one.
 
-**They are verified**, by hand. The appserver/`${web:}` `LoggerContext` finding
-came from exactly that.
+**Closed** the way this entry proposed: each launcher gained a `selfTest()` that
+drives its own bench endpoints over real HTTP and exits with a status, and
+`INTERACTIVE_APPS` is now empty. Both sweep to `PASS`.
 
-**To close:** a self-test like `SelfTestRunner` in `apps/spring-boot-maven` —
-drive the app's own endpoints over HTTP, then exit via the container's shutdown.
-About 70 lines each, and the Spring one is a working template.
+The subtlety worth keeping: `extra_jvm_args_for` has to pass
+`-Dbench.selfTest=true`, or the launcher serves anyway and the cell converts a
+stated `SKIP` into a 300-second `FAIL` — worse than the behaviour it replaced.
 
 ### No full `--all` sweep recorded
 

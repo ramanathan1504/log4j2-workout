@@ -30,6 +30,11 @@ traps that cost time.
 `docs/BY-HAND.md` is the step-by-step playbook for the two jobs this bench exists
 for, kept separate: reviewing a pull request, and reproducing then fixing an
 issue. Start there when you have a specific PR or issue number in front of you.
+`docs/PR-REVIEW.md` is the other half of the first job: how to judge whether a
+contributor's pull request should be merged at all, and how to follow it after
+you comment. `docs/pr-reviews/` holds the reviews already written, and
+`./bench followup` says what has moved on them since.
+
 `docs/GH-COMMANDS.md` is the `gh` reference that goes with it, so the whole loop
 — read the report, run it, file the finding, watch CI — stays in the terminal.
 
@@ -99,7 +104,7 @@ standalone reproduction to attach to it.
 | Module reach (2.x) | 41 of 41 shippable modules on some app's classpath (`./bench coverage` recomputes it) |
 | Module reach (3.x) | 21 of 22 shippable modules on a classpath. The exception is `log4j-plugin-processor`: `@Plugin` moved package between the lines, so plugin sources cannot compile against both and `apps/custom-plugins` is 2.x-only. Catalogued in `FEATURE-MATRIX` §19 |
 | Config formats | every config in XML, JSON, YAML and properties, plus both Log4j 1.x formats |
-| Axes | 19 app targets · 70 configs · JDK 8/17/21/22 · 2.24.1 → 3.0.0-SNAPSHOT. **8 of the 19 apps run on 3.x** — eleven are 2.x-only (`APPS_2X_ONLY` in `bench`), either because their Log4j module has no 3.x release (`log4j-1.2-api`, `log4j-jakarta-web`, `log4j-spring-boot`, `log4j-jpa`, the JUL/JCL/SLF4J bridges, SMTP, JMS) or because the sources cannot compile against both lines (`custom-plugins`) |
+| Axes | 19 app targets · 73 configs · JDK 8/17/21/22 · 2.24.1 → 3.0.0-SNAPSHOT. **8 of the 19 apps run on 3.x** — eleven are 2.x-only (`APPS_2X_ONLY` in `bench`), either because their Log4j module has no 3.x release (`log4j-1.2-api`, `log4j-jakarta-web`, `log4j-spring-boot`, `log4j-jpa`, the JUL/JCL/SLF4J bridges, SMTP, JMS) or because the sources cannot compile against both lines (`custom-plugins`) |
 | Pattern converters | all 41 |
 | Layouts | every layout Log4j ships except `SerializedLayout`, which is deprecated and refuses to build without `log4j2.enableSerialization` |
 | Appenders needing infrastructure | JDBC, JPA, SMTP, JMS, JNDI, Kafka, Syslog, Socket, HTTP, JeroMQ, MongoDB, CouchDB, Cassandra — all verified by outcome against real services |
@@ -384,7 +389,7 @@ The rules, all in `bench`:
 | `min_java_for` | Everything is compiled at release 17 except `java8-baseline`, so java8 cells skip for every other app. |
 | `min_log4j_for` | An app whose Log4j module is younger than the version under test. `jms` needs 2.25.0+, because `log4j-jakarta-jms` did not exist before it. |
 | `is_2x_only` | Eleven apps have no 3.x release path — `log4j-1.2-api`, `log4j-jakarta-web` and friends were never published for 3.x. |
-| `INTERACTIVE_APPS` | `jakarta-web` and `javax-web` start a container, print an endpoint and serve until interrupted. They cannot finish a cell. Drive them by hand, or give them a self-test like `SelfTestRunner`. |
+| `INTERACTIVE_APPS` | Empty. Every server app drives its own endpoints under `-Dbench.selfTest=true` and exits, so none are pruned. Kept for the next app that cannot. |
 | `requires_config_for` | An app that asserts on a specific appender. `db` checks rows reached a JDBC appender, so `db` under `baseline-console` is meaningless. |
 | `requires_app_for` | The mirror: a config whose destinations only one app provides. `appender-network` posts to listeners `apps/network` opens in-process; anything else gets `Connection refused`. |
 

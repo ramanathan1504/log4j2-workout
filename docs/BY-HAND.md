@@ -52,6 +52,13 @@ Two rules that save the most time:
 
 ## A. Reviewing a pull request
 
+> This playbook covers **running** a PR — which app reaches the module, which
+> config exercises it, how to sweep it. For **judging** one — whether it should
+> be merged at all, whether the fix overshoots the bug, and how to follow it
+> after the author pushes — see [`PR-REVIEW.md`](PR-REVIEW.md). Reviews already
+> written are in [`pr-reviews/`](pr-reviews/); `./bench followup` says what has
+> moved since.
+
 ### A1. Read the PR and decide what it touches
 
 ```bash

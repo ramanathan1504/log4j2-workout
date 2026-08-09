@@ -2,6 +2,7 @@
 * xref:workflows.adoc[Workflows]
 ** xref:workflows.adoc#review[Reviewing a pull request]
 ** xref:workflows.adoc#reproduce[Reproducing and fixing an issue]
+** xref:cli.adoc#_followup[Following a PR after review]
 * xref:running.adoc[Running the bench]
 * xref:cli.adoc[Command reference]
 * xref:axes.adoc[The four axes]

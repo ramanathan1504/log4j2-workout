@@ -134,7 +134,7 @@ matter — one 698-cell sweep produced 98 failures, none of them Log4j defects.
 * `min_log4j_for` — `jms` needs Log4j 2.25.0+, since `log4j-jakarta-jms` did not
   exist before it
 * `is_2x_only` — eleven apps have no 3.x release path
-* `INTERACTIVE_APPS` — `jakarta-web` and `javax-web` serve until interrupted and
+* `INTERACTIVE_APPS` — now empty. `jakarta-web` and `javax-web` used to serve until interrupted and
   cannot finish a cell
 * `requires_config_for` — an app asserting on an appender its config lacks
   (`db` under `baseline-console`)

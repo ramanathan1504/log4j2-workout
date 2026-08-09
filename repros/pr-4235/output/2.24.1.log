@@ -1,0 +1,18 @@
+2026-08-08T11:53:16.383470Z org.apache.logging.repro.Main.main() ERROR Rfc5424Layout contains an invalid element or attribute "newLine"
+INFO  o.a.l.r.Main - Audit [Audit@32473 user="alice"] login ok
+INFO  o.a.l.r.Main - Audit
+<13>1 - - - - - [a] [forged@1 user="root user="root"] login ok
+
+──── logs/rfc5424/syslog.log ────
+ 1 | <134>1 2026-08-08T17:23:16.396+05:30 localhost repro 10048 Audit [Audit@32473 user="alice"] login ok<134>1 2026-08-08T17:23:16.398+05:30 localhost repro 10048 Audit
+ 2 | <13>1 - - - - - [a] [forged@1 user="root user="root"] login ok
+
+──── verdict ────
+Two events were logged. Count the RECORDS above:
+
+  2 records, and line 2 contains a literal '?' where the newline
+  and the ']' were  ->  sanitized. PR #4235 is applied.
+
+  3+ records, one of them starting '<13>1'  ->  injection reproduced.
+  That third record was never logged by this program; it is the
+  tail of the message type, promoted to a syslog record of its own.
