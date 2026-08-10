@@ -22,7 +22,29 @@ drafted here and filed by hand; fixes go in the Log4j clone, never here.
 | What is covered, and the 56 findings | `docs/FEATURE-MATRIX.md` (§17 findings, §19 3.x) |
 | What was filed upstream / what is still open | `docs/ISSUES.md`, `docs/GAPS.md` |
 
-`./bench` is the only entry point. `./bench help` lists the ten commands.
+`./bench` is the only entry point. `./bench help` lists the ten commands. It is
+symlinked into `~/.local/bin`, so `bench …` works from any directory — including
+from inside the Log4j clone with an IDE open on it.
+
+## Where this repo sits, of the three
+
+**oss-cli knows → workout runs → knowledge-creator remembers.**
+
+| Repo | Owns | Reach for it when |
+|---|---|---|
+| [`oss-cli`](https://github.com/ramanathan1504/oss-cli) | facts about any repo, from the GitHub API, cached by head SHA. No clone, any project, any language. | you want PR facts, conventions or a verdict without building anything |
+| **this one** | execution — real apps, real JVMs, the version × config × app matrix | the question needs something to actually run |
+| `knowledge-creator` | the archive: harvests threads and notes into DEVONthink, topic-first, indexed | you want it findable in a year |
+
+One test decides where new work belongs: *does it need to execute code against a
+real app?* If yes it is here; if it only needs to be retrievable later it is
+`knowledge-creator`; if it is neither, it is `oss-cli`.
+
+That question went unasked once and cost a rebuild: `./bench redgreen` was
+written from scratch while `knowledge-creator/log4j-pr-review.sh` had done the
+build/spotless half for months. The two are now one command, `./bench review`.
+`--file` hands the finished write-up to `knowledge-creator/pr-review-file.py`,
+which is the only piece that crosses a repo boundary at runtime.
 
 ## Rules that cost real time when missed
 

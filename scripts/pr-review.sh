@@ -34,6 +34,8 @@ KEEP=0
 OFFLINE=""
 OUT=""
 JDK="${BENCH_JDK:-17}"
+FILE_IT=0
+KB="${BENCH_KB_DIR:-$HOME/own repo/knowledge-creator}"
 
 # Changes under these paths force a full reactor build: they can break any
 # module, so a scoped build proves nothing.
@@ -56,6 +58,8 @@ Options:
   --offline           pass -o to maven (fast; needs a warm ~/.m2)
   --keep              keep the worktree for manual poking
   --jdk N             default 17; Log4j 2.x enforces [17,18)
+  --file              file docs/pr-reviews/<PR>-*.md into the knowledge base
+                      (knowledge-creator's pr-review-file.py; $BENCH_KB_DIR)
   --out DIR           default: .bench/reviews/<PR>
   --3x                use the 3.x clone (~/apache/log4j-main)
   --clone PATH        local clone to work in
@@ -73,6 +77,7 @@ while [ $# -gt 0 ]; do
     --keep)     KEEP=1; shift ;;
     --jdk)      JDK="$2"; shift 2 ;;
     --out)      OUT="$2"; shift 2 ;;
+    --file)     FILE_IT=1; shift ;;
     --3x)       CLONE="${BENCH_LOG4J_CLONE:-$HOME/apache/log4j-main}"; shift ;;
     --clone)    CLONE="$2"; shift 2 ;;
     -h|--help)  usage; exit 0 ;;
@@ -544,6 +549,25 @@ red_cell() {
 
 say "Done"
 cat "$OUT/00-SUMMARY.md"
+
+# ------------------------------------------------ hand it to the archive ---
+# The evidence above is disposable — .bench/ is cleared by `./bench clean`. The
+# write-up is not, and it is the one artefact no harvester can reconstruct:
+# public threads record what was said, not the reasoning that got there.
+if [ "$FILE_IT" -eq 1 ]; then
+    say "Filing the write-up into the knowledge base"
+    WRITEUP=$(ls "$ROOT"/docs/pr-reviews/"$PR"-*.md 2>/dev/null | head -1)
+    if [ -z "$WRITEUP" ]; then
+        warn "no docs/pr-reviews/$PR-*.md yet — nothing to file"
+        warn "write it first; the evidence in $OUT is what you write it from"
+    elif [ ! -x "$KB/pr-review-file.py" ]; then
+        warn "no pr-review-file.py in $KB (set \$BENCH_KB_DIR)"
+    else
+        "$KB/pr-review-file.py" "$WRITEUP" --pr "$PR" --repo "$REPO" --apply \
+            && ok "filed $(basename "$WRITEUP") — indexed under Projects/<topic>/pr-reviews/" \
+            || warn "pr-review-file.py failed; the write-up is untouched at $WRITEUP"
+    fi
+fi
 
 # ------------------------------------------------ the half this cannot do ---
 say "these facts are necessary, not sufficient — next, by hand:"
