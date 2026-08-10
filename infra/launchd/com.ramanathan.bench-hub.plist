@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN"
+  "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+  The template for `bench hub --install`, which substitutes __ROOT__ and __HOME__
+  and writes the result to ~/Library/LaunchAgents/.
+
+  Kept here rather than only in ~/Library/LaunchAgents, so a rebuilt machine can
+  reinstall it from the repository instead of from memory. Same reason oss-cli
+  ships its own plist.
+-->
+<plist version="1.0">
+<dict>
+    <key>Label</key>            <string>com.ramanathan.bench-hub</string>
+    <!-- The site over all three repos, always at http://localhost:8787/.
+         --no-open because launchd starts this at login: a browser tab opening
+         by itself every time you log in is not a feature. -->
+    <key>ProgramArguments</key>
+    <array>
+        <string>/bin/bash</string>
+        <string>-c</string>
+        <string>exec __ROOT__/bench hub --no-open</string>
+    </array>
+    <key>RunAtLoad</key>         <true/>
+    <!-- Restart if it dies. Throttled so a persistent failure (port taken,
+         repo mid-rebase) retries once a minute instead of spinning. Verified:
+         killing the process brings it back in about 25 seconds. -->
+    <key>KeepAlive</key>         <true/>
+    <key>ThrottleInterval</key>  <integer>60</integer>
+    <key>WorkingDirectory</key>  <string>__ROOT__</string>
+    <key>StandardOutPath</key>   <string>__ROOT__/.bench/hub/agent.out.log</string>
+    <key>StandardErrorPath</key> <string>__ROOT__/.bench/hub/agent.err.log</string>
+    <!-- git, gh and python3 live in Homebrew; launchd's default PATH has none
+         of them, and the to-do board is fetched with gh. Without this the page
+         still serves and the board silently stays empty, which looks like it
+         is working. -->
+    <key>EnvironmentVariables</key>
+    <dict>
+        <key>PATH</key>
+        <string>/opt/homebrew/bin:/usr/local/bin:__HOME__/.local/bin:/usr/bin:/bin:/usr/sbin:/sbin</string>
+    </dict>
+</dict>
+</plist>
