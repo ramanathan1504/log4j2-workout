@@ -120,33 +120,33 @@ these patterns, which this PR deliberately does not change.
 
 ## ── paste-ready comment ──
 
-> Thanks for this — and the addition to `NamedInstantPatternTest` is the part I
-> like most, since it holds the legacy and modern paths to the same precision
-> across every named pattern rather than two hand-picked cases.
->
-> Before we go into the code, one process point. #3816 was filed by @vy with a
-> preferred resolution already stated:
->
-> > I am personally in favor of copying `InstantPatternDynamicFormatter::patternPrecision`
-> > to `InstantPatternLegacyFormatter`, and adapting it, since this will ensure
-> > legacy code remains an island.
->
-> and it notes that @ppkarwasz had already fixed it by pattern conversion in
-> `3799799`. This PR takes the conversion route — the one @vy declined. I could
-> not find `3799799` in `2.x`, so I think it never landed, but the design question
-> is still open and worth settling before the implementation is reviewed.
->
-> @vy — do you still want the precision logic copied into the legacy formatter, or
-> is conversion acceptable now?
->
-> On the code, in case conversion is the answer: `pattern.replace('n', 'S')` reads
-> alarming, but it is safe, and I think the PR should say why. The rewritten
-> pattern is used **only** for `precision` — `this.pattern` and `createFormatter(...)`
-> both keep the original — so the worst case is a wrong `ChronoUnit`, never wrong
-> output. Quoted literals are precision-neutral, so `'min'` → `'miS'` computes the
-> same thing. A comment to that effect would save the next reader deriving it.
->
-> One last thing for the changelog: `getPrecision()` drives cache invalidation
-> (`InstantPatternThreadLocalCachedFormatter`), and classifying micros as nanos is
-> over-conservative — so the symptom is reduced caching, not incorrect timestamps.
-> Worth wording it that way so users can judge urgency.
+Thanks for this — and the addition to `NamedInstantPatternTest` is the part I
+like most, since it holds the legacy and modern paths to the same precision
+across every named pattern rather than two hand-picked cases.
+
+Before we go into the code, one process point. #3816 was filed by @vy with a
+preferred resolution already stated:
+
+> I am personally in favor of copying `InstantPatternDynamicFormatter::patternPrecision`
+> to `InstantPatternLegacyFormatter`, and adapting it, since this will ensure
+> legacy code remains an island.
+
+and it notes that @ppkarwasz had already fixed it by pattern conversion in
+`3799799`. This PR takes the conversion route — the one @vy declined. I could
+not find `3799799` in `2.x`, so I think it never landed, but the design question
+is still open and worth settling before the implementation is reviewed.
+
+@vy — do you still want the precision logic copied into the legacy formatter, or
+is conversion acceptable now?
+
+On the code, in case conversion is the answer: `pattern.replace('n', 'S')` reads
+alarming, but it is safe, and I think the PR should say why. The rewritten
+pattern is used **only** for `precision` — `this.pattern` and `createFormatter(...)`
+both keep the original — so the worst case is a wrong `ChronoUnit`, never wrong
+output. Quoted literals are precision-neutral, so `'min'` → `'miS'` computes the
+same thing. A comment to that effect would save the next reader deriving it.
+
+One last thing for the changelog: `getPrecision()` drives cache invalidation
+(`InstantPatternThreadLocalCachedFormatter`), and classifying micros as nanos is
+over-conservative — so the symptom is reduced caching, not incorrect timestamps.
+Worth wording it that way so users can judge urgency.

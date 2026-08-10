@@ -380,6 +380,7 @@ diffs against it.
 | `--changed`  | off | Only the ones that moved
 | `--mine`     | off | Only where the last word is not yours
 | `--sync`     | — | Re-record that pull request at its current head, dated today
+| `--comment`  | — | Print only that review's paste-ready block, for piping into `gh pr comment --body-file -`
 | `--repo`     | `apache/logging-log4j2` | Any repository
 |===
 
