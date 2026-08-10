@@ -6,6 +6,8 @@ hub.py — one local site over all three repos.
     bench hub --port 9000
     bench hub --no-open       serve only, no browser
     bench hub --once          write index.html and exit, no server
+    bench hub --sync all      pull everything the page can pull, then exit
+    bench hub --sync triage   one job only — fetch, todo, triage or all
 
 The page is regenerated on every request, from the working tree as it is right
 now. There is no build step, no cache and no watcher to fall out of sync: if you
@@ -15,10 +17,15 @@ Stdlib only, deliberately. This machine has no markdown library and the site has
 to keep working on a laptop with no network, so the renderer below is a small
 subset renderer rather than a dependency.
 
-It reads. It never writes to a repo, never fetches, never pulls.
+It reads the three working trees; it never fetches, pulls or commits in them.
+Two views are the exception, because they answer questions the working tree
+cannot: the To-do board calls the GitHub API, and Backlog triage shells out to
+knowledge-creator's triage.sh, which writes its report there. Both are cached,
+both say how old they are, and neither runs on the request path.
 """
 
 import argparse
+import fcntl
 import html
 import json
 import os
@@ -26,10 +33,12 @@ import re
 import subprocess
 import sys
 import threading
+import time
 import webbrowser
 from datetime import datetime, timezone
 from http.server import BaseHTTPRequestHandler, HTTPServer
 from pathlib import Path
+from urllib.parse import parse_qs, urlparse
 
 HOME = Path.home()
 WORKOUT = Path(__file__).resolve().parent.parent
@@ -447,6 +456,11 @@ h1,h2,h3,h4{line-height:1.3} main h1{font-size:24px} main h2{font-size:19px;marg
 main h3{font-size:16px;margin-top:22px}
 hr{border:0;border-top:1px solid var(--line);margin:22px 0}
 a{color:var(--acc)}
+.btn{font:inherit;font-size:12.5px;padding:3px 11px;border-radius:99px;cursor:pointer;
+border:1px solid var(--line);background:var(--card);color:var(--acc)}
+.btn:hover:not(:disabled){background:var(--code)}
+.btn:disabled{cursor:progress;color:var(--mut)}
+.btn.wide{display:block;width:100%;text-align:center;margin:2px 0 4px}
 .doc{border-top:1px solid var(--line);margin-top:26px;padding-top:6px}
 .foot{color:var(--mut);font-size:12px;margin-top:40px;border-top:1px solid var(--line);padding-top:12px}
 @media(max-width:820px){.wrap{grid-template-columns:1fr}nav{position:static;height:auto}}
@@ -462,8 +476,56 @@ function show(id){
 }
 links.forEach(a=>a.onclick=e=>{e.preventDefault();show(a.dataset.t)});
 show(location.hash.slice(1)||'home');
+
+// ---- sync buttons. Every one of them is the same: start a named job on the
+// server, poll it, then reload — the page is rendered from disk, so the reload
+// is what makes the new data visible. The message survives it via sessionStorage.
+const btns=j=>[...document.querySelectorAll(`button[data-job="${j}"]`)];
+const msgs=j=>[...document.querySelectorAll(`[data-msg="${j}"]`)];
+let busy=0;
+function say(j,t,cls){msgs(j).forEach(m=>{m.textContent=t;m.className='sub '+(cls||'')})}
+function paint(j,s){
+  btns(j).forEach(b=>b.disabled=s.running);
+  if(s.running){say(j,'syncing…')}
+  else if(s.ok===true){say(j,`${s.msg} · ${s.took}s`,'ok')}
+  else if(s.ok===false){say(j,s.msg,'bad')}
+}
+function done(j,s){
+  sessionStorage.setItem('hubmsg',JSON.stringify({j:j,msg:s.msg,ok:s.ok,took:s.took}));
+  location.reload();
+}
+function poll(j){
+  fetch('job?name='+j).then(r=>r.json()).then(s=>{
+    paint(j,s);
+    if(s.running){setTimeout(()=>poll(j),2000);return}
+    busy--;
+    // "Sync everything" runs three jobs, so this one finishing does not mean the
+    // page is settled. Reloading now would yank it out from under the rest;
+    // whichever finishes last does the reload.
+    fetch('job').then(r=>r.json())
+      .then(all=>{if(Object.values(all).some(x=>x.running)){paint(j,s)}else{done(j,s)}})
+      .catch(()=>done(j,s));
+  }).catch(()=>{busy--;say(j,'lost the server','bad');btns(j).forEach(b=>b.disabled=false)});
+}
+document.querySelectorAll('button[data-job]').forEach(b=>b.onclick=()=>{
+  const j=b.dataset.job;
+  if(j==='reload'){location.reload();return}
+  busy++; b.disabled=true; say(j,'starting…');
+  fetch('job?name='+j+'&start=1').then(r=>r.json()).then(s=>{paint(j,s);poll(j)})
+    .catch(()=>{busy--;say(j,'could not start','bad');b.disabled=false});
+});
+// A job started in another tab, or still running when this page was rendered.
+fetch('job').then(r=>r.json()).then(all=>{
+  Object.entries(all).forEach(([j,s])=>{if(s.running){busy++;paint(j,s);poll(j)}});
+});
+const last=sessionStorage.getItem('hubmsg');
+if(last){sessionStorage.removeItem('hubmsg');const d=JSON.parse(last);
+  say(d.j, d.ok?`${d.msg} · ${d.took}s`:d.msg, d.ok?'ok':'bad');}
+
 // The server re-reads the repos on every request, so a reload is the refresh.
-setInterval(()=>{fetch('status.json').then(r=>r.json()).then(d=>{
+setInterval(()=>{
+  if(busy)return;                       // never reload out from under a sync
+  fetch('status.json').then(r=>r.json()).then(d=>{
   if(window.__stamp && window.__stamp!==d.stamp) location.reload();
   window.__stamp=d.stamp;}).catch(()=>{})},15000);
 """
@@ -488,6 +550,213 @@ def human_age(seconds):
     return f"{h} h ago" if h < 48 else f"{h // 24} days ago"
 
 
+# ------------------------------------------------------------ triage sweep ---
+# triage.sh is a read-only GitHub sweep, but it is an expensive one — ~80 PRs and
+# ~160 issues, a few hundred API calls — and it writes its report into
+# knowledge-creator. So it never runs on the request path: the button and the
+# background thread both start it here, and the page polls for the result.
+TRIAGE_SH = KB / "triage.sh"
+TRIAGE_MAX_AGE_H = float(os.environ.get("BENCH_TRIAGE_MAX_AGE_H", "24"))
+
+
+def triage_age():
+    t = newest_triage()
+    return None if not t else datetime.now().timestamp() - t.stat().st_mtime
+
+
+def triage_sweep():
+    if not TRIAGE_SH.exists():
+        raise FileNotFoundError(f"no triage.sh at {TRIAGE_SH}")
+    r = subprocess.run([str(TRIAGE_SH), UPSTREAM, "--no-ai"], cwd=str(KB),
+                       capture_output=True, text=True, timeout=1800)
+    if r.returncode != 0:
+        # The last non-empty line is the failure; the rest is progress.
+        tail = [l for l in (r.stderr or r.stdout).strip().split("\n") if l.strip()]
+        raise RuntimeError(tail[-1] if tail else f"exit {r.returncode}")
+    t = newest_triage()
+    return t.name if t else "swept"
+
+
+# The report is a standalone page from another repo, with its own light-only
+# palette. Rather than restyle it — it is regenerated by triage.sh and any edit
+# there would be overwritten — map its palette onto the hub's dark tokens on the
+# way out, and let the iframe answer prefers-color-scheme like the hub does.
+TRIAGE_DARK = """
+:root{color-scheme:dark}
+body{background:#14130f;color:#eae7e0}
+a{color:#d99a6c}
+h3{color:#eae7e0}
+h2{border-bottom-color:#2c2a25}
+.hint,.stat-l,.ai-note,footer{color:#9d978c}
+#sidebar{background:#1b1a16;color:#c9c3b8}
+.sb-repo a{color:#d99a6c}
+.sb-meta,.sb-sec,.sb-n{color:#9d978c}
+.sb-hr{border-top-color:#2c2a25}
+.nav-list a{color:#c9c3b8}
+.nav-list a:hover{background:#232019;color:#f2efe8}
+.sb-n{background:#232019}
+table,.ai-table{background:#1b1a16;border-color:#2c2a25}
+th{background:#232019;color:#c9c3b8;border-bottom-color:#2c2a25}
+td{border-top-color:#2c2a25}
+tr:hover td,.ai-table tr:hover td{background:#232019}
+.stat,.cluster,.ai{background:#1b1a16;border-color:#2c2a25}
+.cluster{border-left-color:#d99a6c}
+.ai{background:#1b1a16;border-left-color:#a78bfa}
+.ai-table th{background:#2a2233;color:#c4b5fd;border-bottom-color:#3b2f47}
+.ai-table code{background:#232019;border-color:#2c2a25;color:#eae7e0}
+.rr{color:#c9c3b8;border-top-color:#2c2a25}
+.rl-bar{background:#2c2a25}
+.warn{background:#2a2416;border-color:#5c4a1a;color:#d9b96c}
+footer{border-top-color:#2c2a25}
+.b{border-width:1px;border-style:solid}
+.g{background:#16281c;color:#7fb98c;border-color:#2f4a37}
+.r{background:#2b1717;color:#e08a8a;border-color:#5a2b2b}
+.y{background:#2a2416;color:#d9b96c;border-color:#5c4a1a}
+.u{background:#151f2e;color:#8ab4e8;border-color:#2a3f5c}
+.s{background:#232019;color:#9d978c;border-color:#2c2a25}
+.p{background:#241c33;color:#c4b5fd;border-color:#3b2f47}
+"""
+
+
+def triage_page(theme="auto"):
+    """The report as served: its own bytes, plus a dark palette it never had."""
+    t = newest_triage()
+    if not t:
+        return None
+    css = "" if theme == "light" else (
+        TRIAGE_DARK if theme == "dark"
+        else "@media (prefers-color-scheme:dark){%s}" % TRIAGE_DARK)
+    body = t.read_text(encoding="utf-8", errors="replace")
+    if css:
+        # After the report's own <style>, so equal-specificity rules win.
+        tag = f"<style>{css}</style>"
+        body = (body.replace("</head>", tag + "\n</head>", 1)
+                if "</head>" in body else tag + body)
+    return body.encode()
+
+
+# -------------------------------------------------------------------- jobs ---
+# Every "pull new" button on the page is the same mechanism: a named job, started
+# on its own thread, polled by the browser. Nothing runs on the request path,
+# because this is a single-threaded server — a synchronous sweep would freeze the
+# page it is refreshing. A job already running is joined, not started twice.
+def fetch_all():
+    """`git fetch` in all three clones, so 'behind' means today rather than
+    whenever you last fetched by hand. Fetch only — it never touches a worktree."""
+    done, failed = [], []
+    for name, path, _, _ in REPOS:
+        if not (path / ".git").exists():
+            continue
+        r = subprocess.run(["git", "-C", str(path), "fetch", "--all", "--quiet",
+                            "--prune"], capture_output=True, text=True, timeout=180)
+        (done if r.returncode == 0 else failed).append(name)
+    if failed:
+        raise RuntimeError(f"fetch failed: {', '.join(failed)}")
+    return f"fetched {', '.join(done)}" if done else "no clones to fetch"
+
+
+def sync_all():
+    """One button for the whole page. Sequential on purpose: three concurrent
+    GitHub sweeps race each other for the same rate limit."""
+    out = []
+    for n in SYNC_ORDER:
+        s = job_run(n)
+        # job_run declines a job the background thread already has in flight, and
+        # returns its live state. That is "wait for it", not "it failed" — so join
+        # it rather than reporting a sweep that is running fine as a failure.
+        while s["running"]:
+            time.sleep(1)
+            s = job_state(n)
+        out.append(f"{JOBS[n][0].lower()}: {s['msg'] if s['ok'] else 'FAILED — ' + s['msg']}")
+    return " · ".join(out)
+
+
+JOBS = {
+    "todo": ("To do", lambda: f"{len(todo_refresh()['rows'])} PRs"),
+    "triage": ("Backlog triage", triage_sweep),
+    "fetch": ("Repo status", fetch_all),
+    "all": ("Everything", sync_all),
+}
+SYNC_ORDER = ("fetch", "todo", "triage")
+
+LOCK_DIR = WORKOUT / ".bench" / "hub" / "locks"
+_jobs_lock = threading.Lock()
+_job_state = {}
+
+
+def job_state(name):
+    with _jobs_lock:
+        return dict(_job_state.get(name) or
+                    {"name": name, "running": False, "ok": None, "msg": "", "took": None})
+
+
+def _job_claim(name):
+    """Mark the job running, if it is not already. Claiming and executing are
+    separate so that starting one on a thread cannot look, to the thread it just
+    started, like a job already in flight."""
+    with _jobs_lock:
+        if (_job_state.get(name) or {}).get("running"):
+            return False
+        _job_state[name] = {"name": name, "running": True, "ok": None,
+                            "msg": "running…", "took": None}
+        return True
+
+
+def _job_lock(name):
+    """`bench hub` runs from launchd all day, so a terminal `--sync` is a second
+    process, not a second thread — and two triage.sh runs would write the same
+    report at once. flock is held by the OS and released when the process dies,
+    which a pidfile would not survive."""
+    LOCK_DIR.mkdir(parents=True, exist_ok=True)
+    f = open(LOCK_DIR / f"{name}.lock", "w")
+    try:
+        fcntl.flock(f, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        return f
+    except OSError:
+        f.close()
+        return None
+
+
+def _job_exec(name):
+    started = datetime.now(timezone.utc)
+    # "all" holds no lock of its own; each job it runs takes its own.
+    lock = _job_lock(name) if name != "all" else True
+    if lock is None:
+        msg, ok = "already running in another bench hub — left it to finish", True
+    else:
+        try:
+            msg, ok = str(JOBS[name][1]()), True
+        except Exception as e:
+            msg, ok = str(e) or e.__class__.__name__, False
+        finally:
+            if lock is not True:
+                fcntl.flock(lock, fcntl.LOCK_UN)
+                lock.close()
+    took = round((datetime.now(timezone.utc) - started).total_seconds())
+    with _jobs_lock:
+        _job_state[name] = {"name": name, "running": False, "ok": ok,
+                            "msg": msg, "took": took}
+        return dict(_job_state[name])
+
+
+def job_run(name):
+    """Run a job to completion. Returns its state; never raises."""
+    if not _job_claim(name):
+        return job_state(name)
+    return _job_exec(name)
+
+
+def job_start(name):
+    """Start a job on its own thread and return its state immediately."""
+    if _job_claim(name):
+        threading.Thread(target=_job_exec, args=(name,), daemon=True).start()
+    return job_state(name)
+
+
+def button(job, label):
+    return f'<button class="btn" data-job="{job}">{html.escape(label)}</button>'
+
+
 BUCKETS = [
     ("you", "Your move", "nothing happens until you do something"),
     ("them", "Their move", "waiting on someone else — safe to ignore today"),
@@ -497,9 +766,11 @@ BUCKETS = [
 
 def todo_html(todo, age):
     if not todo:
-        return """<div class="hd"><h2>To do</h2></div>
+        return f"""<div class="hd"><h2>To do</h2>{button("todo", "Sync now")}
+        <span class="sub" data-msg="todo"></span></div>
         <p>No cache yet — this view needs GitHub, so it is fetched rather than read
-        from the working tree.</p><pre><code>bench hub --refresh</code></pre>
+        from the working tree. Press <em>Sync now</em>, or:</p>
+        <pre><code>bench hub --refresh</code></pre>
         <p class="sub">Once written, the page renders from the cache instantly and
         refreshes itself in the background while the server runs.</p>"""
 
@@ -507,12 +778,13 @@ def todo_html(todo, age):
     head = (f'<div class="hd"><h2>To do</h2><span class="sub">'
             f'{html.escape(todo["repo"])} · as @{html.escape(todo["me"])} · '
             f'{"<span class=warn>" if stale else ""}fetched {human_age(age)}'
-            f'{"</span>" if stale else ""}</span></div>')
+            f'{"</span>" if stale else ""}</span>'
+            f'{button("todo", "Sync now")}<span class="sub" data-msg="todo"></span></div>')
 
     out = [head]
     if stale:
         out.append('<p class="sub">Older than an hour — the server refreshes in the '
-                   'background, or run <code>bench hub --refresh</code>.</p>')
+                   'background, or press <em>Sync now</em>.</p>')
 
     for key, title, blurb in BUCKETS:
         rows = [r for r in todo["rows"] if r["bucket"] == key]
@@ -595,9 +867,11 @@ def build():
            f'<a href="#todo" data-t="todo">To do{f" <b>({n_you})</b>" if n_you else ""}</a>',
            '<a href="#home" data-t="home">Overview &amp; status</a>',
            '<a href="#flow" data-t="flow">Reviewing a PR</a>',
-           '<a href="#reviews" data-t="reviews">Reviews</a>']
-    if triage:
-        nav.append('<a href="#triage" data-t="triage">Backlog triage</a>')
+           '<a href="#reviews" data-t="reviews">Reviews</a>',
+           '<a href="#triage" data-t="triage">Backlog triage</a>',
+           '<div class="grp">sync</div>',
+           f'<button class="btn wide" data-job="all">Sync everything</button>',
+           '<div class="sub" data-msg="all" style="padding:6px 8px"></div>']
     secs = []
 
     # ---- to do
@@ -617,7 +891,8 @@ def build():
         f"<tr><td><code>{c}</code></td><td>{'<span class=ok>installed</span>' if p else '<span class=bad>not on PATH</span>'}</td>"
         f"<td><code>{html.escape(p or '—')}</code></td></tr>" for c, p in cmds.items())
 
-    secs.append(f"""<section id="home" hidden><div class="hd"><h2>Three repos, one job each</h2></div>
+    secs.append(f"""<section id="home" hidden><div class="hd"><h2>Three repos, one job each</h2>
+    {button("fetch", "Fetch all three")}<span class="sub" data-msg="fetch"></span></div>
     <p><strong>oss-cli knows → log4j2-workout runs → knowledge-creator remembers.</strong>
     One test decides where new work belongs: <em>does it need to execute code against a
     real app?</em> If yes it is the workout; if it only needs to be retrievable later it is
@@ -627,8 +902,9 @@ def build():
     <div class="tw"><table><thead><tr><th>command</th><th>state</th><th>path</th></tr></thead>
     <tbody>{inst}</tbody></table></div>
     <p class="sub">This page re-reads all three working trees on every request — no build
-    step and no cache, so a reload is the refresh. It never fetches, pulls or writes.
-    “behind” is measured against the last <code>git fetch</code> you ran.</p>
+    step and no cache, so a reload is the refresh. It never pulls, merges or writes to a
+    worktree. “behind” is measured against the last fetch, which is what
+    <em>Fetch all three</em> is for.</p>
     </section>""")
 
     # ---- flow
@@ -646,7 +922,8 @@ def build():
                  f'<td>{html.escape(r["author"])}</td><td>{html.escape(r["posted"])}</td>'
                  f'<td>{link}</td><td>{ev}</td><td>{html.escape(r["note"])}</td></tr>')
     secs.append(f"""<section id="reviews" hidden><div class="hd"><h2>Reviews</h2>
-    <span class="sub">{len(led)} in the ledger · {len(evid)} with evidence in .bench/reviews</span></div>
+    <span class="sub">{len(led)} in the ledger · {len(evid)} with evidence in .bench/reviews</span>
+    <button class="btn" data-job="reload">Re-read from disk</button></div>
     <p class="sub">“posted” is whether the paste-ready comment went upstream. The write-up
     column is the file under <code>docs/pr-reviews/</code>; evidence is a
     <code>bench review &lt;n&gt;</code> run still on disk.</p>
@@ -655,16 +932,29 @@ def build():
     <tbody>{rows or '<tr><td colspan=8>ledger empty</td></tr>'}</tbody></table></div></section>""")
 
     # ---- backlog triage, from knowledge-creator's own report
+    auto = (f"anything older than {TRIAGE_MAX_AGE_H:g} h is re-swept in the background"
+            if TRIAGE_MAX_AGE_H > 0 else
+            "background re-sweep is off (<code>BENCH_TRIAGE_MAX_AGE_H=0</code>)")
+    blurb = f"""<p class="sub">Generated by <code>knowledge-creator/triage.sh</code> —
+    clusters, mergeable-now, one-fix-away, top issues. A few hundred API calls, so it runs
+    off the request path: {auto}, and <em>Sweep now</em> starts one immediately. By hand:</p>
+    <pre><code>cd ~/own\\ repo/knowledge-creator &amp;&amp; ./triage.sh {html.escape(UPSTREAM)} --no-ai</code></pre>"""
     if triage:
-        t_age = human_age((datetime.now().timestamp() - triage.stat().st_mtime))
-        secs.append(f"""<section id="triage" hidden><div class="hd"><h2>Backlog triage</h2>
-        <span class="sub">{html.escape(triage.name)} · {t_age}</span></div>
-        <p class="sub">Generated by <code>knowledge-creator/triage.sh</code> — clusters,
-        mergeable-now, one-fix-away, top issues. Not regenerated by this page; it is a
-        read-only GitHub sweep and costs API calls, so you run it when you want it:</p>
-        <pre><code>cd ~/own\\ repo/knowledge-creator &amp;&amp; ./triage.sh {html.escape(UPSTREAM)} --no-ai</code></pre>
-        <iframe src="triage.html" style="width:100%;height:78vh;border:1px solid var(--line);
-        border-radius:10px;background:#fff"></iframe></section>""")
+        age = datetime.now().timestamp() - triage.stat().st_mtime
+        stale = TRIAGE_MAX_AGE_H > 0 and age > TRIAGE_MAX_AGE_H * 3600
+        tstamp = (f'<span class="sub">{html.escape(triage.name)} · '
+                  f'{"<span class=warn>" if stale else ""}{human_age(age)}'
+                  f'{"</span>" if stale else ""}</span>')
+        view = ('<iframe src="triage.html" style="width:100%;height:78vh;'
+                'border:1px solid var(--line);border-radius:10px;'
+                'background:var(--card)"></iframe>')
+    else:
+        tstamp = '<span class="sub warn">no report yet</span>'
+        view = ('<p>No <code>triage-*.html</code> in knowledge-creator yet — '
+                '<em>Sweep now</em> writes the first one.</p>')
+    secs.append(f"""<section id="triage" hidden><div class="hd"><h2>Backlog triage</h2>
+    {tstamp}{button("triage", "Sweep now")}<span class="sub" data-msg="triage"></span></div>
+    {blurb}{view}</section>""")
 
     # ---- docs
     for repo_name, base, paths in DOCS:
@@ -680,7 +970,8 @@ def build():
             except Exception as e:  # a doc that cannot be read is a fact, not a crash
                 body = f"<p class='bad'>could not read: {html.escape(str(e))}</p>"
             secs.append(f'<section id="{sid}" hidden><div class="hd">'
-                        f'<h2>{html.escape(rel)}</h2><span class="sub">{html.escape(repo_name)}</span></div>'
+                        f'<h2>{html.escape(rel)}</h2><span class="sub">{html.escape(repo_name)}</span>'
+                        f'<button class="btn" data-job="reload">Re-read from disk</button></div>'
                         f'<div class="doc">{body}</div></section>')
 
     stamp = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%SZ")
@@ -688,7 +979,8 @@ def build():
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>bench hub</title><style>{CSS}</style></head><body>
 <div class="wrap"><nav>{''.join(nav)}</nav><main>{''.join(secs)}
-<div class="foot">generated {stamp} · read-only · reload to refresh</div></main></div>
+<div class="foot">generated {stamp} · the working tree is read on every request ·
+sync pulls what only GitHub knows</div></main></div>
 <script>{JS}</script></body></html>"""
 
 
@@ -830,13 +1122,25 @@ class Handler(BaseHTTPRequestHandler):
         pass
 
     def do_GET(self):
+        q = parse_qs(urlparse(self.path).query)
         if self.path.startswith("/triage.html"):
-            t = newest_triage()
-            if not t:
+            body = triage_page(q.get("theme", ["auto"])[0])
+            if body is None:
                 self.send_error(404, "no triage-*.html in knowledge-creator")
                 return
-            body = t.read_bytes()
             ctype = "text/html; charset=utf-8"
+        elif self.path.startswith("/job"):
+            name = q.get("name", [""])[0]
+            if not name:
+                payload = {n: job_state(n) for n in JOBS}
+            elif name not in JOBS:
+                self.send_error(404, f"no such job: {name}")
+                return
+            else:
+                payload = (job_start(name) if q.get("start")
+                           else job_state(name))
+            body = json.dumps(payload).encode()
+            ctype = "application/json"
         elif self.path.startswith("/refresh"):
             # Explicit, synchronous, and it says how long it took. The background
             # refresher exists so a page load never waits on twenty API calls.
@@ -872,6 +1176,8 @@ def main():
                     help="just serve; do not open a browser")
     ap.add_argument("--refresh", action="store_true",
                     help="re-fetch the To-do view from GitHub, then exit")
+    ap.add_argument("--sync", choices=sorted(JOBS), metavar="JOB",
+                    help=f"run one sync job and exit: {', '.join(sorted(JOBS))}")
     ap.add_argument("--install", action="store_true",
                     help="install the launchd agent so the site starts at login")
     ap.add_argument("--uninstall", action="store_true", help="remove that agent")
@@ -880,6 +1186,11 @@ def main():
     if args.install or args.uninstall:
         install_agent(remove=args.uninstall)
         return
+
+    if args.sync:
+        s = job_run(args.sync)
+        print(f"{JOBS[args.sync][0]}: {s['msg']}  ({s['took']}s)")
+        sys.exit(0 if s["ok"] else 1)
 
     if args.refresh:
         d = todo_refresh()
@@ -910,15 +1221,20 @@ def main():
     # Refresh off the request path, so the first page load is instant even when
     # the cache is cold or an hour stale.
     def refresher():
-        import time
         while True:
             _, age = todo_load()
             if age is None or age > 900:
-                try:
-                    d = todo_refresh()
-                    print(f"to-do refreshed: {len(d['rows'])} PRs", file=sys.stderr)
-                except Exception as e:  # a rate limit or a dropped network is not fatal
-                    print(f"to-do refresh failed: {e}", file=sys.stderr)
+                s = job_run("todo")
+                print(f"to-do {'refreshed' if s['ok'] else 'refresh failed'}: {s['msg']}",
+                      file=sys.stderr)
+            # The triage sweep is far heavier than the to-do fetch, so it gets its
+            # own, much longer staleness window. BENCH_TRIAGE_MAX_AGE_H=0 turns the
+            # automatic sweep off and leaves the button.
+            t_age = triage_age()
+            if TRIAGE_MAX_AGE_H > 0 and (t_age is None or t_age > TRIAGE_MAX_AGE_H * 3600):
+                s = job_run("triage")
+                print(f"triage {'swept' if s['ok'] else 'sweep failed'}: {s['msg']}",
+                      file=sys.stderr)
             time.sleep(300)
     threading.Thread(target=refresher, daemon=True).start()
 
