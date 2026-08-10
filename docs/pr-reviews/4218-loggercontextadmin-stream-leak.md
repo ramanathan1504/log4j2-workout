@@ -111,6 +111,13 @@ in a way that looks unrelated and reproduces once in fifty runs.
 Worth confirming the module's surefire configuration is single-threaded, or
 annotating for isolation.
 
+### 4. The tests leak a `LoggerContext` each
+
+All four tests do `new LoggerContext(...)` and never `stop()` it, so a PR whose
+subject is resource cleanup leaks four contexts across its own suite. A one-line
+`@AfterEach` fixes it. The module's usual extensions (`@UsingStatusListener`,
+`LoggerContextSource`) are also bypassed, but that is a style point, not a leak.
+
 ## Repro
 
 None built. The observable is a file descriptor, not appender output — the bench
@@ -123,32 +130,54 @@ to count FDs would reproduce the same flakiness the test has.
 
 Thanks for turning that around — the new
 `setConfigLocationUri_closesCallerOwnedStreamWhenFactoryDoesNotConsumeIt` does
-what I asked: it fails without the production change. And dropping the
-buffering resolves my second point.
+what I asked. I re-ran the check on my side rather than take it on trust: `2.x`
+plus your test files only, without `LoggerContextAdmin.java`, gives
+
+```
+Tests run: 4, Failures: 1, Errors: 0, Skipped: 0
+  <<< FAILURE! -- LoggerContextAdminSetConfigLocationUriTest
+```
+
+and adding the fix back turns it green. That is a real red-green now. Dropping
+the buffering resolves my second point.
 
 I also checked the thing that worried me most about the fix, and it is fine:
 closing the stream after `start()` does not break `monitorInterval` re-reads,
 because `ConfigurationSource.resetInputStream()` opens a fresh stream from the
 file rather than reusing the retained one. Your inline comment is accurate.
 
-Two things on the test before I approve:
+Your answer to my third question is right too, and I am glad it made it into the
+changelog `<description>` rather than just the thread — "the gap is the
+caller-owns-stream contract when a factory never consumes" is the accurate
+description of what this fixes.
 
-**1. The FD count will flake.** Open-descriptor count is process-wide in a JVM
-surefire shares across test classes, so class loading, GC closing a jar handle,
-or any concurrent test moves it between the two samples. Your own numbers hint
-at it — `expected: 173 but was: 177` is a delta of 4 for one leaked stream, so
-three of those came from elsewhere. Could the test observe `close()` directly
-instead? Wrapping the stream in a `FilterInputStream` that records closure, or
-capturing `source.getInputStream()` in the stub factory and asserting on it
-afterwards, tests the contract rather than a proxy for it.
+**The production change is good and I am no longer blocking on it.** One ask on
+the test before merge, then two you can take or leave.
+
+**1. The FD count will flake — this is the one I would like changed.**
+Open-descriptor count is process-wide in a JVM surefire shares across test
+classes, so class loading, GC closing a jar handle, or any concurrent test moves
+it between the two samples. Your own numbers hint at it: `expected: 173 but was:
+177` is a delta of 4 for one leaked stream, so three of those descriptors came
+from somewhere else. Could the test observe `close()` directly instead? Wrapping
+the stream in a `FilterInputStream` that records closure, or capturing
+`source.getInputStream()` in the stub factory and asserting on it afterwards,
+tests the contract rather than a proxy for it — and it is deterministic, which
+matters more than usual for a test that will run on every PR in this project.
 
 **2. `getOpenFileDescriptorCount()` returns 0 when the bean is not a
 `UnixOperatingSystemMXBean`,** so on Windows the assertion is `assertEquals(0, 0)`
 and passes with or without the fix. The `Files.delete` check still carries it
-there, but the vacuous assertion should at least be commented, or the test
-assumption-skipped off Unix.
+there, so the test is not worthless on Windows — but the headline assertion is
+vacuous and nothing says so. A comment or an assumption-skip off Unix would do.
+Moot if you take (1).
 
-Minor: `ConfigurationFactory.setConfigurationFactory` is a global static. The
-`@AfterEach` reset is right, but if this module ever runs test classes in
-parallel, a concurrent test would pick up a factory returning
-`DefaultConfiguration` for `"*"`. Worth an isolation annotation.
+**3. Minor, and I smiled at it:** all four tests create a `LoggerContext` and
+never `stop()` it, so the resource-cleanup PR leaks four contexts through its own
+suite. An `@AfterEach ctx.stop()` closes that.
+
+Also worth noting for later: `ConfigurationFactory.setConfigurationFactory` is a
+global static, and the `@AfterEach` reset is the right call — but if this module
+ever runs test classes in parallel, a concurrent test would pick up a factory
+returning `DefaultConfiguration` for `"*"` and fail in a way that looks
+unrelated. Not something to fix here.
