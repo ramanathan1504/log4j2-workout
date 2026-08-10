@@ -112,6 +112,59 @@ Also worth asking on any behaviour change:
 
 ## 3. Verify — a clean exit proves nothing
 
+### Start with the mechanical gates
+
+```bash
+./bench redgreen 4218
+```
+
+Four gates, in order, in a throwaway `git worktree` — your clone stays on `2.x`
+and `~/.m2` is never overwritten, so this is safe to run before you have
+baselined anything:
+
+| Gate | Asks |
+|---|---|
+| BUILD | does the PR branch compile, and do its own tests pass |
+| SPOTLESS | is it formatted the way the project enforces |
+| **RED** | base + the PR's **test files only** → must **fail** |
+| GREEN | base + tests + the PR's **main files** → must **pass** |
+
+**RED is the one that earns its keep.** It automates the hand-check that caught
+#4218: revert the fix, keep the tests, and see whether anything goes red. That
+PR's first revision shipped three tests that all passed without the production
+change — they asserted that a configuration loads, not that a stream closes.
+Nothing but running it says so. On the current head the same gate reports
+`Tests run: 4, Failures: 1`, which is the author's red-green claim confirmed
+rather than taken on trust.
+
+Read the RED verdict carefully, because it has four outcomes and only one of
+them is "the tests are fine":
+
+- **fail, as required** — an assertion failed. What you want.
+- **compile error** — valid red, but weaker: the test pins an API's existence,
+  not a behaviour. A test that only fails to compile would still pass if the
+  method were reintroduced doing nothing.
+- **PASS** — the tests do not test the fix. This is a blocking finding, and the
+  comment to write is "can you make at least one of them fail without the
+  production change?"
+- **inconclusive** — the build broke before any test ran, so there is no
+  evidence either way. Never read this as red.
+
+That last outcome is why the gate insists on a surefire `Tests run: … Failures:`
+line rather than trusting maven's exit code. An early version of the script ran
+under JDK 22, Log4j's enforcer rejected it with `[17,18)` in `log4j-bom` before
+compiling anything, and the non-zero exit reported a cheerful green tick on RED.
+Same shape as the `commons-compress` repro below that passed on four versions
+having compressed nothing: **the failure you are looking for and an unrelated
+failure exit the same way.**
+
+The gates are necessary, not sufficient. All four green means the change is
+mechanically sound, and says nothing about whether it fixes the right thing —
+that is §2, and no script gets there. The script prints the §2 checklist when it
+finishes for exactly that reason.
+
+### Then reproduce it here
+
 Reproduce against **releases first**. `--install` overwrites `2.27.0-SNAPSHOT`,
 so a baseline taken afterwards measures the PR twice.
 

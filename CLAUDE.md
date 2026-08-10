@@ -22,7 +22,7 @@ drafted here and filed by hand; fixes go in the Log4j clone, never here.
 | What is covered, and the 56 findings | `docs/FEATURE-MATRIX.md` (§17 findings, §19 3.x) |
 | What was filed upstream / what is still open | `docs/ISSUES.md`, `docs/GAPS.md` |
 
-`./bench` is the only entry point. `./bench help` lists the nine commands.
+`./bench` is the only entry point. `./bench help` lists the ten commands.
 
 ## Rules that cost real time when missed
 

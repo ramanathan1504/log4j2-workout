@@ -12,6 +12,7 @@
 #   ./bench repro 4143 --log4j 2.26.0               build a standalone repro zip
 #   ./bench issue 4143                              read an upstream issue
 #   ./bench pr 4133 --checkout --install            read a PR, and run it here
+#   ./bench redgreen 4133                           does its test fail without its fix?
 #   ./bench followup                                what moved since you reviewed
 #
 # Every run forks a real JVM with an explicit classpath rather than running
@@ -777,6 +778,7 @@ java_major_of() {
 cmd_repro() { exec "$ROOT/scripts/repro.sh" "$@"; }
 cmd_issue() { exec "$ROOT/scripts/gh-issue.sh" "$@"; }
 cmd_pr()    { exec "$ROOT/scripts/gh-pr.sh" "$@"; }
+cmd_redgreen() { exec "$ROOT/scripts/pr-redgreen.sh" "$@"; }
 cmd_followup() { exec "$ROOT/scripts/gh-pr-followup.sh" "$@"; }
 
 # Where the bench actually reaches, as opposed to where it is meant to reach.
@@ -885,6 +887,7 @@ case "${1:-help}" in
   repro)    shift; cmd_repro "$@" ;;
   issue)    shift; cmd_issue "$@" ;;
   pr)       shift; cmd_pr "$@" ;;
+  redgreen) shift; cmd_redgreen "$@" ;;
   followup) shift; cmd_followup "$@" ;;
   clean)  rm -rf "$CACHE"; info "cleared $CACHE" ;;
   help|--help|-h) usage ;;
