@@ -2,9 +2,9 @@
 """
 hub.py — one local site over all three repos.
 
-    bench hub                 serve on http://localhost:8787
+    bench hub                 serve on http://localhost:8787, and open it
     bench hub --port 9000
-    bench hub --open          ...and open a browser
+    bench hub --no-open       serve only, no browser
     bench hub --once          write index.html and exit, no server
 
 The page is regenerated on every request, from the working tree as it is right
@@ -252,7 +252,6 @@ def reviews():
 CSS = """
 :root{--bg:#fbfaf8;--fg:#1c1b19;--mut:#6b675f;--line:#e2ded6;--card:#fff;
 --acc:#8a4b2a;--ok:#2f6a3f;--warn:#8a6a1a;--bad:#9b2c2c;--code:#f3f0ea;}
-:root:not([data-theme=light]) @media (prefers-color-scheme:dark){}
 @media (prefers-color-scheme:dark){:root:not([data-theme=light]){
 --bg:#14130f;--fg:#eae7e0;--mut:#9d978c;--line:#2c2a25;--card:#1b1a16;
 --acc:#d99a6c;--ok:#7fb98c;--warn:#d9b96c;--bad:#e08a8a;--code:#232019;}}
@@ -535,7 +534,12 @@ def main():
     ap = argparse.ArgumentParser(description="One local site over all three repos.")
     ap.add_argument("--port", type=int, default=8787)
     ap.add_argument("--once", action="store_true", help="write index.html and exit")
-    ap.add_argument("--open", action="store_true", help="open a browser")
+    # Opening is the default: a command whose whole job is to show you a page and
+    # then only prints a URL reads as broken. --open is kept as a no-op so any
+    # muscle memory or script that passes it still works.
+    ap.add_argument("--open", action="store_true", help="(default) open a browser")
+    ap.add_argument("--no-open", dest="no_open", action="store_true",
+                    help="just serve; do not open a browser")
     args = ap.parse_args()
 
     missing = [n for n, p, _, _ in REPOS if not (p / ".git").exists()]
@@ -556,8 +560,9 @@ def main():
     except OSError as e:
         sys.exit(f"error: cannot bind {url} — {e}")
     print(f"bench hub on {url}   (ctrl-c to stop)", file=sys.stderr)
-    if args.open:
-        webbrowser.open(url)
+    if not args.no_open:
+        if not webbrowser.open(url):
+            print(f"could not open a browser — go to {url}", file=sys.stderr)
     try:
         srv.serve_forever()
     except KeyboardInterrupt:

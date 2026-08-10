@@ -14,7 +14,7 @@
 #   ./bench pr 4133 --checkout --install            read a PR, and run it here
 #   ./bench review 4133                             every mechanical fact about a PR
 #   ./bench followup                                what moved since you reviewed
-#   ./bench hub --open                              all three repos, one local page
+#   ./bench hub                                     all three repos, one local page
 #
 # Every run forks a real JVM with an explicit classpath rather than running
 # inside Maven's, so what executes here is exactly what a repro zip would ship.
