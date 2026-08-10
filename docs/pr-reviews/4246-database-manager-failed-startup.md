@@ -152,37 +152,37 @@ Your existing evidence for the underlying bug:
 
 ## ── paste-ready comment ──
 
-> Thanks for picking this up. The diagnosis matches what I filed in #4241, and
-> the `CassandraManager.shutdownInternal()` change is exactly right — `try {
-> session.close(); } finally { cluster.close(); }` is what #4242 needs too.
->
-> I have a concern about the `write()` early return, though. The not-running case
-> is already handled one level down, and handled deliberately loudly —
-> `NoSqlDatabaseManager.writeInternal`:
->
-> ```java
-> if (!this.isRunning() || this.connection == null || this.connection.isClosed()) {
->     throw new AppenderLoggingException(
->             "Cannot write logging event; NoSQL manager not connected to the database.");
-> }
-> ```
->
-> That `AppenderLoggingException` is how `ignoreExceptions="false"` reaches the
-> application. With the new guard in the base class, `writeInternal` is never
-> reached, so a user who explicitly configured `ignoreExceptions="false"` on a
-> `NoSql` appender now gets a single `StatusLogger` warning and silent event loss
-> instead of a failure on the calling thread. That is a behaviour change for
-> MongoDB/CouchDB users that is not called out in the description.
->
-> Would it work to fix the per-event NPE where it actually originates — give
-> `CassandraManager.writeInternal` the same not-running guard `NoSqlDatabaseManager`
-> already has — and leave `AbstractDatabaseManager.write()` alone? That closes
-> #4241 without changing the `ignoreExceptions` contract.
->
-> On the `shutdown()` half: making `shutdownInternal()` run after a failed startup
-> is a widening of a documented contract on a `protected abstract` method of a
-> public extension point. All four in-tree implementations happen to tolerate it
-> (I checked JPA, JDBC, NoSQL, Cassandra), but third-party database managers were
-> written against *"will only be called after `startupInternal()`"*. Could the
-> changelog entry be `changed` rather than `fixed`, and the javadoc change called
-> out in the description as a compatibility note?
+Thanks for picking this up. The diagnosis matches what I filed in #4241, and
+the `CassandraManager.shutdownInternal()` change is exactly right — `try {
+session.close(); } finally { cluster.close(); }` is what #4242 needs too.
+
+I have a concern about the `write()` early return, though. The not-running case
+is already handled one level down, and handled deliberately loudly —
+`NoSqlDatabaseManager.writeInternal`:
+
+```java
+if (!this.isRunning() || this.connection == null || this.connection.isClosed()) {
+    throw new AppenderLoggingException(
+            "Cannot write logging event; NoSQL manager not connected to the database.");
+}
+```
+
+That `AppenderLoggingException` is how `ignoreExceptions="false"` reaches the
+application. With the new guard in the base class, `writeInternal` is never
+reached, so a user who explicitly configured `ignoreExceptions="false"` on a
+`NoSql` appender now gets a single `StatusLogger` warning and silent event loss
+instead of a failure on the calling thread. That is a behaviour change for
+MongoDB/CouchDB users that is not called out in the description.
+
+Would it work to fix the per-event NPE where it actually originates — give
+`CassandraManager.writeInternal` the same not-running guard `NoSqlDatabaseManager`
+already has — and leave `AbstractDatabaseManager.write()` alone? That closes
+#4241 without changing the `ignoreExceptions` contract.
+
+On the `shutdown()` half: making `shutdownInternal()` run after a failed startup
+is a widening of a documented contract on a `protected abstract` method of a
+public extension point. All four in-tree implementations happen to tolerate it
+(I checked JPA, JDBC, NoSQL, Cassandra), but third-party database managers were
+written against *"will only be called after `startupInternal()`"*. Could the
+changelog entry be `changed` rather than `fixed`, and the javadoc change called
+out in the description as a compatibility note?

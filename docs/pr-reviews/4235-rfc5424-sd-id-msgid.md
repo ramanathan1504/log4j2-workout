@@ -116,32 +116,32 @@ for `StructuredDataMessage`.
 
 ## ── paste-ready comment ──
 
-> This is a good find, and I like that it follows the rule #4073 already
-> established rather than inventing a new one — same `?` replacement, and the
-> SD-ID/PARAM-NAME split matches RFC 5424 giving both fields the same `SD-NAME`
-> production while MSGID keeps the wider printable-US-ASCII range.
->
-> I checked the two call sites and they are as you describe: `appendMessageId`
-> appends `StructuredDataMessage.getType()` raw and `formatStructuredElement`
-> appends the SD-ID raw, and neither `setType` nor the `StructuredDataId`
-> constructors validate characters — only length. Leaving the lengths alone is the
-> right call, since `StructuredDataId` lets callers raise the 32-character limit.
->
-> A few notes:
->
-> - `sanitizePrintableUsAscii` allocating lazily is the right shape for this path
->   and matches `escapeParamValue` directly below it. Good.
-> - `@` is preserved, so `name@32473` enterprise IDs pass through — the
->   `validId@32473` test case covers that.
-> - The root cause is arguably that `StructuredDataId` and
->   `StructuredDataMessage#setType` validate length but not characters, leaving
->   every layout to sanitise on output. Out of scope here, but worth an issue.
-> - `main` needs the same change.
->
-> One process note, since you have a few security-flavoured PRs open: for anything
-> where untrusted input can reach the affected field, the ASF process is to mail
-> `security@apache.org` first rather than open a public PR with a working
-> proof-of-concept — see https://logging.apache.org/security.html. I do not think
-> this one crosses that line, because the SD-ID and type come from the application
-> rather than from a remote user, so a public PR is right here. Flagging it so the
-> next one goes to the right place.
+This is a good find, and I like that it follows the rule #4073 already
+established rather than inventing a new one — same `?` replacement, and the
+SD-ID/PARAM-NAME split matches RFC 5424 giving both fields the same `SD-NAME`
+production while MSGID keeps the wider printable-US-ASCII range.
+
+I checked the two call sites and they are as you describe: `appendMessageId`
+appends `StructuredDataMessage.getType()` raw and `formatStructuredElement`
+appends the SD-ID raw, and neither `setType` nor the `StructuredDataId`
+constructors validate characters — only length. Leaving the lengths alone is the
+right call, since `StructuredDataId` lets callers raise the 32-character limit.
+
+A few notes:
+
+- `sanitizePrintableUsAscii` allocating lazily is the right shape for this path
+  and matches `escapeParamValue` directly below it. Good.
+- `@` is preserved, so `name@32473` enterprise IDs pass through — the
+  `validId@32473` test case covers that.
+- The root cause is arguably that `StructuredDataId` and
+  `StructuredDataMessage#setType` validate length but not characters, leaving
+  every layout to sanitise on output. Out of scope here, but worth an issue.
+- `main` needs the same change.
+
+One process note, since you have a few security-flavoured PRs open: for anything
+where untrusted input can reach the affected field, the ASF process is to mail
+`security@apache.org` first rather than open a public PR with a working
+proof-of-concept — see https://logging.apache.org/security.html. I do not think
+this one crosses that line, because the SD-ID and type come from the application
+rather than from a remote user, so a public PR is right here. Flagging it so the
+next one goes to the right place.

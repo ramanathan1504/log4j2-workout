@@ -231,6 +231,7 @@ PR was at when it was reviewed, and `./bench followup` diffs against it.
 ./bench followup --mine          # only where the last word is not yours
 ./bench followup 4234            # one PR, in full
 ./bench followup --sync 4234     # re-record, AFTER re-reading it
+./bench followup --comment 4234  # print ONLY the paste-ready block
 ```
 
 ```

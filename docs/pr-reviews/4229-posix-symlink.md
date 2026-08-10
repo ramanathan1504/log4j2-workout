@@ -128,29 +128,29 @@ rather than as part of a sweep.
 
 ## ── paste-ready comment ──
 
-> The technical observation is correct on both counts — `defineFilePosixAttributeView`
-> did resolve the view without `NOFOLLOW_LINKS`, and `walkFileTree` does hand
-> symlinks to `visitFile` regardless of the `followLinks="false"` default, so the
-> attributes landed on the target. Requesting the view with `NOFOLLOW_LINKS` and
-> skipping links in the visitor is the right mechanism, and `CONTINUE` rather than
-> aborting the rollover is the right call.
->
-> I would frame this differently in the changelog, though. Planting the link
-> requires write access to the directory the application is actively logging into
-> — at which point the attacker has better options than redirecting a chmod. So
-> this reads to me as defence-in-depth hardening rather than a privilege-boundary
-> fix, and I would rather the entry said so than have it read as a security
-> advisory.
->
-> Two smaller points:
->
-> - It is a silent behaviour change for anyone who deliberately keeps symlinks in
->   their log directory and expects permissions to be applied through them. Could
->   the changelog entry mention that?
-> - `testDefineFilePosixAttributeViewDoesNotFollowSymbolicLinks` swallows the
->   `IOException` and then asserts the target is unchanged, so it passes whether or
->   not the fix is present on any filesystem that refuses link chmod for its own
->   reasons. `PosixViewAttributeActionTest.testSymbolicLinksAreNotFollowed` is the
->   stronger test — it asserts both that the regular file *was* updated and that the
->   outsider *was not*, so it would also catch the visitor skipping too much. Could
->   the `FileUtilsTest` one assert on the outcome rather than tolerate the exception?
+The technical observation is correct on both counts — `defineFilePosixAttributeView`
+did resolve the view without `NOFOLLOW_LINKS`, and `walkFileTree` does hand
+symlinks to `visitFile` regardless of the `followLinks="false"` default, so the
+attributes landed on the target. Requesting the view with `NOFOLLOW_LINKS` and
+skipping links in the visitor is the right mechanism, and `CONTINUE` rather than
+aborting the rollover is the right call.
+
+I would frame this differently in the changelog, though. Planting the link
+requires write access to the directory the application is actively logging into
+— at which point the attacker has better options than redirecting a chmod. So
+this reads to me as defence-in-depth hardening rather than a privilege-boundary
+fix, and I would rather the entry said so than have it read as a security
+advisory.
+
+Two smaller points:
+
+- It is a silent behaviour change for anyone who deliberately keeps symlinks in
+  their log directory and expects permissions to be applied through them. Could
+  the changelog entry mention that?
+- `testDefineFilePosixAttributeViewDoesNotFollowSymbolicLinks` swallows the
+  `IOException` and then asserts the target is unchanged, so it passes whether or
+  not the fix is present on any filesystem that refuses link chmod for its own
+  reasons. `PosixViewAttributeActionTest.testSymbolicLinksAreNotFollowed` is the
+  stronger test — it asserts both that the regular file *was* updated and that the
+  outsider *was not*, so it would also catch the visitor skipping too much. Could
+  the `FileUtilsTest` one assert on the outcome rather than tolerate the exception?

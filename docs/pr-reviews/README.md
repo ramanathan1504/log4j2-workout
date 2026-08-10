@@ -14,6 +14,11 @@
 > there — re-read, then `./bench followup --sync <n>`. That step is manual on
 > purpose; automating it would erase the signal.
 >
+> Each paste-ready block is plain markdown with **no `>` prefix** — a quoted
+> block posts as though you were quoting someone else. `./bench followup
+> --comment <n>` extracts just that block, since the rest of the file is notes
+> to yourself.
+>
 > How to judge a PR in the first place: [`../PR-REVIEW.md`](../PR-REVIEW.md).
 > None of these comments have been posted yet — every `posted` column reads `no`.
 

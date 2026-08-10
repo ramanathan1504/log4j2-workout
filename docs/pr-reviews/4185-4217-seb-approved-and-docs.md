@@ -123,31 +123,31 @@ whole-path-segment distinction is easy to lose.
 
 ## ── paste-ready comment for #4185 ──
 
-> Re-reviewing since the branch changed after my approval — folding the
-> `AppenderDynamicMBean` `setLayout` check in from #4219 was the right call, and
-> thanks for the changelog entries.
->
-> The new guard is consistent with the `addAppender` one, and both are safe
-> defensive checks on a reflective instantiation that can legitimately return
-> null.
->
-> One question before I re-approve: `setLayout` returns the string
-> `"Could not instantiate layout class."` from `invoke()`. A JMX client cannot
-> tell that apart from a successful result — should it throw an `MBeanException`
-> instead, or is returning a diagnostic string the established convention for this
-> MBean? Happy either way, I just want it to be deliberate.
+Re-reviewing since the branch changed after my approval — folding the
+`AppenderDynamicMBean` `setLayout` check in from #4219 was the right call, and
+thanks for the changelog entries.
+
+The new guard is consistent with the `addAppender` one, and both are safe
+defensive checks on a reflective instantiation that can legitimately return
+null.
+
+One question before I re-approve: `setLayout` returns the string
+`"Could not instantiate layout class."` from `invoke()`. A JMX client cannot
+tell that apart from a successful result — should it throw an `MBeanException`
+instead, or is returning a diagnostic string the established convention for this
+MBean? Happy either way, I just want it to be deliberate.
 
 ## ── paste-ready comment for #4217 ──
 
-> The update covers what I raised — splitting resource allocation from the threat
-> model, and the whole-path-segment contrast between
-> `fileName="logs/${ctx:userId}.log"` and `logs/user-${ctx:userId}.log` is the
-> detail that makes this accurate rather than just alarming. Thanks.
->
-> One thing before merge: could you confirm the built site renders and the new
-> cross-page link to the configuration-sources threat model resolves to both the
-> page and the anchor? Cross-module `xref`s tend to look fine in preview and break
-> in the built site.
->
-> @ppkarwasz — does this fully answer #4181, or is there more of the threat model
-> you wanted covered?
+The update covers what I raised — splitting resource allocation from the threat
+model, and the whole-path-segment contrast between
+`fileName="logs/${ctx:userId}.log"` and `logs/user-${ctx:userId}.log` is the
+detail that makes this accurate rather than just alarming. Thanks.
+
+One thing before merge: could you confirm the built site renders and the new
+cross-page link to the configuration-sources threat model resolves to both the
+page and the anchor? Cross-module `xref`s tend to look fine in preview and break
+in the built site.
+
+@ppkarwasz — does this fully answer #4181, or is there more of the threat model
+you wanted covered?

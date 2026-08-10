@@ -158,40 +158,40 @@ compression level must be in the range [1, 22], got: 0` during rollover, while
 
 ## ── paste-ready comment ──
 
-> Thanks for the detailed write-up — the reasoning about the `-1` sentinel is
-> sound, and the gap you identified (that `compressionLevel` is silently ignored
-> for `.zst`) is real.
->
-> There is a compatibility problem, though. `compressionLevel` is not a
-> zstd-specific attribute — it is the shared `DefaultRolloverStrategy` attribute,
-> documented in that class as *"The compression level, 0 (less) through 9 (more)"*
-> and passed unchanged to whichever `FileExtension` the file pattern selects.
->
-> Today a configuration like this works, because `CommonsCompressAction` ignores
-> the level:
->
-> ```xml
-> <RollingFile name="R" fileName="logs/app.log" filePattern="logs/app-%i.log.zst">
->   <SizeBasedTriggeringPolicy size="1KB"/>
->   <DefaultRolloverStrategy max="3" compressionLevel="0"/>
-> </RollingFile>
-> ```
->
-> After this PR, `FileExtension.ZSTD.createCompressAction` maps only `-1`, so `0`
-> reaches `checkCompressionLevel` and throws
-> `IllegalArgumentException: Zstd compression level must be in the range [1, 22], got: 0`
-> — from inside the rollover, not at configuration time. The rollover fails for a
-> configuration that is valid and working on every released 2.x.
->
-> `0` is the documented minimum for the attribute, so this is likely to be a real
-> user's config after switching a `.zip` pattern to `.zst`.
->
-> Could the mapping in `FileExtension.ZSTD` clamp-and-warn instead of letting
-> out-of-range values reach the constructor? Something like: values outside
-> `[1, ZSTD_CLEVEL_MAX]` fall back to the zstd default with a `StatusLogger` warning,
-> preserving today's "ignored" behaviour rather than turning it into a failure.
->
-> Separately, and this is a question for the maintainers rather than for you:
-> `ZstdCompressAction` would be a new public class on `2.x` only, and #2921 has
-> already replaced `compressionLevel` with `compressionOptions` on `main`. Worth
-> confirming the 2.x-only API addition is wanted before investing more in this.
+Thanks for the detailed write-up — the reasoning about the `-1` sentinel is
+sound, and the gap you identified (that `compressionLevel` is silently ignored
+for `.zst`) is real.
+
+There is a compatibility problem, though. `compressionLevel` is not a
+zstd-specific attribute — it is the shared `DefaultRolloverStrategy` attribute,
+documented in that class as *"The compression level, 0 (less) through 9 (more)"*
+and passed unchanged to whichever `FileExtension` the file pattern selects.
+
+Today a configuration like this works, because `CommonsCompressAction` ignores
+the level:
+
+```xml
+<RollingFile name="R" fileName="logs/app.log" filePattern="logs/app-%i.log.zst">
+  <SizeBasedTriggeringPolicy size="1KB"/>
+  <DefaultRolloverStrategy max="3" compressionLevel="0"/>
+</RollingFile>
+```
+
+After this PR, `FileExtension.ZSTD.createCompressAction` maps only `-1`, so `0`
+reaches `checkCompressionLevel` and throws
+`IllegalArgumentException: Zstd compression level must be in the range [1, 22], got: 0`
+— from inside the rollover, not at configuration time. The rollover fails for a
+configuration that is valid and working on every released 2.x.
+
+`0` is the documented minimum for the attribute, so this is likely to be a real
+user's config after switching a `.zip` pattern to `.zst`.
+
+Could the mapping in `FileExtension.ZSTD` clamp-and-warn instead of letting
+out-of-range values reach the constructor? Something like: values outside
+`[1, ZSTD_CLEVEL_MAX]` fall back to the zstd default with a `StatusLogger` warning,
+preserving today's "ignored" behaviour rather than turning it into a failure.
+
+Separately, and this is a question for the maintainers rather than for you:
+`ZstdCompressAction` would be a new public class on `2.x` only, and #2921 has
+already replaced `compressionLevel` with `compressionOptions` on `main`. Worth
+confirming the 2.x-only API addition is wanted before investing more in this.
