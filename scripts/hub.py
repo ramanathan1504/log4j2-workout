@@ -25,6 +25,7 @@ import os
 import re
 import subprocess
 import sys
+import threading
 import webbrowser
 from datetime import datetime, timezone
 from http.server import BaseHTTPRequestHandler, HTTPServer
@@ -226,6 +227,159 @@ def installed(cmd):
     return r.stdout.strip()
 
 
+# --------------------------------------------------------------------- todo ---
+# Whose turn is it? That is the only question worth a page, and answering it
+# needs GitHub, not the working tree. So it is cached: the page renders from
+# .bench/hub/todo.json instantly and says how old it is, and a refresh runs in
+# the background rather than blocking a page load behind twenty API calls.
+TODO_CACHE = WORKOUT / ".bench" / "hub" / "todo.json"
+UPSTREAM = os.environ.get("BENCH_UPSTREAM_REPO", "apache/logging-log4j2")
+
+
+def gh_json(*args, timeout=60):
+    try:
+        r = subprocess.run(["gh", *args], capture_output=True, text=True, timeout=timeout)
+        return json.loads(r.stdout) if r.returncode == 0 and r.stdout.strip() else None
+    except Exception:
+        return None
+
+
+def ledger_map():
+    out = {}
+    f = WORKOUT / "docs" / "pr-reviews" / "ledger.tsv"
+    if f.exists():
+        for line in f.read_text().split("\n"):
+            if not line.strip() or line.startswith("#"):
+                continue
+            c = line.split("\t")
+            if len(c) >= 7:
+                out[c[0]] = {"verdict": c[1], "when": c[2], "sha": c[3],
+                             "author": c[4], "posted": c[5], "note": c[6]}
+    return out
+
+
+def todo_fetch():
+    """One row per PR you have touched. Bucketed by whose move it is."""
+    r = subprocess.run(["gh", "api", "user", "--jq", ".login"],
+                       capture_output=True, text=True, timeout=30)
+    me = r.stdout.strip() or "me"
+
+    # Two questions, two queries. What am I reviewing (Log4j, where the ledger
+    # lives), and what have I opened anywhere in the open-source world.
+    # --visibility=public keeps work repos out; they are not this dashboard's job.
+    involved = gh_json("search", "prs", "--involves=@me", f"--repo={UPSTREAM}",
+                       "--state=open", "--limit=60",
+                       "--json", "number,title,author,updatedAt") or []
+    authored = gh_json("search", "prs", "--author=@me", "--state=open",
+                       "--visibility=public", "--limit=60",
+                       "--json", "number,title,repository,updatedAt") or []
+    led = ledger_map()
+
+    targets = {(UPSTREAM, str(p["number"])) for p in involved}
+    targets |= {(UPSTREAM, n) for n in led}
+    targets |= {(p["repository"]["nameWithOwner"], str(p["number"])) for p in authored}
+    # Your own repos are not follow-up: nobody is waiting on you there, you just
+    # merge them. This board is for work in someone else's project.
+    targets = {(r, n) for r, n in targets if not r.lower().startswith(f"{me.lower()}/")}
+
+    rows = []
+    for repo, n in sorted(targets, key=lambda t: (t[0], -int(t[1]))):
+        d = gh_json("pr", "view", n, "--repo", repo, "--json",
+                    "number,title,author,state,isDraft,updatedAt,headRefOid,"
+                    "reviews,comments,mergeable,reviewDecision,statusCheckRollup",
+                    timeout=45)
+        if not d:
+            continue
+        # The ledger only knows about the repo it was written for.
+        l = led.get(n) if repo == UPSTREAM else None
+        mine = [x for x in (d.get("reviews") or []) if (x.get("author") or {}).get("login") == me]
+        my_last = mine[-1] if mine else None
+        events = [(c.get("createdAt", ""), (c.get("author") or {}).get("login", ""))
+                  for c in (d.get("comments") or [])]
+        events += [(x.get("submittedAt", ""), (x.get("author") or {}).get("login", ""))
+                   for x in (d.get("reviews") or [])]
+        events = [e for e in events if e[0]]
+        events.sort()
+        last_word = events[-1][1] if events else ""
+        moved = bool(l and l["sha"] and d.get("headRefOid") and l["sha"] != d["headRefOid"])
+
+        author = (d.get("author") or {}).get("login", "")
+        role = "mine" if author == me else "review"
+        decision = d.get("reviewDecision") or ""
+        checks = [c.get("conclusion") or c.get("state") or ""
+                  for c in (d.get("statusCheckRollup") or [])]
+        ci_bad = any(c in ("FAILURE", "TIMED_OUT", "CANCELLED", "ERROR", "ACTION_REQUIRED")
+                     for c in checks)
+        unsent = bool(l and l["posted"] == "no")
+
+        # Whose move is it? Decided from GitHub state, not from the ledger — an
+        # unsent draft is a flag on the row, not a bucket, or every reviewed PR
+        # piles into "yours" and the list stops sorting anything.
+        if d["state"] != "OPEN":
+            bucket, why = "closed", d["state"].lower()
+        elif role == "mine":
+            if decision == "CHANGES_REQUESTED":
+                bucket, why = "you", "changes requested on your PR"
+            elif ci_bad:
+                bucket, why = "you", "CI is failing on your PR"
+            elif last_word and last_word != me:
+                bucket, why = "you", f"@{last_word} replied and you have not"
+            elif decision == "APPROVED":
+                bucket, why = "them", "approved — waiting on a committer to merge"
+            else:
+                bucket, why = "them", "waiting on review"
+        elif d.get("isDraft"):
+            bucket, why = "them", "still a draft"
+        elif moved:
+            bucket, why = "you", "author pushed since you reviewed"
+        elif last_word and last_word != me:
+            bucket, why = "you", f"@{last_word} had the last word"
+        elif not l and not mine:
+            bucket, why = "you", "you are involved but have not reviewed it"
+        elif (my_last or {}).get("state") == "CHANGES_REQUESTED":
+            bucket, why = "them", "you requested changes; nothing new since"
+        elif unsent:
+            bucket, why = "you", "your review is written but never posted"
+        else:
+            bucket, why = "them", "reviewed; nothing has moved"
+        if unsent and bucket != "you":
+            why += " · draft unsent"
+
+        rows.append({
+            "pr": n, "repo": repo, "title": d.get("title", ""),
+            "author": author, "role": role,
+            "state": d.get("state", ""), "draft": d.get("isDraft", False),
+            "updated": (d.get("updatedAt") or "")[:10],
+            "verdict": (l or {}).get("verdict", "—"),
+            "posted": (l or {}).get("posted", "—"), "unsent": unsent,
+            "reviewed": (l or {}).get("when", "—"),
+            "my_review": (my_last or {}).get("state", "—"),
+            "decision": decision or "—", "ci_bad": ci_bad,
+            "moved": moved, "bucket": bucket, "why": why,
+        })
+    return {"me": me, "repo": UPSTREAM, "rows": rows,
+            "at": datetime.now(timezone.utc).isoformat(timespec="seconds")}
+
+
+def todo_load():
+    if not TODO_CACHE.exists():
+        return None, None
+    try:
+        d = json.loads(TODO_CACHE.read_text())
+        age = (datetime.now(timezone.utc)
+               - datetime.fromisoformat(d["at"])).total_seconds()
+        return d, age
+    except Exception:
+        return None, None
+
+
+def todo_refresh():
+    TODO_CACHE.parent.mkdir(parents=True, exist_ok=True)
+    d = todo_fetch()
+    TODO_CACHE.write_text(json.dumps(d, indent=1))
+    return d
+
+
 def reviews():
     """The ledger is the record of what was reviewed; .bench/reviews is evidence."""
     rows = []
@@ -315,6 +469,103 @@ setInterval(()=>{fetch('status.json').then(r=>r.json()).then(d=>{
 """
 
 
+def newest_triage():
+    """knowledge-creator's triage.sh already answers 'what is happening in the
+    backlog'. Surface its newest report rather than writing a second one."""
+    reports = sorted(KB.glob("triage-*.html"), key=lambda p: p.stat().st_mtime, reverse=True)
+    return reports[0] if reports else None
+
+
+def human_age(seconds):
+    if seconds is None:
+        return "never"
+    m = int(seconds // 60)
+    if m < 1:
+        return "just now"
+    if m < 60:
+        return f"{m} min ago"
+    h = m // 60
+    return f"{h} h ago" if h < 48 else f"{h // 24} days ago"
+
+
+BUCKETS = [
+    ("you", "Your move", "nothing happens until you do something"),
+    ("them", "Their move", "waiting on someone else — safe to ignore today"),
+    ("closed", "Closed or merged", "no longer live"),
+]
+
+
+def todo_html(todo, age):
+    if not todo:
+        return """<div class="hd"><h2>To do</h2></div>
+        <p>No cache yet — this view needs GitHub, so it is fetched rather than read
+        from the working tree.</p><pre><code>bench hub --refresh</code></pre>
+        <p class="sub">Once written, the page renders from the cache instantly and
+        refreshes itself in the background while the server runs.</p>"""
+
+    stale = age is not None and age > 3600
+    head = (f'<div class="hd"><h2>To do</h2><span class="sub">'
+            f'{html.escape(todo["repo"])} · as @{html.escape(todo["me"])} · '
+            f'{"<span class=warn>" if stale else ""}fetched {human_age(age)}'
+            f'{"</span>" if stale else ""}</span></div>')
+
+    out = [head]
+    if stale:
+        out.append('<p class="sub">Older than an hour — the server refreshes in the '
+                   'background, or run <code>bench hub --refresh</code>.</p>')
+
+    for key, title, blurb in BUCKETS:
+        rows = [r for r in todo["rows"] if r["bucket"] == key]
+        if not rows:
+            continue
+        # Yours first, and within a bucket the PRs you wrote before the ones you
+        # review — a failing CI on your own change outranks someone else's patch.
+        rows.sort(key=lambda r: (r["role"] != "mine", r["repo"], -int(r["pr"])))
+        body = ""
+        for r in rows:
+            flags = ""
+            if r["moved"]:
+                flags += ' <span class="pill warn">pushed since review</span>'
+            if r["draft"]:
+                flags += ' <span class="pill">draft</span>'
+            if r["ci_bad"]:
+                flags += ' <span class="pill bad">CI failing</span>'
+            if r["unsent"]:
+                flags += ' <span class="pill warn">review unsent</span>'
+            # The verdict comes from ledger.tsv — GitHub has no idea what you
+            # decided, only what you posted.
+            verdict = ("" if r["verdict"] in ("—", "")
+                       else f' · <em>{html.escape(r["verdict"])}</em>')
+            who = ("<strong>yours</strong>" if r["role"] == "mine"
+                   else f'review of @{html.escape(r["author"])}{verdict}')
+            body += (
+                f'<tr><td class="sub">{html.escape(r["repo"])}</td>'
+                f'<td><a href="https://github.com/{html.escape(r["repo"])}/pull/{r["pr"]}">'
+                f'#{r["pr"]}</a></td>'
+                f'<td>{html.escape(r["title"][:66])}{flags}</td>'
+                f"<td>{who}</td>"
+                f'<td>{html.escape(r["updated"])}</td>'
+                f'<td class="sub">{html.escape(r["why"])}</td></tr>')
+        cls = "bad" if key == "you" else ("warn" if key == "them" else "")
+        out.append(
+            f'<h3 class="{cls}">{title} <span class="sub">({len(rows)}) — {blurb}</span></h3>'
+            f'<div class="tw"><table><thead><tr><th>repo</th><th>PR</th><th>title</th>'
+            f'<th>role</th><th>updated</th><th>why</th></tr></thead>'
+            f"<tbody>{body}</tbody></table></div>")
+
+    out.append('<p class="sub">Two of these signals exist nowhere on GitHub, and come '
+               'from <code>docs/pr-reviews/ledger.tsv</code>: <strong>review unsent</strong> '
+               '(you wrote a verdict and never posted it) and <strong>pushed since '
+               'review</strong> (the head SHA moved past the one you reviewed at). '
+               'GitHub knows what you <em>said</em>; the ledger knows what you '
+               '<em>decided</em>. Keep it current with '
+               '<code>bench followup --sync &lt;n&gt;</code>.</p>'
+               '<pre><code>bench followup --changed    # the same question, in the terminal\n'
+               'bench review &lt;n&gt;              # the mechanical facts\n'
+               'bench hub --refresh          # re-fetch this view</code></pre>')
+    return "".join(out)
+
+
 def status_badge(s):
     if not s["ok"]:
         return f'<span class="pill bad">{html.escape(s["why"])}</span>'
@@ -335,12 +586,22 @@ def build():
     cmds = {c: installed(c) for c in ("bench", "oss-cli", "kb")}
     led, evid, files = reviews()
 
+    todo, age = todo_load()
+    triage = newest_triage()
+
+    n_you = len([r for r in todo["rows"] if r["bucket"] == "you"]) if todo else 0
     nav = ['<h1>bench hub</h1><div class="sub">three repos, one page</div>',
            '<div class="grp">start</div>',
+           f'<a href="#todo" data-t="todo">To do{f" <b>({n_you})</b>" if n_you else ""}</a>',
            '<a href="#home" data-t="home">Overview &amp; status</a>',
            '<a href="#flow" data-t="flow">Reviewing a PR</a>',
            '<a href="#reviews" data-t="reviews">Reviews</a>']
+    if triage:
+        nav.append('<a href="#triage" data-t="triage">Backlog triage</a>')
     secs = []
+
+    # ---- to do
+    secs.append(f'<section id="todo">{todo_html(todo, age)}</section>')
 
     # ---- home
     cards = []
@@ -356,7 +617,7 @@ def build():
         f"<tr><td><code>{c}</code></td><td>{'<span class=ok>installed</span>' if p else '<span class=bad>not on PATH</span>'}</td>"
         f"<td><code>{html.escape(p or '—')}</code></td></tr>" for c, p in cmds.items())
 
-    secs.append(f"""<section id="home"><div class="hd"><h2>Three repos, one job each</h2></div>
+    secs.append(f"""<section id="home" hidden><div class="hd"><h2>Three repos, one job each</h2></div>
     <p><strong>oss-cli knows → log4j2-workout runs → knowledge-creator remembers.</strong>
     One test decides where new work belongs: <em>does it need to execute code against a
     real app?</em> If yes it is the workout; if it only needs to be retrievable later it is
@@ -392,6 +653,18 @@ def build():
     <div class="tw"><table><thead><tr><th>PR</th><th>state</th><th>reviewed</th><th>author</th>
     <th>posted</th><th>write-up</th><th>evidence</th><th>note</th></tr></thead>
     <tbody>{rows or '<tr><td colspan=8>ledger empty</td></tr>'}</tbody></table></div></section>""")
+
+    # ---- backlog triage, from knowledge-creator's own report
+    if triage:
+        t_age = human_age((datetime.now().timestamp() - triage.stat().st_mtime))
+        secs.append(f"""<section id="triage" hidden><div class="hd"><h2>Backlog triage</h2>
+        <span class="sub">{html.escape(triage.name)} · {t_age}</span></div>
+        <p class="sub">Generated by <code>knowledge-creator/triage.sh</code> — clusters,
+        mergeable-now, one-fix-away, top issues. Not regenerated by this page; it is a
+        read-only GitHub sweep and costs API calls, so you run it when you want it:</p>
+        <pre><code>cd ~/own\\ repo/knowledge-creator &amp;&amp; ./triage.sh {html.escape(UPSTREAM)} --no-ai</code></pre>
+        <iframe src="triage.html" style="width:100%;height:78vh;border:1px solid var(--line);
+        border-radius:10px;background:#fff"></iframe></section>""")
 
     # ---- docs
     for repo_name, base, paths in DOCS:
@@ -513,7 +786,20 @@ class Handler(BaseHTTPRequestHandler):
         pass
 
     def do_GET(self):
-        if self.path.startswith("/status.json"):
+        if self.path.startswith("/triage.html"):
+            t = newest_triage()
+            if not t:
+                self.send_error(404, "no triage-*.html in knowledge-creator")
+                return
+            body = t.read_bytes()
+            ctype = "text/html; charset=utf-8"
+        elif self.path.startswith("/refresh"):
+            # Explicit, synchronous, and it says how long it took. The background
+            # refresher exists so a page load never waits on twenty API calls.
+            d = todo_refresh()
+            body = json.dumps({"rows": len(d["rows"]), "at": d["at"]}).encode()
+            ctype = "application/json"
+        elif self.path.startswith("/status.json"):
             body = json.dumps({
                 "stamp": "|".join(
                     f"{n}:{repo_state(p).get('head', '')}:{repo_state(p).get('dirty', 0)}"
@@ -540,7 +826,18 @@ def main():
     ap.add_argument("--open", action="store_true", help="(default) open a browser")
     ap.add_argument("--no-open", dest="no_open", action="store_true",
                     help="just serve; do not open a browser")
+    ap.add_argument("--refresh", action="store_true",
+                    help="re-fetch the To-do view from GitHub, then exit")
     args = ap.parse_args()
+
+    if args.refresh:
+        d = todo_refresh()
+        by = {}
+        for r in d["rows"]:
+            by[r["bucket"]] = by.get(r["bucket"], 0) + 1
+        print(f"{len(d['rows'])} PRs — " + ", ".join(f"{k}: {v}" for k, v in sorted(by.items())))
+        print(TODO_CACHE)
+        return
 
     missing = [n for n, p, _, _ in REPOS if not (p / ".git").exists()]
     if missing:
@@ -559,6 +856,21 @@ def main():
         srv = HTTPServer(("127.0.0.1", args.port), Handler)
     except OSError as e:
         sys.exit(f"error: cannot bind {url} — {e}")
+    # Refresh off the request path, so the first page load is instant even when
+    # the cache is cold or an hour stale.
+    def refresher():
+        import time
+        while True:
+            _, age = todo_load()
+            if age is None or age > 900:
+                try:
+                    d = todo_refresh()
+                    print(f"to-do refreshed: {len(d['rows'])} PRs", file=sys.stderr)
+                except Exception as e:  # a rate limit or a dropped network is not fatal
+                    print(f"to-do refresh failed: {e}", file=sys.stderr)
+            time.sleep(300)
+    threading.Thread(target=refresher, daemon=True).start()
+
     print(f"bench hub on {url}   (ctrl-c to stop)", file=sys.stderr)
     if not args.no_open:
         if not webbrowser.open(url):
