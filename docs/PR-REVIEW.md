@@ -177,8 +177,16 @@ re-read before sending is one you cannot check.
 Say what you verified and how, name file and line, and separate *blocking* from
 *non-blocking* so the author knows what actually gates the merge. Then:
 
+The paste-ready block is the section under `── paste-ready comment ──`, and it
+is **not** the whole file — everything above it is notes to yourself. Write that
+block as plain markdown with no `>` prefix, or it posts as a blockquote and reads
+as though you were quoting someone else.
+
+`--comment` extracts exactly that block, so the rest cannot leak:
+
 ```bash
-gh pr comment <n> -R apache/logging-log4j2 --body-file docs/pr-reviews/<file>.md
+./bench followup --comment <n>                        # read it first
+./bench followup --comment <n> | gh pr comment <n> -R apache/logging-log4j2 --body-file -
 ```
 
 Never inline a heredoc you cannot re-read. Always pass `-R` — omitting it targets
@@ -256,7 +264,8 @@ GitHub's own UI, and is right to.
 | Standalone repro | `./bench repro <n> --pr --config <cfg> --scenario <s> --log4j …` |
 | Install the branch | `./bench pr <n> --checkout --install` |
 | Restore afterwards | `git switch 2.x && mvn install -DskipTests` |
-| Post the draft | `gh pr comment <n> -R apache/logging-log4j2 --body-file …` |
+| Read just the comment | `./bench followup --comment <n>` |
+| Post it | `./bench followup --comment <n> \| gh pr comment <n> -R apache/logging-log4j2 --body-file -` |
 | What moved since | `./bench followup [--changed\|--mine] [<n>]` |
 | Re-record after re-reading | `./bench followup --sync <n>` |
 

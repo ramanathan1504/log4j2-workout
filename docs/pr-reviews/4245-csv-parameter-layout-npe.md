@@ -98,26 +98,26 @@ Always pass `--scenario`. Without it every cell runs all seven.
 
 ## ── paste-ready comment ──
 
-> Thanks — this matches the diagnosis in #4243 and the fix is right.
-> `Constants.EMPTY_OBJECT_ARRAY` is the correct constant and the test builds a
-> real `Log4jLogEvent`, which is what I would want to see here.
->
-> Two things before this goes in.
->
-> **1. Is an empty record the output we want?** The test pins the behaviour to
-> "record separator and nothing else", so `logger.info("hello")` under a
-> `CsvParameterLayout` now writes a blank line rather than throwing. For an
-> application that mixes parameterised and non-parameterised calls, that produces
-> a CSV file interleaved with blank lines. The alternatives would be to skip the
-> event entirely (return `Strings.EMPTY`, write no line) or to emit the formatted
-> message as a single column. All three are defensible — I would just like it to
-> be a decision rather than a default. @ppkarwasz, any preference?
->
-> **2. `main` has the same bug.** The layout moved to `log4j-csv` and gained a
-> recycler on `main`, but the null check is still absent
-> (`log4j-csv/.../csv/layout/CsvParameterLayout.java`). This PR is `2.x`-only, so
-> #4243 should stay open, or a companion PR should follow.
->
-> I have a standalone reproduction for this (plain `log4j-api` + `log4j-core` +
-> `commons-csv`, no parent POM) that fails on 2.24.1 and 2.26.1 — happy to attach
-> it to #4243 if that is useful for the regression check.
+Thanks — this matches the diagnosis in #4243 and the fix is right.
+`Constants.EMPTY_OBJECT_ARRAY` is the correct constant and the test builds a
+real `Log4jLogEvent`, which is what I would want to see here.
+
+Two things before this goes in.
+
+**1. Is an empty record the output we want?** The test pins the behaviour to
+"record separator and nothing else", so `logger.info("hello")` under a
+`CsvParameterLayout` now writes a blank line rather than throwing. For an
+application that mixes parameterised and non-parameterised calls, that produces
+a CSV file interleaved with blank lines. The alternatives would be to skip the
+event entirely (return `Strings.EMPTY`, write no line) or to emit the formatted
+message as a single column. All three are defensible — I would just like it to
+be a decision rather than a default. @ppkarwasz, any preference?
+
+**2. `main` has the same bug.** The layout moved to `log4j-csv` and gained a
+recycler on `main`, but the null check is still absent
+(`log4j-csv/.../csv/layout/CsvParameterLayout.java`). This PR is `2.x`-only, so
+#4243 should stay open, or a companion PR should follow.
+
+I have a standalone reproduction for this (plain `log4j-api` + `log4j-core` +
+`commons-csv`, no parent POM) that fails on 2.24.1 and 2.26.1 — happy to attach
+it to #4243 if that is useful for the regression check.

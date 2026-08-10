@@ -107,33 +107,33 @@ cd ~/apache/logging-log4j2
 
 ## ── paste-ready comment ──
 
-> Thanks for the patch, and the refactor onto a single `printMessage` helper is
-> clean.
->
-> I do not think this closes #4225, though. The issue asks for the plugin build to
-> be **less chatty**, and this change keeps `minAllowedMessageKind` at
-> `Diagnostic.Kind.NOTE` by default. With `ERROR(0) < WARNING(1) <
-> MANDATORY_WARNING(2) < NOTE(3) < OTHER(4)` and the filter at `kind.ordinal() <=
-> minAllowedMessageKind.ordinal()`, the per-module
->
-> ```
-> GraalVmProcessor: writing GraalVM metadata for N Java classes to `…`.
-> ```
->
-> is `NOTE` and still prints. So an unmodified build emits the same number of
-> lines as before, each now longer by the `[Log4j] ` prefix — unless the user
-> discovers and passes `-Alog4j.plugin.processor.minAllowedMessageKind=WARNING`.
->
-> That may be the design the maintainers want (opt-in quiet rather than a changed
-> default), but it is the opposite of what was reported, and the issue is still
-> labelled `waiting-for-user`, so the design question is open. Could we settle that
-> on #4225 first? @ppkarwasz — should the metadata-written message drop to a lower
-> kind, or is opt-in the intended answer?
->
-> Two smaller things whichever way that goes:
->
-> - `MESSAGE_PREFIX = "[Log4j] "` is now declared independently in both
->   `GraalVmProcessor` and `PluginProcessor`. For a constant whose whole purpose is
->   consistent branding, that should live in one place.
-> - Most messages already start with `PROCESSOR_NAME`, so they now read `[Log4j]
->   GraalVmProcessor: …`. If the goal is less noise, one of the two should go.
+Thanks for the patch, and the refactor onto a single `printMessage` helper is
+clean.
+
+I do not think this closes #4225, though. The issue asks for the plugin build to
+be **less chatty**, and this change keeps `minAllowedMessageKind` at
+`Diagnostic.Kind.NOTE` by default. With `ERROR(0) < WARNING(1) <
+MANDATORY_WARNING(2) < NOTE(3) < OTHER(4)` and the filter at `kind.ordinal() <=
+minAllowedMessageKind.ordinal()`, the per-module
+
+```
+GraalVmProcessor: writing GraalVM metadata for N Java classes to `…`.
+```
+
+is `NOTE` and still prints. So an unmodified build emits the same number of
+lines as before, each now longer by the `[Log4j] ` prefix — unless the user
+discovers and passes `-Alog4j.plugin.processor.minAllowedMessageKind=WARNING`.
+
+That may be the design the maintainers want (opt-in quiet rather than a changed
+default), but it is the opposite of what was reported, and the issue is still
+labelled `waiting-for-user`, so the design question is open. Could we settle that
+on #4225 first? @ppkarwasz — should the metadata-written message drop to a lower
+kind, or is opt-in the intended answer?
+
+Two smaller things whichever way that goes:
+
+- `MESSAGE_PREFIX = "[Log4j] "` is now declared independently in both
+  `GraalVmProcessor` and `PluginProcessor`. For a constant whose whole purpose is
+  consistent branding, that should live in one place.
+- Most messages already start with `PROCESSOR_NAME`, so they now read `[Log4j]
+  GraalVmProcessor: …`. If the goal is less noise, one of the two should go.

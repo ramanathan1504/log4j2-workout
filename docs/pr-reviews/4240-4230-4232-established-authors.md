@@ -88,8 +88,8 @@ one a red build. See [`4234-zstd-compress-action.md`](4234-zstd-compress-action.
 
 ## ── paste-ready comment (only for #4230, if you want one) ──
 
-> Thanks for taking this on — it is a lot of ground.
->
-> Given the size, could you confirm the site builds and that every `xref`
-> resolves to both a page and an anchor? Cross-reference breakage is the failure
-> mode that survives review on a change this large, and it does not show up in CI.
+Thanks for taking this on — it is a lot of ground.
+
+Given the size, could you confirm the site builds and that every `xref`
+resolves to both a page and an anchor? Cross-reference breakage is the failure
+mode that survives review on a change this large, and it does not show up in CI.

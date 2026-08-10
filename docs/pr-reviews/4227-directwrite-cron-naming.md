@@ -111,44 +111,44 @@ recorded in the repro README rather than papered over.
 
 ## ── paste-ready comment ──
 
-> Thank you for leading with the compatibility note — that is the right call, and
-> it is the part that needs a maintainer decision rather than a review.
->
-> On the mechanics I think you are right, and I checked the step that worried me
-> most: removing the `LOG4J2-3339` override could plausibly regress every
-> *non-cron* direct-write appender. It does not, and
-> `PatternProcessor.java:301-303` is why —
->
-> ```java
-> final long time = useCurrentTime
->         ? currentFileTime != 0 ? currentFileTime : System.currentTimeMillis()
-> ```
->
-> — so a policy that never sets the value gets the same `System.currentTimeMillis()`
-> it got before. Walking the three paths: `CronTriggeringPolicy` sets the period
-> start (the fix), `TimeBasedTriggeringPolicy` sets `currentTimeMillis()` itself at
-> line 171 (unchanged), and size/onStartup-only configurations leave it at 0 and
-> hit the fallback (unchanged). Agreed that nothing regresses.
->
-> The `manager.rollover(..., lastRollDate)` → `rollTime` change also looks right:
-> `RollingFileManager.rollover` assigns the second argument via
-> `setCurrentFileTime`, so it names the *new* file, and `lastRollDate` was naming
-> each replacement after the file it had just rolled.
->
-> Two things:
->
-> - The changelog entry should say the file names **change**, not only that they
->   are now correct. Someone with retention globs or log shipping keyed to the old
->   names will hit this silently on a patch upgrade.
-> - `testDirectWriteFileNameUsesPeriodStart` derives its expected value from
->   `getPrevFireTime(new Date())` — the same call the production path makes — so it
->   would pass if both moved together. Could it pin a fixed clock and a literal
->   expected name instead?
->
-> @ppkarwasz @vy — this needs a call on compatibility: take it as a fix with a
-> loud changelog entry, gate it behind an attribute defaulting to current
-> behaviour on `2.x`, or land it on `main` only?
->
-> Separately: this and #4226 both touch `CronTriggeringPolicy` (different methods,
-> so no conflict), and this one builds on `initialize()` recording the period start
-> — worth noting the intended merge order.
+Thank you for leading with the compatibility note — that is the right call, and
+it is the part that needs a maintainer decision rather than a review.
+
+On the mechanics I think you are right, and I checked the step that worried me
+most: removing the `LOG4J2-3339` override could plausibly regress every
+*non-cron* direct-write appender. It does not, and
+`PatternProcessor.java:301-303` is why —
+
+```java
+final long time = useCurrentTime
+        ? currentFileTime != 0 ? currentFileTime : System.currentTimeMillis()
+```
+
+— so a policy that never sets the value gets the same `System.currentTimeMillis()`
+it got before. Walking the three paths: `CronTriggeringPolicy` sets the period
+start (the fix), `TimeBasedTriggeringPolicy` sets `currentTimeMillis()` itself at
+line 171 (unchanged), and size/onStartup-only configurations leave it at 0 and
+hit the fallback (unchanged). Agreed that nothing regresses.
+
+The `manager.rollover(..., lastRollDate)` → `rollTime` change also looks right:
+`RollingFileManager.rollover` assigns the second argument via
+`setCurrentFileTime`, so it names the *new* file, and `lastRollDate` was naming
+each replacement after the file it had just rolled.
+
+Two things:
+
+- The changelog entry should say the file names **change**, not only that they
+  are now correct. Someone with retention globs or log shipping keyed to the old
+  names will hit this silently on a patch upgrade.
+- `testDirectWriteFileNameUsesPeriodStart` derives its expected value from
+  `getPrevFireTime(new Date())` — the same call the production path makes — so it
+  would pass if both moved together. Could it pin a fixed clock and a literal
+  expected name instead?
+
+@ppkarwasz @vy — this needs a call on compatibility: take it as a fix with a
+loud changelog entry, gate it behind an attribute defaulting to current
+behaviour on `2.x`, or land it on `main` only?
+
+Separately: this and #4226 both touch `CronTriggeringPolicy` (different methods,
+so no conflict), and this one builds on `initialize()` recording the period start
+— worth noting the intended merge order.

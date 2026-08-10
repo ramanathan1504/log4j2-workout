@@ -7,6 +7,7 @@
 #   ./bench followup --changed       only the ones that moved
 #   ./bench followup --mine          only where the last word is not yours
 #   ./bench followup --sync 4234     record the current head as reviewed
+#   ./bench followup --comment 4234  print just the paste-ready comment, to pipe
 #
 # `./bench pr <n>` is a snapshot: it tells you what a PR looks like now. It
 # cannot tell you whether the author pushed after you commented, whether a
@@ -34,12 +35,13 @@ dim()  { printf '\033[2m%s\033[0m\n' "$*"; }
 command -v gh >/dev/null || die "gh is not installed"
 [[ -f $LEDGER ]] || die "no ledger at $LEDGER"
 
-ONLY=""; CHANGED=0; MINE=0; SYNC=""
+ONLY=""; CHANGED=0; MINE=0; SYNC=""; COMMENT=""
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --changed) CHANGED=1; shift ;;
     --mine)    MINE=1;    shift ;;
     --sync)    SYNC="${2:-}"; [[ -n $SYNC ]] || die "--sync needs a PR number"; shift 2 ;;
+    --comment) COMMENT="${2:-}"; [[ -n $COMMENT ]] || die "--comment needs a PR number"; shift 2 ;;
     --repo)    REPO="$2"; shift 2 ;;
     -h|--help) sed -n '2,20p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//'; exit 0 ;;
     -*)        die "unknown flag: $1" ;;
@@ -54,6 +56,26 @@ ledger_rows() { grep -vE '^\s*(#|$)' "$LEDGER"; }
 ledger_field() { # <pr> <1-based column>
   ledger_rows | awk -F'\t' -v pr="$1" -v c="$2" '$1==pr {print $c; exit}'
 }
+
+# ── --comment: print only the paste-ready block ─────────────────────────────
+# A review file is mostly notes to yourself -- provenance, what was checked, what
+# is blocking. Posting the whole file upstream sends all of that. Only the block
+# under `── paste-ready comment ──` is addressed to the author, so that is what
+# this prints, and nothing else.
+if [[ -n $COMMENT ]]; then
+  f=$(find "$REVIEW_DIR" -name "*${COMMENT}*.md" | sort | head -1)
+  [[ -n $f ]] || die "no review file for PR $COMMENT in ${REVIEW_DIR#"$ROOT"/}"
+  # A file may carry one block per PR it covers; prefer the one naming this PR.
+  body=$(awk -v pr="$COMMENT" '
+    /^## .*paste-ready comment/ {
+      want = ($0 ~ ("#" pr) || $0 !~ /for #/); f = want; next
+    }
+    /^## / { f = 0 }
+    f' "$f")
+  [[ -n ${body//[$'\n\t ']/} ]] || die "no paste-ready block for PR $COMMENT in ${f#"$ROOT"/}"
+  printf '%s\n' "$body"
+  exit 0
+fi
 
 # ── --sync: re-record a PR at its current head ──────────────────────────────
 if [[ -n $SYNC ]]; then

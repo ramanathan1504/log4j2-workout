@@ -125,45 +125,45 @@ conditions have to coincide.
 
 ## ── paste-ready comment ──
 
-> This is an excellent write-up — the root cause is exactly right, and the
-> unsatisfiable exit condition is not something you would find without the stack
-> sample.
->
-> I reproduced it against a real application on 2.26.1, with three cron appenders
-> differing only in whether `fileName` is set:
->
-> | Appender | `fileName` | `initialize()` → `LastRollForFile` | Returned |
-> |---|---|---:|---|
-> | `DirectCronA` | none | **2.996 s** | `null` |
-> | `DirectCronB` | none | **2.756 s** | `null` |
-> | `CronWithFileName` | set | **0.000118 s** | `2026-08-09T00:00:00` |
->
-> So ~2.8–3.0 s per appender, additive, matching your "roughly three seconds".
-> End to end the configuration costs 8.36 s wall against 1.98 s for the same
-> application with a non-cron config.
->
-> One thing worth adding to the description, because it makes the bug worse than
-> it reads: I assumed the delay would disappear once the files exist, and it does
-> not — a second run measured 8.04 s. For a direct-write appender the manager is
-> constructed with `file == null`, so `getFileTime()` is 0 on **every** startup.
-> Your text says this, but "on every startup" is easy to skim past.
->
-> On the fix itself: I worked the boundary and agree it preserves results — for
-> any target comfortably after 1970 the loop exits normally long before
-> `prevCheckDate` reaches `MIN_DATE`, and when the guard does fire, `null` is what
-> the old code returned anyway, just ~3 s later.
->
-> Two questions:
->
-> 1. With the `getTimeBefore()` bound in place, is the `fileTime > 0` guard in
->    `initialize()` still load-bearing? `getPrevFireTime(new Date(0))` now returns
->    `null` in microseconds, which is what the guard substitutes. Happy to keep it
->    as documentation, just want to confirm it is belt-and-braces rather than a
->    second distinct bug.
-> 2. Could a test assert that an appender **with** a `fileName` still gets a
->    non-null `lastRollForFile`? That is the case the new guard could
->    accidentally widen to, and it is the one my control appender covers.
->
-> Finally: this and #4227 both touch `CronTriggeringPolicy`, in different methods.
-> Worth noting the intended merge order on both, since #4227 builds on
-> `initialize()` recording the period start.
+This is an excellent write-up — the root cause is exactly right, and the
+unsatisfiable exit condition is not something you would find without the stack
+sample.
+
+I reproduced it against a real application on 2.26.1, with three cron appenders
+differing only in whether `fileName` is set:
+
+| Appender | `fileName` | `initialize()` → `LastRollForFile` | Returned |
+|---|---|---:|---|
+| `DirectCronA` | none | **2.996 s** | `null` |
+| `DirectCronB` | none | **2.756 s** | `null` |
+| `CronWithFileName` | set | **0.000118 s** | `2026-08-09T00:00:00` |
+
+So ~2.8–3.0 s per appender, additive, matching your "roughly three seconds".
+End to end the configuration costs 8.36 s wall against 1.98 s for the same
+application with a non-cron config.
+
+One thing worth adding to the description, because it makes the bug worse than
+it reads: I assumed the delay would disappear once the files exist, and it does
+not — a second run measured 8.04 s. For a direct-write appender the manager is
+constructed with `file == null`, so `getFileTime()` is 0 on **every** startup.
+Your text says this, but "on every startup" is easy to skim past.
+
+On the fix itself: I worked the boundary and agree it preserves results — for
+any target comfortably after 1970 the loop exits normally long before
+`prevCheckDate` reaches `MIN_DATE`, and when the guard does fire, `null` is what
+the old code returned anyway, just ~3 s later.
+
+Two questions:
+
+1. With the `getTimeBefore()` bound in place, is the `fileTime > 0` guard in
+   `initialize()` still load-bearing? `getPrevFireTime(new Date(0))` now returns
+   `null` in microseconds, which is what the guard substitutes. Happy to keep it
+   as documentation, just want to confirm it is belt-and-braces rather than a
+   second distinct bug.
+2. Could a test assert that an appender **with** a `fileName` still gets a
+   non-null `lastRollForFile`? That is the case the new guard could
+   accidentally widen to, and it is the one my control appender covers.
+
+Finally: this and #4227 both touch `CronTriggeringPolicy`, in different methods.
+Worth noting the intended merge order on both, since #4227 builds on
+`initialize()` recording the period start.

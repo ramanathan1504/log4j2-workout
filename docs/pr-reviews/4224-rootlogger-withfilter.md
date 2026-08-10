@@ -77,13 +77,13 @@ code via `ConfigurationBuilder`, which is a different API than
 *(You have already commented on this PR and pushed to the branch, so this is a
 close-out note rather than a review.)*
 
-> Confirmed the gap is exactly as described: `LoggerConfig.Builder` has both
-> `withtFilter` (line 321) and the corrected `withFilter` (line 327), while
-> `RootLogger.Builder` has only `withtFilter` (line 1135). Both are deprecated
-> wrappers around `setFilter`, so this is a compatibility alias rather than new
-> API surface, and it closes #3369.
->
-> One last thing before merge: since this adds a method to an exported package,
-> please double-check the `package-info.java` bump is a **minor** version
-> increment rather than a micro — Bnd baseline failures on that tend to surface at
-> release time rather than in PR CI.
+Confirmed the gap is exactly as described: `LoggerConfig.Builder` has both
+`withtFilter` (line 321) and the corrected `withFilter` (line 327), while
+`RootLogger.Builder` has only `withtFilter` (line 1135). Both are deprecated
+wrappers around `setFilter`, so this is a compatibility alias rather than new
+API surface, and it closes #3369.
+
+One last thing before merge: since this adds a method to an exported package,
+please double-check the `package-info.java` bump is a **minor** version
+increment rather than a micro — Bnd baseline failures on that tend to surface at
+release time rather than in PR CI.

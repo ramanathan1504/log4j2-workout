@@ -48,16 +48,16 @@ None applicable.
 
 ## ── paste-ready comment ──
 
-> Thanks — this matches #4237 and the replacement list is right: `facility`,
-> `facilityPrinting`, `header`, `messageLayout` and `charset` are the builder's
-> actual attributes, and `includeNewLine` / `escapeNL` belong to
-> `org.apache.logging.log4j.core.layout.SyslogLayout`, not to this one.
->
-> One thing to confirm before merge: the new
-> `{@link org.apache.logging.log4j.core.layout.SyslogLayout}` points from
-> `log4j-1.2-api` into `log4j-core`. The dependency is there so it should resolve,
-> but could you run a javadoc build (`./mvnw -pl log4j-1.2-api javadoc:javadoc`)
-> and confirm there is no unresolved-link warning? The PR notes only that the
-> module compiles.
->
-> No changelog entry needed for a javadoc-only change, so that part is correct as-is.
+Thanks — this matches #4237 and the replacement list is right: `facility`,
+`facilityPrinting`, `header`, `messageLayout` and `charset` are the builder's
+actual attributes, and `includeNewLine` / `escapeNL` belong to
+`org.apache.logging.log4j.core.layout.SyslogLayout`, not to this one.
+
+One thing to confirm before merge: the new
+`{@link org.apache.logging.log4j.core.layout.SyslogLayout}` points from
+`log4j-1.2-api` into `log4j-core`. The dependency is there so it should resolve,
+but could you run a javadoc build (`./mvnw -pl log4j-1.2-api javadoc:javadoc`)
+and confirm there is no unresolved-link warning? The PR notes only that the
+module compiles.
+
+No changelog entry needed for a javadoc-only change, so that part is correct as-is.
