@@ -112,6 +112,82 @@ Also worth asking on any behaviour change:
 
 ## 3. Verify — a clean exit proves nothing
 
+### Start with the mechanical facts
+
+```bash
+bench review 4218              # eleven steps, one directory
+bench review 4218 --no-build   # steps 1-5 only, seconds not minutes
+```
+
+Everything happens in a throwaway `git worktree` — your clone stays on its
+branch and `~/.m2` is never overwritten, so this is safe to run with the clone
+open in an IDE, and before you have baselined anything.
+
+| | Step | Asks |
+|---|---|---|
+| 1 | metadata | who wrote it, what it claims, commit authorship on ports |
+| 2 | feedback | every thread including **resolved and outdated** ones, via GraphQL |
+| 3 | diff | the patch and the changed-file list |
+| 4 | changelog | is this a port, and does it add an entry it should not |
+| 5 | 2.x comparison | for ports, what the 2.x counterpart actually did |
+| 6 | worktree | the PR checked out where it cannot disturb anything |
+| 7 | build | scoped to touched modules, or a full reactor when the change is build-wide |
+| 8 | tests + spotless | the module suite, split into this PR's failures and the module's |
+| 9 | pollution | did the tests write into the source tree |
+| 10 | **RED** | base + the PR's **test files only** → must **fail** |
+| 11 | GREEN | base + tests + the PR's **main files** → must **pass** |
+
+Steps 1–9 came from `knowledge-creator`'s `log4j-pr-review.sh`, which owned this
+job first; 10 and 11 are what it never had. There is one deliberate reordering:
+the pollution check runs *before* red-green, because red-green works by checking
+files in and out of the tree and would otherwise be caught polluting it itself.
+
+**Step 8 does not tell you the PR is broken.** It runs the whole module suite —
+8729 tests for `log4j-core-test` — and that suite has its own failures on any
+given machine. The summary splits them into classes this PR touches and classes
+it does not, and `08-test-failures.md` prints the command to settle the
+difference. Failures in untouched classes are *probably* pre-existing, and
+"probably" is not a review finding: run the base before writing it down.
+
+**RED is the one that earns its keep.** It automates the hand-check that caught
+#4218: revert the fix, keep the tests, and see whether anything goes red. That
+PR's first revision shipped three tests that all passed without the production
+change — they asserted that a configuration loads, not that a stream closes.
+Nothing but running it says so. On the current head the same gate reports
+`Tests run: 4, Failures: 1`, which is the author's red-green claim confirmed
+rather than taken on trust.
+
+Read the RED verdict carefully, because it has four outcomes and only one of
+them is "the tests are fine":
+
+- **fail, as required** — an assertion failed. What you want.
+- **compile error** — valid red, but weaker: the test pins an API's existence,
+  not a behaviour. A test that only fails to compile would still pass if the
+  method were reintroduced doing nothing.
+- **PASS** — the tests do not test the fix. This is a blocking finding, and the
+  comment to write is "can you make at least one of them fail without the
+  production change?"
+- **inconclusive** — the build broke before any test ran, so there is no
+  evidence either way. Never read this as red.
+
+That last outcome is why the gate insists on a surefire `Tests run: … Failures:`
+line rather than trusting maven's exit code. An early version of the script ran
+under JDK 22, Log4j's enforcer rejected it with `[17,18)` in `log4j-bom` before
+compiling anything, and the non-zero exit reported a cheerful green tick on RED.
+Same shape as the `commons-compress` repro below that passed on four versions
+having compressed nothing: **the failure you are looking for and an unrelated
+failure exit the same way.**
+
+These facts are necessary, not sufficient. Every step green means the change is
+mechanically sound, and says nothing about whether it fixes the right thing —
+that is §2, and no script gets there. The script prints the §2 checklist when it
+finishes for exactly that reason.
+
+`bench` is on `PATH` as a symlink, so all of this works from any directory,
+including from inside the Log4j clone while you read the code in an IDE.
+
+### Then reproduce it here
+
 Reproduce against **releases first**. `--install` overwrites `2.27.0-SNAPSHOT`,
 so a baseline taken afterwards measures the PR twice.
 
