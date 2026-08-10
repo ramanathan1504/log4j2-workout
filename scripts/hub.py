@@ -781,6 +781,50 @@ reasoning that got there — including the parts you decided not to post.
 """
 
 
+AGENT = "com.ramanathan.bench-hub"
+AGENT_PLIST = HOME / "Library" / "LaunchAgents" / f"{AGENT}.plist"
+AGENT_TEMPLATE = WORKOUT / "infra" / "launchd" / f"{AGENT}.plist"
+
+
+def install_agent(remove=False):
+    """Render the committed template with this checkout's paths, and load it.
+
+    The template is the copy of record: a machine rebuilt from the repository
+    can reinstall the agent without anyone remembering what was in it.
+    """
+    target = f"gui/{os.getuid()}/{AGENT}"
+    if AGENT_PLIST.exists():
+        subprocess.run(["launchctl", "bootout", target],
+                       capture_output=True, text=True)
+    if remove:
+        AGENT_PLIST.unlink(missing_ok=True)
+        print(f"removed {AGENT_PLIST}")
+        return
+    if not AGENT_TEMPLATE.exists():
+        sys.exit(f"error: no template at {AGENT_TEMPLATE}")
+
+    body = (AGENT_TEMPLATE.read_text()
+            .replace("__ROOT__", str(WORKOUT))
+            .replace("__HOME__", str(HOME)))
+    AGENT_PLIST.parent.mkdir(parents=True, exist_ok=True)
+    AGENT_PLIST.write_text(body)
+    (WORKOUT / ".bench" / "hub").mkdir(parents=True, exist_ok=True)
+
+    lint = subprocess.run(["plutil", "-lint", str(AGENT_PLIST)],
+                          capture_output=True, text=True)
+    if lint.returncode != 0:
+        sys.exit(f"error: the rendered plist is malformed —\n{lint.stdout}{lint.stderr}")
+
+    r = subprocess.run(["launchctl", "bootstrap", f"gui/{os.getuid()}", str(AGENT_PLIST)],
+                       capture_output=True, text=True)
+    if r.returncode != 0:
+        sys.exit(f"error: launchctl bootstrap failed — {r.stderr.strip() or r.stdout.strip()}")
+    print(f"installed {AGENT_PLIST}")
+    print(f"  serving http://localhost:8787/ at login, restarts if it dies")
+    print(f"  logs    {WORKOUT}/.bench/hub/agent.{{out,err}}.log")
+    print(f"  remove  bench hub --uninstall")
+
+
 class Handler(BaseHTTPRequestHandler):
     def log_message(self, *a):
         pass
@@ -828,7 +872,14 @@ def main():
                     help="just serve; do not open a browser")
     ap.add_argument("--refresh", action="store_true",
                     help="re-fetch the To-do view from GitHub, then exit")
+    ap.add_argument("--install", action="store_true",
+                    help="install the launchd agent so the site starts at login")
+    ap.add_argument("--uninstall", action="store_true", help="remove that agent")
     args = ap.parse_args()
+
+    if args.install or args.uninstall:
+        install_agent(remove=args.uninstall)
+        return
 
     if args.refresh:
         d = todo_refresh()
