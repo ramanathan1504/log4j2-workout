@@ -1,0 +1,22 @@
+{
+  "name": "log4j",
+  "kind": "bench",
+  "description": "Apache Log4j across a version x config x app matrix, on real JVMs",
+  "exec": "./bench",
+  "verbs": {
+    "list": "list",
+    "run": "run",
+    "matrix": "matrix",
+    "coverage": "coverage",
+    "repro": "repro",
+    "review": "review",
+    "issue": "issue",
+    "pr": "pr",
+    "followup": "followup",
+    "hub": "hub"
+  },
+  "axes": ["app", "version", "config", "scenario"],
+
+  "writes": ["hub"],
+  "writesTo": "apache/logging-log4j2 (a post reaches the mailing list; there is no undo)"
+}
