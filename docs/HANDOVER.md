@@ -245,7 +245,7 @@ both 1.x configuration formats.
 **Log4j 3.x — 21 of 22 shippable modules**, catalogued in `FEATURE-MATRIX` §19.
 Eight of nineteen app targets run on 3.x; the other eleven cannot, because the
 Log4j modules they exercise were never published for it. The list is
-`APPS_2X_ONLY` in `bench`, which is the only place it is stated once.
+`APPS_2X_ONLY` in `packs/log4j/pack.sh`, which is the only place it is stated once.
 
 The one unreachable module is `log4j-plugin-processor`, and the reason is worth
 knowing: **`@Plugin` moved package between the lines** —
