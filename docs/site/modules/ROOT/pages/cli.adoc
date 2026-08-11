@@ -48,7 +48,7 @@ xref:running.adoc[Running the bench] and xref:workflows.adoc[Workflows].
 | `docs/pr-reviews/ledger.tsv`, with `--sync`
 
 | `clean`
-| Discard the classpath cache
+| Discard the classpath cache, keeping the hub's state
 | `.bench/`
 
 | `help`
@@ -417,12 +417,20 @@ The playbook this belongs to is
 
 [source,bash]
 ----
-./bench clean
+./bench clean          # <1>
+./bench clean --all    # <2>
 ----
+<1> The derived half of `.bench/` — cached classpaths, matrix logs, the coverage
+    ledger.
+<2> That, plus the two things in `.bench/` that cannot be rebuilt.
 
-Removes `.bench/` — the cached classpaths, the matrix logs and the coverage
-ledger. Nothing in `logs/`, `repros/` or the applications is touched. The next
-run re-resolves every classpath, which is slow rather than destructive.
+Nothing in `logs/`, `repros/` or the applications is touched either way. The
+next run re-resolves every classpath, which is slow rather than destructive.
+
+`.bench/hub/` and `.bench/reviews/` are kept unless you pass `--all`, because
+neither can be re-derived: the daily reports are the only record of days whose
+commits have since been squashed away, and `.bench/reviews/` is evidence a
+written finding cites. `clean` says how many report days it kept.
 
 == Environment variables
 
@@ -484,8 +492,10 @@ BENCH_JVM_ARGS='-Dlog4j2.debug=true -Dlog4j2.StatusLogger.level=TRACE' \
 | `repros/<kind>-<n>/` | `repro` | The zip, the verification matrix, the per-version logs
 |===
 
-`.bench/` is disposable — that is what `clean` removes. `logs/` is the evidence
-a run produced, and is where a finding is usually confirmed.
+Most of `.bench/` is disposable — that is what `clean` removes. Its exceptions
+are `.bench/hub/` and `.bench/reviews/`, which `clean` keeps and `clean --all`
+takes. `logs/` is the evidence a run produced, and is where a finding is usually
+confirmed.
 
 == Requirements
 

@@ -274,6 +274,39 @@ Record it, and mark it posted:
 ./bench followup --sync <n>      # after posting, or after any re-read
 ```
 
+### Or post it from the page — including comments on specific lines
+
+`gh pr comment` sends one block of prose. Half the useful things in a review are
+not prose: *this line*, *that null check*, *this test asserts the wrong thing*.
+For those, the hub has a composer:
+
+```bash
+./bench hub --pr 4245           # or the Review → button on any To-do row
+```
+
+It shows every PR whose next move is yours, with the ones whose write-up was
+never posted first, and opens on the diff at the current head:
+
+- **click a line number** to comment on that line; shift-click a second one in
+  the same file for a range. A deletion is commented on the base, everything else
+  on the head — the composer picks the side, because getting it wrong does not
+  fail, it comments on the wrong code.
+- the summary box is **prefilled with the paste-ready block** from
+  `docs/pr-reviews/<n>-*.md`, and every box has a *Preview* tab.
+- one **Send**, posting the summary and every line comment as a single review —
+  `Comment`, `Request changes`, `Approve`, or a plain conversation comment. It
+  names the repository, the PR and the event in a confirmation first, and posts
+  through `gh`, as you.
+- on success it writes `posted=yes` and the head SHA into
+  [`ledger.tsv`](pr-reviews/ledger.tsv), which is the `--sync` above.
+
+Nothing is sent by loading a page or by typing, and nothing is stored on the
+server — a comment lives in the tab until you send it. `BENCH_HUB_READONLY=1`
+disables Send outright, for an unattended hub.
+
+The write-up under `docs/pr-reviews/` is still where the review is *decided*.
+The composer is how the decision reaches the author, with the lines attached.
+
 ---
 
 ## 5. Follow up — the half that usually goes missing
@@ -342,6 +375,7 @@ GitHub's own UI, and is right to.
 | Restore afterwards | `git switch 2.x && mvn install -DskipTests` |
 | Read just the comment | `./bench followup --comment <n>` |
 | Post it | `./bench followup --comment <n> \| gh pr comment <n> -R apache/logging-log4j2 --body-file -` |
+| Post it with line comments | `./bench hub --pr <n>` |
 | What moved since | `./bench followup [--changed\|--mine] [<n>]` |
 | Re-record after re-reading | `./bench followup --sync <n>` |
 
