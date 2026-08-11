@@ -241,8 +241,30 @@ def git(repo, *args):
         return ""
 
 
-def repo_state(path):
+def repo_state(path, command=None):
+    """Working-tree state, or -- for a repo that is INSTALLED rather than cloned -- what is
+    installed instead.
+
+    oss-cli ships through Homebrew now, so the normal state of that entry is "no clone here, and
+    that is correct". Reporting it as a missing checkout made a healthy machine look broken, and
+    invited re-cloning something that does not need to be cloned. A core you install and extensions
+    you attach is the whole shape of this thing; the page should say so."""
     if not (path / ".git").exists():
+        if command:
+            found = installed(command)
+            if found:
+                ver = ""
+                try:
+                    r = subprocess.run([command, "--version"], capture_output=True, text=True, timeout=20)
+                    # NOT the first non-empty line: the CLI prints "Initializing local SQLite
+                    # database connection..." before its own output, so first-line wins put that
+                    # in the version pill. Take the line that actually names the tool.
+                    ver = next((l.strip() for l in (r.stdout or "").splitlines()
+                                if l.strip().startswith(command + " ")), "")
+                except Exception:
+                    pass
+                return {"ok": True, "installed": True, "path": found,
+                        "head": ver or "installed", "when": "not a clone — installed"}
         return {"ok": False, "why": f"no git clone at {path}"}
     dirty = [l for l in git(path, "status", "--porcelain").split("\n") if l.strip()]
     counts = git(path, "rev-list", "--left-right", "--count", "@{u}...HEAD")
@@ -1820,6 +1842,11 @@ def compose_html(todo):
 def status_badge(s):
     if not s["ok"]:
         return f'<span class="pill bad">{html.escape(s["why"])}</span>'
+    # An installed component has no branch, no dirty count and nothing to pull. Reusing the
+    # working-tree badges for it would print "clean" about something that has no working tree.
+    if s.get("installed"):
+        return ('<span class="pill ok">installed</span>'
+                f'<span class="pill">{html.escape(s.get("head", ""))}</span>')
     bits = [f'<span class="pill">{html.escape(s["branch"])}</span>']
     if s["dirty"]:
         bits.append(f'<span class="pill warn">{s["dirty"]} uncommitted</span>')
@@ -1926,7 +1953,9 @@ def report_html(rep, days):
 
 
 def build(day=None):
-    states = {name: repo_state(p) for name, p, _, _ in REPOS}
+    # oss-cli is the one that may legitimately be absent as a clone: it is installed.
+    states = {name: repo_state(p, "oss-cli" if name == "oss-cli" else None)
+              for name, p, _, _ in REPOS}
     cmds = {c: installed(c) for c in ("bench", "oss-cli", "kb")}
     led, evid, files = reviews()
 
