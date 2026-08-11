@@ -30,7 +30,10 @@ BENCH_HUB_READONLY=1 takes even that away.
 """
 
 import argparse
+import base64
 import fcntl
+import hashlib
+import hmac
 import html
 import json
 import os
@@ -595,6 +598,40 @@ def pr_bundle(repo, pr, force=False):
     return d
 
 
+GUARD_FILE = Path(os.environ.get("OSS_CLI_HOME") or (HOME / ".oss-cli")) / "upstream-guard.json"
+
+
+def guard_ok(passphrase):
+    """Verify a passphrase against OSS-CLI's upstream-write guard.
+
+    The same file, format and iteration count OSS-CLI writes, so one passphrase
+    covers both doors. Reading a public repo is free to get wrong; posting to one
+    is not -- it reaches every watcher and the mailing list at once, and deleting
+    it afterwards reaches neither.
+
+    Refuses in both directions that matter: no guard file means refused, not
+    allowed. Defaulting to "unguarded when unconfigured" would make the
+    protection depend on remembering to switch it on.
+    """
+    if not GUARD_FILE.is_file():
+        raise RuntimeError(
+            "refused — no upstream passphrase is set on this machine. "
+            "Set one with: oss-cli setup --upstream-guard")
+    if not passphrase:
+        raise RuntimeError("refused — this posts to a public repository; enter the passphrase to send")
+    try:
+        g = json.loads(GUARD_FILE.read_text())
+        salt = base64.b64decode(g["salt"])
+        expected = base64.b64decode(g["hash"])
+        actual = hashlib.pbkdf2_hmac("sha256", passphrase.encode(), salt, int(g["iterations"]), len(expected))
+    except Exception as e:
+        raise RuntimeError(f"refused — could not read the guard file: {e}")
+    # Constant-time: a plain == would leak how much of the passphrase was right.
+    if not hmac.compare_digest(expected, actual):
+        raise RuntimeError("refused — passphrase did not match")
+    return True
+
+
 def api_post(path, payload):
     """POST through `gh`, so this uses the same credential the CLI does and no
     token is ever read, stored or logged by this server."""
@@ -754,6 +791,10 @@ def send_review(req):
         raise RuntimeError(f"that is not a PR number: {pr}")
     if event not in EVENT_NAMES:
         raise RuntimeError(f"unknown event: {event}")
+
+    # Before any POST, and before check_anchors spends API calls: this is the
+    # last point at which nothing has left the machine.
+    guard_ok(req.get("passphrase") or "")
 
     if event == "ISSUE_COMMENT":
         if comments:
@@ -1151,9 +1192,15 @@ function send(){
       +'\\n'+n+' line comment'+(n===1?'':'s')
       +'\\nsummary: '+(body.trim()?body.trim().length+' characters':'(empty)')
       +'\\n\\nThis is public, under your account.'))return;
+  // Second gate, and a different KIND of gate. The confirm above is a reflex
+  // check anyone clicks through; this one cannot be satisfied by clicking. The
+  // server refuses without it, so a stray Enter cannot post.
+  const pass=prompt('Upstream passphrase to post to '+CM.repo+':');
+  if(pass===null){msg.className='sub';msg.textContent='not sent';return}
   go.disabled=true;msg.className='sub';msg.textContent='posting…';
   fetch('review',{method:'POST',headers:{'Content-Type':'application/json'},
     body:JSON.stringify({repo:CM.repo,pr:CM.pr,sha:CM.sha,event:ev,body:body,
+      passphrase:pass,
       comments:CM.comments.map(c=>({path:c.path,line:c.line,side:c.side,
         start_line:c.start_line,body:c.body}))})})
   .then(r=>r.json()).then(d=>{

@@ -89,7 +89,7 @@ it:
 | Count | Source of truth |
 |---|---|
 | Apps, versions, configs | `./bench list --apps` / `--versions` / `--configs` |
-| Which apps are 2.x-only | `APPS_2X_ONLY` in `bench` (eleven; so eight of nineteen run on 3.x) |
+| Which apps are 2.x-only | `APPS_2X_ONLY` in `packs/log4j/pack.sh` (eleven; so eight of nineteen run on 3.x) |
 | Module reach | `./bench coverage`, which reads the source clone |
 
 `./bench list --configs` prints 74 files, but one (`templates/bench-custom.json`)

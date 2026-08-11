@@ -41,31 +41,45 @@ ROOT="$(cd "$(dirname "$SELF")" && pwd)"
 CACHE="$ROOT/.bench"
 mkdir -p "$CACHE"
 
-# ── The version axis ────────────────────────────────────────────────────────
-# Ordered oldest → newest. `matrix` walks this list.
-VERSIONS=(
-  2.24.1
-  2.25.4
-  2.25.5
-  2.26.0
-  2.26.1
-  # 2.27.0 is deliberately absent: it is unreleased (404 on Central, whose
-  # newest is 2.26.1), so every cell on it fails to resolve rather than
-  # testing anything. Listing it cost ~1/8 of a full matrix in guaranteed
-  # noise. Add it back when it ships.
-  2.27.0-SNAPSHOT
-  3.0.0-SNAPSHOT
-)
-DEFAULT_VERSION=2.27.0-SNAPSHOT
+# ── The pack: what this bench tests ─────────────────────────────────────────
+# Everything above this line is the engine -- forking JVMs, walking a matrix,
+# caching classpaths -- and none of it is specific to Log4j. What IS specific
+# lives in a pack, so the same engine can be pointed at another project by
+# writing one file rather than by editing this one.
+#
+#   BENCH_PACK=mine ./bench list      loads packs/mine/pack.sh
+#
+# Sourced, not executed, because it defines arrays and a function this script
+# then uses directly. `set -u` is already on, so a pack that forgets a variable
+# fails at the check below with its name, rather than as an empty axis that
+# silently sweeps nothing.
+BENCH_PACK="${BENCH_PACK:-log4j}"
+PACK_FILE="$ROOT/packs/$BENCH_PACK/pack.sh"
+[[ -f $PACK_FILE ]] || {
+  printf '\033[31merror\033[0m no pack at %s\n' "${PACK_FILE#"$ROOT"/}" >&2
+  printf '  packs available:%s\n' \
+    "$(for d in "$ROOT"/packs/*/pack.sh; do [[ -f $d ]] && printf ' %s' "$(basename "$(dirname "$d")")"; done)" >&2
+  exit 1
+}
+# shellcheck source=packs/log4j/pack.sh
+. "$PACK_FILE"
 
-APPS=(core-java spring-boot-maven db log4j1-bridge jakarta-web spring-boot-gradle
-      java8-baseline bridges-in bridges-out bridges-to-jul custom-plugins jpa smtp javax-web jdbc-jndi jms spring-cloud-config network nosql)
-
-# Apps that cannot build on 3.x, because the Log4j artifacts they need have no
-# 3.x release. `matrix` skips these rather than reporting a spurious failure.
-APPS_2X_ONLY=(log4j1-bridge jakarta-web spring-boot-gradle
-              bridges-in bridges-out bridges-to-jul jpa smtp javax-web jms
-              custom-plugins)
+# A pack that loads but declares nothing would produce an empty matrix, and an
+# empty matrix reports "0 cells, 0 failures" -- which reads exactly like a pass.
+for _required in PACK_NAME VERSIONS DEFAULT_VERSION APPS; do
+  if ! declare -p "$_required" >/dev/null 2>&1; then
+    printf '\033[31merror\033[0m pack %s does not set %s\n' "$BENCH_PACK" "$_required" >&2
+    exit 1
+  fi
+done
+declare -F pack_module_path >/dev/null 2>&1 || {
+  printf '\033[31merror\033[0m pack %s does not define pack_module_path()\n' "$BENCH_PACK" >&2
+  exit 1
+}
+# Optional, with the historic layout as the default so an older pack still works.
+PACK_CONFIGS_DIR="${PACK_CONFIGS_DIR:-configs}"
+PACK_APPS_DIR="${PACK_APPS_DIR:-apps}"
+APPS_2X_ONLY=("${APPS_2X_ONLY[@]:-}")
 
 is_2x_only() {
   local app="$1" a
@@ -318,28 +332,11 @@ set_mvn_flags() {
   fi
 }
 
+# The mapping itself is pack content; the error is the engine's, so that every
+# pack gets the same "unknown app, here are the known ones" message without
+# having to write it.
 module_path_for() {
-  case "$1" in
-    core-java)          echo "apps/core-java" ;;
-    spring-boot-maven)  echo "apps/spring-boot-maven" ;;
-    spring-boot-gradle) echo "apps/spring-boot-gradle" ;;
-    db|nosql)           echo "apps/db" ;;
-    log4j1-bridge)      echo "apps/log4j1-bridge" ;;
-    jakarta-web)        echo "apps/jakarta-web" ;;
-    java8-baseline)     echo "apps/java8-baseline" ;;
-    custom-plugins)     echo "apps/custom-plugins" ;;
-    jpa)                echo "apps/jpa" ;;
-    smtp)               echo "apps/smtp" ;;
-    javax-web)          echo "apps/javax-web" ;;
-    jdbc-jndi)          echo "apps/jdbc-jndi" ;;
-    jms)                echo "apps/jms" ;;
-    network)            echo "apps/network" ;;
-    spring-cloud-config) echo "apps/spring-cloud-config" ;;
-    bridges-in)         echo "apps/bridges-in" ;;
-    bridges-out)        echo "apps/bridges-out" ;;
-    bridges-to-jul)     echo "apps/bridges-to-jul" ;;
-    *) die "unknown app '$1' (known: ${APPS[*]})" ;;
-  esac
+  pack_module_path "$1" || die "unknown app '$1' (known: ${APPS[*]})"
 }
 
 # Apps built by Gradle rather than Maven.
