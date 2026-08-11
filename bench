@@ -796,6 +796,28 @@ cmd_issue() { exec "$ROOT/scripts/gh-issue.sh" "$@"; }
 cmd_pr()    { exec "$ROOT/scripts/gh-pr.sh" "$@"; }
 cmd_review() { exec "$ROOT/scripts/pr-review.sh" "$@"; }
 cmd_hub()    { exec python3 "$ROOT/scripts/hub.py" "$@"; }
+
+# `.bench` stopped being purely disposable when the hub started keeping state
+# there. Two things in it cannot be rebuilt: the daily reports, which are the
+# only record of days whose commits have since been squashed away, and
+# `.bench/reviews`, which is evidence a written finding cites. Everything else —
+# classpath caches, sweep logs, the cell ledger — is derived and costs only time.
+# So `clean` takes the derived half and leaves those two; `--all` takes the lot.
+cmd_clean() {
+  if [ "${1:-}" = "--all" ]; then
+    rm -rf "$CACHE"
+    info "cleared $CACHE entirely — daily reports and review evidence included"
+    return
+  fi
+  [ -n "${1:-}" ] && die "unknown flag '$1' (clean takes --all, or nothing)"
+  [ -d "$CACHE" ] || { info "nothing to clear — no $CACHE"; return; }
+  local was; was=$(du -sh "$CACHE" 2>/dev/null | cut -f1)
+  find "$CACHE" -mindepth 1 -maxdepth 1 ! -name hub ! -name reviews \
+       -exec rm -rf {} + 2>/dev/null
+  local days; days=$(ls "$CACHE/hub/report" 2>/dev/null | wc -l | tr -d ' ')
+  info "cleared $CACHE ($was → $(du -sh "$CACHE" 2>/dev/null | cut -f1))"
+  info "kept hub/ (${days} daily reports) and reviews/ — './bench clean --all' takes those too"
+}
 cmd_followup() { exec "$ROOT/scripts/gh-pr-followup.sh" "$@"; }
 
 # Where the bench actually reaches, as opposed to where it is meant to reach.
@@ -907,7 +929,7 @@ case "${1:-help}" in
   review)   shift; cmd_review "$@" ;;
   followup) shift; cmd_followup "$@" ;;
   hub)      shift; cmd_hub "$@" ;;
-  clean)  rm -rf "$CACHE"; info "cleared $CACHE" ;;
+  clean)  shift; cmd_clean "$@" ;;
   help|--help|-h) usage ;;
   *) die "unknown command '$1' (try: ./bench help)" ;;
 esac

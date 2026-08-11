@@ -170,7 +170,7 @@ The habit that has caught the most here is checking the claim, not the intent:
 | Path | Contains |
 |---|---|
 | `logs/<config>/` | what the appenders produced — where a finding is confirmed |
-| `.bench/` | cached classpaths, sweep logs, the cell ledger. Disposable; `./bench clean` |
+| `.bench/` | cached classpaths, sweep logs, the cell ledger — disposable, `./bench clean`. Two exceptions it keeps: `hub/` (the daily reports) and `reviews/` (evidence); `clean --all` takes those |
 | `repros/<kind>-<n>/` | the zip, the verification matrix, the per-version logs |
 | `docs/evidence/` | captured logs referenced by findings |
 
