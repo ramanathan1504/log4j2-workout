@@ -15,6 +15,7 @@ drafted here and filed by hand; fixes go in the Log4j clone, never here.
 | A PR or issue number in front of you | `docs/BY-HAND.md` |
 | **Judging** a contributor PR, and following it after | `docs/PR-REVIEW.md` |
 | Reviews already written, and what moved since | `docs/pr-reviews/`, `./bench followup` |
+| The local site, the daily report, the launchd agent | `docs/HUB.md` |
 | Every `gh` command | `docs/GH-COMMANDS.md` |
 | Every `./bench` flag, env var, output path | `docs/site/modules/ROOT/pages/cli.adoc` |
 | The operator's manual, and the collected traps | `docs/HANDOVER.md` |
@@ -140,6 +141,12 @@ feature branch --squash--> development --merge--> main
   inline heredoc you cannot re-read.
 - Always pass `-R apache/logging-log4j2`. Omitting it targets *this* repository,
   which is the easiest way to file a bug in the wrong place.
+- **Never write to `apache/logging-log4j2` to test anything.** Not a pending
+  review, not a draft, not something deleted a second later — a GitHub delete
+  does not reach the mailing-list archive or an email already sent. Verify write
+  paths against a repo you own, a fixture, or a mocked POST. Read-only `gh` is
+  fine and is what the tooling is built on. This cost a real incident:
+  `docs/UPSTREAM-INCIDENT.md`.
 - Fixes go in the Log4j clone on their own branch, with a test in that module's
   own test source set.
 - Verifying a fix has two halves: every version that failed must now pass, **and
