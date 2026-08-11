@@ -22,17 +22,5 @@
     "scenario"
   ],
   "writes": [],
-  "writesNote": "No verb here writes upstream. `hub` only serves and writes a local page; the one path that can POST is guarded inside hub.py at api_post, which refuses unless the hub was started with --approve-upstream <repo> AND the repository name is retyped for that specific send. Listing `hub` here as a write blocked merely VIEWING the page, which sends nothing.",
-  "docs": [
-    "README.md",
-    "docs/BY-HAND.md",
-    "docs/PR-REVIEW.md",
-    "docs/BENCH-NOTES.md",
-    "docs/HANDOVER.md",
-    "docs/GH-COMMANDS.md",
-    "docs/FEATURE-MATRIX.md",
-    "docs/ISSUES.md",
-    "docs/GAPS.md",
-    "docs/HUB.md"
-  ]
+  "writesNote": "No verb here writes upstream. `hub` only serves and writes a local page; the one path that can POST is guarded inside hub.py at api_post, which refuses unless the hub was started with --approve-upstream <repo> AND the repository name is retyped for that specific send. Listing `hub` here as a write blocked merely VIEWING the page, which sends nothing."
 }
