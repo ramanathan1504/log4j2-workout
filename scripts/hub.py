@@ -3,6 +3,7 @@
 hub.py — one local site over all three repos.
 
     bench hub                 serve on http://localhost:8787, and open it
+    bench hub --pr 4245       ...straight into the review composer for one PR
     bench hub --port 9000
     bench hub --no-open       serve only, no browser
     bench hub --once          write index.html and exit, no server
@@ -22,6 +23,10 @@ Two views are the exception, because they answer questions the working tree
 cannot: the To-do board calls the GitHub API, and Backlog triage shells out to
 knowledge-creator's triage.sh, which writes its report there. Both are cached,
 both say how old they are, and neither runs on the request path.
+
+One view writes: **Send a review** posts to GitHub, through `gh`, as you. It is
+the only one, it posts nothing until Send is pressed and confirmed, and
+BENCH_HUB_READONLY=1 takes even that away.
 """
 
 import argparse
@@ -36,9 +41,10 @@ import threading
 import time
 import webbrowser
 from datetime import datetime, timezone
-from http.server import BaseHTTPRequestHandler, HTTPServer
+from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
-from urllib.parse import parse_qs, urlparse
+from urllib.parse import parse_qs, quote, urlparse
+from urllib.request import urlopen
 
 HOME = Path.home()
 WORKOUT = Path(__file__).resolve().parent.parent
@@ -411,15 +417,360 @@ def reviews():
     return rows, evidence, files
 
 
+# ----------------------------------------------------------------- compose ---
+# The one view here that writes to GitHub. Everything else reads: the working
+# tree, a cache, a report. A review leaves this machine and lands under your name
+# in someone else's project, so it is three deliberate steps — load the diff at a
+# known head SHA, write the comments, then a Send that names the repository, the
+# pull request and the event in a confirmation before anything is posted. Loading
+# a page, opening a PR and typing all post nothing.
+PR_DIR = WORKOUT / ".bench" / "hub" / "pr"
+REVIEW_DIR = WORKOUT / "docs" / "pr-reviews"
+
+# One switch that makes the composer read-only — for an unattended hub under
+# launchd, or a machine you are not the only one at. The boxes still open and the
+# preview still renders; Send refuses, on the server, not just in the page.
+READONLY = (os.environ.get("BENCH_HUB_READONLY") or "0") not in ("0", "", "no", "false")
+
+# What GitHub calls the review event, and what it means when you are the one
+# choosing. ISSUE_COMMENT is not a review at all — it is the plain conversation
+# comment, kept here because "just say something" is half of what a review round
+# actually is, and it is the only one of the four that cannot carry line comments.
+EVENTS = [
+    ("COMMENT", "Comment", "feedback, no verdict"),
+    ("REQUEST_CHANGES", "Request changes", "blocks the merge until you clear it"),
+    ("APPROVE", "Approve", "you cannot approve your own PR"),
+    ("ISSUE_COMMENT", "Plain comment", "on the conversation — not a review"),
+]
+EVENT_NAMES = {e[0] for e in EVENTS}
+
+
+def draft_body(pr):
+    """The paste-ready block from this PR's write-up, or nothing.
+
+    Same rule as `bench followup --comment`, and for the same reason: a review
+    file is mostly notes to yourself, and only the block under
+    `── paste-ready comment ──` is addressed to the author. A file may carry one
+    block per PR it covers, so prefer the one naming this number.
+    """
+    files = sorted(REVIEW_DIR.glob(f"*{pr}*.md"))
+    if not files:
+        return "", ""
+    f = files[0]
+    keep, out = False, []
+    for line in f.read_text(errors="replace").split("\n"):
+        if re.match(r"^##\s+.*paste-ready comment", line):
+            keep = (f"#{pr}" in line) or ("for #" not in line)
+            continue
+        if line.startswith("## "):
+            keep = False
+            continue
+        if keep:
+            out.append(line)
+    return "\n".join(out).strip("\n"), f.name
+
+
+def parse_patch(patch):
+    """A unified diff into hunks whose every line knows both its line numbers.
+
+    That is the whole point of parsing it here rather than showing the raw patch:
+    GitHub anchors a review comment by `path` + `line` + `side`, where the number
+    is the line in the file on that side — not an offset into the diff. Counting
+    it wrong does not fail, it comments on the wrong code.
+    """
+    hunks, old, new = [], 0, 0
+    # rstrip first: a patch that ends in a newline would otherwise gain a phantom
+    # empty context line, and with it a commentable line number past the hunk.
+    for raw in (patch or "").rstrip("\n").split("\n"):
+        m = re.match(r"^@@ -(\d+)(?:,\d+)? \+(\d+)(?:,\d+)? @@(.*)$", raw)
+        if m:
+            old, new = int(m.group(1)), int(m.group(2))
+            hunks.append({"header": raw, "lines": []})
+            continue
+        if not hunks or raw.startswith("\\"):  # "\ No newline at end of file"
+            continue
+        t, text = raw[:1], raw[1:]
+        if t == "+":
+            hunks[-1]["lines"].append({"t": "+", "old": None, "new": new, "text": text})
+            new += 1
+        elif t == "-":
+            hunks[-1]["lines"].append({"t": "-", "old": old, "new": None, "text": text})
+            old += 1
+        else:
+            # A context line, including the empty one a patch writes as "".
+            hunks[-1]["lines"].append({"t": " ", "old": old, "new": new, "text": text})
+            old += 1
+            new += 1
+    return hunks
+
+
+def pr_bundle(repo, pr, force=False):
+    """Head, files and hunks for one PR, cached by head SHA.
+
+    Cached by SHA rather than by number, which is oss-cli's rule and the right one
+    here too: a push moves the SHA and invalidates the cache by itself, so the
+    composer can never anchor a comment to a line that has since been rewritten.
+    """
+    meta = gh_json("pr", "view", str(pr), "--repo", repo, "--json",
+                   "number,title,author,state,isDraft,url,headRefOid,baseRefName,"
+                   "additions,deletions,changedFiles", timeout=45)
+    if not meta:
+        raise RuntimeError(f"could not read {repo}#{pr} — check `gh auth status`")
+    sha = meta.get("headRefOid") or ""
+    cache = PR_DIR / f"{repo.replace('/', '__')}-{pr}.json"
+
+    d = None
+    if not force and cache.exists():
+        try:
+            c = json.loads(cache.read_text())
+            if c.get("sha") == sha:
+                d = c
+                d["cached"] = True
+        except Exception:
+            d = None
+
+    if d is None:
+        r = subprocess.run(["gh", "api", f"repos/{repo}/pulls/{pr}/files",
+                            "--paginate", "--jq", ".[]"],
+                           capture_output=True, text=True, timeout=180)
+        if r.returncode != 0:
+            raise RuntimeError((r.stderr.strip() or "gh api failed").split("\n")[-1])
+        files = []
+        for line in r.stdout.split("\n"):
+            if not line.strip():
+                continue
+            f = json.loads(line)
+            files.append({
+                "path": f.get("filename", ""), "status": f.get("status", ""),
+                "adds": f.get("additions", 0), "dels": f.get("deletions", 0),
+                # A binary, renamed-only or too-large file comes back with no
+                # patch. Say so — an empty box reads as "nothing changed here".
+                "hunks": parse_patch(f.get("patch")), "nopatch": not f.get("patch")})
+        d = {"repo": repo, "pr": str(pr), "sha": sha, "files": files,
+             "at": datetime.now(timezone.utc).isoformat(timespec="seconds"),
+             "cached": False}
+        PR_DIR.mkdir(parents=True, exist_ok=True)
+        cache.write_text(json.dumps(d))
+
+    # Everything below is cheap and changes without the SHA moving — the title on
+    # an edit, the state on a merge, the draft when you save the write-up — so it
+    # is refreshed on every load rather than frozen into the cache.
+    draft, draft_file = draft_body(pr)
+    led = ledger_map().get(str(pr)) or {}
+    d.update({
+        "title": meta.get("title", ""), "url": meta.get("url", ""),
+        "author": (meta.get("author") or {}).get("login", ""),
+        "state": meta.get("state", ""), "wip": meta.get("isDraft", False),
+        "base": meta.get("baseRefName", ""), "adds": meta.get("additions", 0),
+        "dels": meta.get("deletions", 0), "changed": meta.get("changedFiles", 0),
+        "draft": draft, "draft_file": draft_file,
+        "verdict": led.get("verdict", ""), "posted": led.get("posted", ""),
+        "in_ledger": bool(led), "readonly": READONLY})
+    return d
+
+
+def api_post(path, payload):
+    """POST through `gh`, so this uses the same credential the CLI does and no
+    token is ever read, stored or logged by this server."""
+    r = subprocess.run(["gh", "api", "--method", "POST", path, "--input", "-"],
+                       input=json.dumps(payload), capture_output=True,
+                       text=True, timeout=120)
+    if r.returncode != 0:
+        msg = (r.stderr.strip() or r.stdout.strip() or "gh api failed")
+        # GitHub's own message is far better than gh's exit line — "line must be
+        # part of the diff" is the one you will actually hit — so prefer it.
+        try:
+            j = json.loads(r.stdout)
+            msg = j.get("message") or msg
+            if j.get("errors"):
+                msg += " — " + "; ".join(
+                    str(e.get("message") or e.get("field") or e) for e in j["errors"])
+        except Exception:
+            pass
+        raise RuntimeError(" ".join(msg.split())[:500])
+    return json.loads(r.stdout) if r.stdout.strip() else {}
+
+
+def clean_comment(c):
+    """One line comment, validated here rather than at GitHub. `side` decides
+    which file the number counts in: RIGHT is the head, LEFT is the base."""
+    path = (c.get("path") or "").strip()
+    body = (c.get("body") or "").strip()
+    side = (c.get("side") or "RIGHT").upper()
+    if not path:
+        raise RuntimeError("a line comment with no file")
+    if not body:
+        raise RuntimeError(f"a line comment on {path} with no text")
+    if side not in ("LEFT", "RIGHT"):
+        raise RuntimeError(f"bad side: {side}")
+    try:
+        line = int(c.get("line"))
+    except (TypeError, ValueError):
+        raise RuntimeError(f"a line comment on {path} with no line number")
+    out = {"path": path, "body": body, "line": line, "side": side}
+    start = c.get("start_line")
+    if start not in (None, "", line):
+        out["start_line"] = int(start)
+        out["start_side"] = (c.get("start_side") or side).upper()
+    return out
+
+
+def commentable(repo, pr):
+    """Which lines GitHub will accept a comment on, per file and per side.
+
+    A review comment must anchor to a line that is *part of the diff*, and the
+    only answer GitHub gives for a line that is not is a 422 on the POST — after
+    the review exists. The bundle already carries every hunk line with its old
+    and new number, so the same question is answerable here, before anything is
+    sent. RIGHT counts in the head file, LEFT in the base file, which is why
+    they are two sets and not one.
+
+    Returns None when the diff is not available, and the caller falls back to
+    letting GitHub decide — a check that cannot run is not a reason to refuse.
+    """
+    try:
+        d = pr_bundle(repo, pr)
+    except Exception:
+        return None
+    out = {}
+    for f in d.get("files") or []:
+        right, left = set(), set()
+        for h in f.get("hunks") or []:
+            for ln in h.get("lines") or []:
+                if ln.get("new") is not None:
+                    right.add(int(ln["new"]))
+                if ln.get("old") is not None:
+                    left.add(int(ln["old"]))
+        out[f.get("path", "")] = {"RIGHT": right, "LEFT": left}
+    return out or None
+
+
+def spans(nums):
+    """`92-104, 118` — the commentable lines of a file, said the short way."""
+    out, run = [], []
+    for n in sorted(nums):
+        if run and n == run[-1] + 1:
+            run.append(n)
+        else:
+            if run:
+                out.append(run)
+            run = [n]
+    if run:
+        out.append(run)
+    return ", ".join(str(r[0]) if len(r) == 1 else f"{r[0]}-{r[-1]}" for r in out)
+
+
+def check_anchors(repo, pr, comments):
+    """Refuse a bad line here, naming the lines that would have worked.
+
+    This is the check that makes posting to a live pull request an unnecessary
+    way to find out whether an anchor resolves. See docs/UPSTREAM-INCIDENT.md.
+    """
+    ok = commentable(repo, pr)
+    if not ok:
+        return
+    for c in comments:
+        path, side = c["path"], c["side"]
+        if path not in ok:
+            raise RuntimeError(
+                f"{path} is not in this diff — nothing changed in it, so no line "
+                f"of it can be commented on")
+        for label, num, sd in (("line", c["line"], side),
+                               ("start_line", c.get("start_line"), c.get("start_side", side))):
+            if num is None:
+                continue
+            if int(num) not in ok[path][sd]:
+                where = "head" if sd == "RIGHT" else "base"
+                have = spans(ok[path][sd])
+                raise RuntimeError(
+                    f"{path.split('/')[-1]}:{num} ({label}, {where} side) is not part "
+                    f"of the diff — commentable {where} lines in that file: "
+                    f"{have or 'none'}")
+
+
+def ledger_mark_posted(pr, sha):
+    """Sending makes two ledger columns true at the same moment: the review is
+    posted, and it was posted against this head. `bench followup --sync` writes
+    the second; there is no reason to make you run it by hand after a Send."""
+    f = REVIEW_DIR / "ledger.tsv"
+    if not f.exists():
+        return ""
+    stamp = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+    out, hit = [], False
+    for line in f.read_text().split("\n"):
+        c = line.split("\t")
+        if not line.strip() or line.startswith("#") or len(c) < 7 or c[0] != str(pr):
+            out.append(line)
+            continue
+        c[2], c[5] = stamp, "yes"
+        if sha:
+            c[3] = sha
+        out.append("\t".join(c))
+        hit = True
+    if not hit:
+        return ""
+    f.write_text("\n".join(out))
+    return f"ledger: #{pr} marked posted at {sha[:8]}"
+
+
+def send_review(req):
+    """The Send. Everything it rejects, it rejects before touching the network."""
+    if READONLY:
+        raise RuntimeError("BENCH_HUB_READONLY is set — this hub does not post")
+    repo = (req.get("repo") or UPSTREAM).strip()
+    pr = str(req.get("pr") or "").strip()
+    event = (req.get("event") or "COMMENT").strip()
+    body = (req.get("body") or "").strip()
+    comments = req.get("comments") or []
+    if not re.fullmatch(r"[\w.-]+/[\w.-]+", repo):
+        raise RuntimeError(f"that is not a repository: {repo}")
+    if not re.fullmatch(r"\d+", pr):
+        raise RuntimeError(f"that is not a PR number: {pr}")
+    if event not in EVENT_NAMES:
+        raise RuntimeError(f"unknown event: {event}")
+
+    if event == "ISSUE_COMMENT":
+        if comments:
+            raise RuntimeError("a plain comment cannot carry line comments — "
+                               "choose Comment to send those as a review")
+        if not body:
+            raise RuntimeError("nothing to send — the comment is empty")
+        r = api_post(f"repos/{repo}/issues/{pr}/comments", {"body": body})
+        kind = "comment"
+    else:
+        if not body and not comments:
+            raise RuntimeError("nothing to send — write a summary, or comment on a line")
+        payload = {"event": event, "body": body}
+        # Pinning the review to the SHA the diff was read at is what makes a
+        # stale tab fail loudly instead of commenting on rewritten code.
+        if req.get("sha"):
+            payload["commit_id"] = req["sha"]
+        if comments:
+            payload["comments"] = [clean_comment(c) for c in comments]
+            # Every anchor is checked against the diff before the POST, so a bad
+            # line number is a sentence here rather than a 422 with a review
+            # already created upstream.
+            check_anchors(repo, pr, payload["comments"])
+        r = api_post(f"repos/{repo}/pulls/{pr}/reviews", payload)
+        kind = "review"
+
+    note = ledger_mark_posted(pr, req.get("sha") or "") if repo == UPSTREAM else ""
+    return {"ok": True, "kind": kind, "url": r.get("html_url", ""),
+            "count": len(comments), "ledger": note}
+
+
 # -------------------------------------------------------------------- page ---
 CSS = """
 :root{--bg:#fbfaf8;--fg:#1c1b19;--mut:#6b675f;--line:#e2ded6;--card:#fff;
---acc:#8a4b2a;--ok:#2f6a3f;--warn:#8a6a1a;--bad:#9b2c2c;--code:#f3f0ea;}
+--acc:#8a4b2a;--ok:#2f6a3f;--warn:#8a6a1a;--bad:#9b2c2c;--code:#f3f0ea;
+--add:#e8f6ea;--del:#fbeaea;--gut:#f5f2ec;}
 @media (prefers-color-scheme:dark){:root:not([data-theme=light]){
 --bg:#14130f;--fg:#eae7e0;--mut:#9d978c;--line:#2c2a25;--card:#1b1a16;
---acc:#d99a6c;--ok:#7fb98c;--warn:#d9b96c;--bad:#e08a8a;--code:#232019;}}
+--acc:#d99a6c;--ok:#7fb98c;--warn:#d9b96c;--bad:#e08a8a;--code:#232019;
+--add:#152a1b;--del:#2e1719;--gut:#1e1c17;}}
 :root[data-theme=dark]{--bg:#14130f;--fg:#eae7e0;--mut:#9d978c;--line:#2c2a25;
---card:#1b1a16;--acc:#d99a6c;--ok:#7fb98c;--warn:#d9b96c;--bad:#e08a8a;--code:#232019;}
+--card:#1b1a16;--acc:#d99a6c;--ok:#7fb98c;--warn:#d9b96c;--bad:#e08a8a;--code:#232019;
+--add:#152a1b;--del:#2e1719;--gut:#1e1c17;}
 *{box-sizing:border-box}
 body{margin:0;background:var(--bg);color:var(--fg);
 font:15px/1.65 ui-sans-serif,-apple-system,"Segoe UI",sans-serif;}
@@ -464,6 +815,57 @@ border:1px solid var(--line);background:var(--card);color:var(--acc)}
 .doc{border-top:1px solid var(--line);margin-top:26px;padding-top:6px}
 .foot{color:var(--mut);font-size:12px;margin-top:40px;border-top:1px solid var(--line);padding-top:12px}
 @media(max-width:820px){.wrap{grid-template-columns:1fr}nav{position:static;height:auto}}
+
+/* ---- review composer. A diff has to be read as code, so this half of the
+   page is monospace, tight and full-bleed, unlike everything above it. */
+.bar{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:14px 0}
+.bar input{font:inherit;font-size:13px;padding:4px 9px;border-radius:7px;
+border:1px solid var(--line);background:var(--card);color:var(--fg)}
+.bar input.n{width:92px}
+.file{border:1px solid var(--line);border-radius:10px;margin:12px 0;background:var(--card);
+overflow:hidden}
+.file>summary{padding:8px 12px;cursor:pointer;font:12.5px/1.5 ui-monospace,Menlo,monospace;
+background:var(--gut);border-bottom:1px solid var(--line);word-break:break-all}
+.file>summary::marker{color:var(--mut)}
+table.dt{width:100%;border-collapse:collapse;font:12.5px/1.55 ui-monospace,SFMono-Regular,Menlo,monospace}
+.dt td{border:0;padding:0 8px;vertical-align:top;white-space:pre-wrap;word-break:break-word}
+.dt td.n{width:1%;min-width:44px;text-align:right;color:var(--mut);background:var(--gut);
+user-select:none;border-right:1px solid var(--line);position:relative}
+.dt tr.add td.c{background:var(--add)} .dt tr.del td.c{background:var(--del)}
+.dt tr.hh td{background:var(--code);color:var(--mut);padding:3px 8px}
+.dt tr.cl:hover td.n{color:var(--acc)}
+.dt td.n.hit{cursor:pointer}
+.dt td.n.hit:hover::after{content:"+";position:absolute;right:2px;color:var(--card);
+background:var(--acc);border-radius:4px;padding:0 4px;line-height:1.4}
+.dt tr.sel td.c{outline:2px solid var(--acc);outline-offset:-2px}
+.cw{padding:10px 12px 12px 52px;background:var(--card);border-top:1px solid var(--line)}
+.cbox{border:1px solid var(--line);border-radius:9px;padding:10px;background:var(--bg);
+max-width:820px}
+.cbox textarea,.rbody{font:13px/1.6 ui-monospace,Menlo,monospace;width:100%;
+border:1px solid var(--line);border-radius:7px;padding:9px 10px;background:var(--card);
+color:var(--fg);resize:vertical}
+.cbox textarea{min-height:88px}
+.rbody{min-height:210px}
+.tabs{display:flex;gap:6px;align-items:center;margin-bottom:7px;flex-wrap:wrap}
+.tabs .sub{min-width:0;word-break:break-all}
+.tab{font:inherit;font-size:12px;padding:2px 10px;border-radius:99px;cursor:pointer;
+white-space:nowrap;border:1px solid var(--line);background:var(--card);color:var(--mut)}
+.tab.on{color:var(--acc);border-color:var(--acc)}
+.prev{border:1px dashed var(--line);border-radius:7px;padding:2px 12px;background:var(--card);
+min-height:88px;font-size:14px}
+.prev>*:first-child{margin-top:10px}
+.thr{border-left:3px solid var(--acc);padding:8px 10px;background:var(--bg);border-radius:0 7px 7px 0;
+max-width:820px;font:14px/1.6 ui-sans-serif,-apple-system,sans-serif}
+.thr .who{font-size:12px;color:var(--mut);margin-bottom:4px}
+.send{position:sticky;bottom:0;border:1px solid var(--line);border-top-width:3px;
+border-top-color:var(--acc);border-radius:12px;background:var(--card);padding:14px 16px;
+margin:18px 0 0;box-shadow:0 -6px 18px rgba(0,0,0,.06)}
+.send label{display:inline-flex;gap:6px;align-items:baseline;margin-right:16px;font-size:13.5px}
+.go{font:inherit;font-size:14px;font-weight:600;padding:7px 18px;border-radius:99px;
+cursor:pointer;border:1px solid var(--acc);background:var(--acc);color:#fff}
+.go:disabled{opacity:.5;cursor:not-allowed}
+.pend{font-size:12.5px;color:var(--mut)}
+.sent{border:1px solid var(--ok);border-radius:9px;padding:10px 14px;margin-top:12px}
 """
 
 JS = """
@@ -525,9 +927,299 @@ if(last){sessionStorage.removeItem('hubmsg');const d=JSON.parse(last);
 // The server re-reads the repos on every request, so a reload is the refresh.
 setInterval(()=>{
   if(busy)return;                       // never reload out from under a sync
+  if(CM.pr)return;                      // ...nor out from under a half-written review
   fetch('status.json').then(r=>r.json()).then(d=>{
   if(window.__stamp && window.__stamp!==d.stamp) location.reload();
   window.__stamp=d.stamp;}).catch(()=>{})},15000);
+
+// ---- the composer ----------------------------------------------------------
+// Two rules everything below follows from. A comment is anchored by (path, line,
+// side) taken from the parsed hunk the server sent — never by counting rows in
+// the page — so what you click is what GitHub receives. And nothing leaves the
+// machine until Send, which says what it is about to post, where, and as what.
+const CM={repo:'',pr:'',sha:'',data:null,comments:[],seq:0,anchor:null,sent:false};
+const cmp=document.getElementById('cmp');
+const EVS=JSON.parse(document.getElementById('ev-json').textContent);
+const EVL=Object.fromEntries(EVS.map(e=>[e[0],e[1]]));
+const esc=s=>String(s==null?'':s).replace(/[&<>"]/g,
+  c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+
+// Markdown is rendered by the same renderer the rest of this site uses, so a
+// preview is what the page would show — one round trip, and no second parser.
+function render(md,el){
+  if(!md.trim()){el.innerHTML='<p class="sub">nothing to preview yet</p>';return}
+  el.innerHTML='<p class="sub">rendering…</p>';
+  fetch('preview',{method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({text:md})}).then(r=>r.json())
+    .then(d=>{el.innerHTML=d.html||''})
+    .catch(()=>{el.textContent=md});
+}
+
+function openPR(repo,pr,force){
+  if(CM.comments.length && !CM.sent && (repo!==CM.repo||pr!==CM.pr)
+     && !confirm('Discard '+CM.comments.length+' unsent line comment(s) on #'+CM.pr+'?'))return;
+  show('compose');
+  const inp=document.getElementById('c-repo'), inn=document.getElementById('c-pr');
+  if(inp)inp.value=repo; if(inn)inn.value=pr;
+  cmp.innerHTML='<p class="sub">reading '+esc(repo)+' #'+esc(pr)+' from GitHub…</p>';
+  fetch('pr.json?repo='+encodeURIComponent(repo)+'&pr='+encodeURIComponent(pr)+(force?'&reload=1':''))
+    .then(r=>r.json()).then(d=>{
+      if(d.error){cmp.innerHTML='<p class="bad">'+esc(d.error)+'</p>';return}
+      CM.repo=d.repo;CM.pr=d.pr;CM.sha=d.sha;CM.data=d;CM.comments=[];CM.seq=0;
+      CM.anchor=null;CM.sent=false;
+      renderPR(d);
+    }).catch(()=>{cmp.innerHTML='<p class="bad">lost the server</p>'});
+}
+
+function fileHtml(f,fi){
+  if(f.nopatch)return '<div class="cw"><span class="sub">no textual diff — binary, '
+    +'a pure rename, or too large for the API. Comment on it from GitHub.</span></div>';
+  let out='<table class="dt">';
+  f.hunks.forEach((h,hi)=>{
+    out+='<tr class="hh"><td class="n"></td><td class="n"></td><td>'+esc(h.header)+'</td></tr>';
+    h.lines.forEach((l,li)=>{
+      // A deletion only exists on the base, so it is commented on LEFT; every
+      // other line is addressed on the head. That is GitHub's rule, not a choice.
+      const side=l.t==='-'?'LEFT':'RIGHT', line=l.t==='-'?l.old:l.new;
+      const cls=l.t==='+'?'add':(l.t==='-'?'del':'ctx');
+      out+='<tr class="cl '+cls+'" data-f="'+fi+'" data-h="'+hi+'" data-i="'+li+'"'
+        +' data-path="'+esc(f.path)+'" data-line="'+line+'" data-side="'+side+'"'
+        +' data-code="'+esc(l.text)+'">'
+        +'<td class="n hit">'+(l.old==null?'':l.old)+'</td>'
+        +'<td class="n hit">'+(l.new==null?'':l.new)+'</td>'
+        +'<td class="c">'+esc(l.t)+esc(l.text)+'</td></tr>';
+    });
+  });
+  return out+'</table>';
+}
+
+function renderPR(d){
+  const flags=[d.state!=='OPEN'?'<span class="pill bad">'+esc(d.state.toLowerCase())+'</span>':'',
+               d.wip?'<span class="pill">draft PR</span>':'',
+               d.cached?'<span class="pill">from cache at this head</span>':''].join(' ');
+  const draft=d.draft_file
+    ?'prefilled from <code>docs/pr-reviews/'+esc(d.draft_file)+'</code> — the paste-ready block, edit freely'
+    :'no write-up under <code>docs/pr-reviews/</code> for this PR — writing from scratch';
+  const head='<div class="card"><div class="role">'+esc(d.repo)+' · '+esc(d.state.toLowerCase())+'</div>'
+    +'<h3><a href="'+esc(d.url)+'">#'+esc(d.pr)+'</a> '+esc(d.title)+'</h3>'
+    +'<div class="sub">@'+esc(d.author)+' → '+esc(d.base)+' · '+d.changed+' files · '
+    +'<span class="ok">+'+d.adds+'</span> <span class="bad">−'+d.dels+'</span> · head '
+    +'<code>'+esc(d.sha.slice(0,8))+'</code> '+flags+'</div>'
+    +'<div class="bar"><button class="btn" id="c-reload">Re-read the diff from GitHub</button>'
+    +'<span class="sub">click a line number to comment on it · shift-click a second one '
+    +'for a range</span></div></div>';
+  const files=d.files.map((f,i)=>
+    '<details class="file" open><summary>'+esc(f.path)+'  <span class="sub">'+esc(f.status)
+    +' · <span class="ok">+'+f.adds+'</span> <span class="bad">−'+f.dels+'</span></span></summary>'
+    +fileHtml(f,i)+'</details>').join('');
+  const evs=EVS.map((e,i)=>'<label><input type="radio" name="ev" value="'+e[0]+'"'
+    +(i===0?' checked':'')+'><span>'+esc(e[1])+' <span class="sub">— '+esc(e[2])+'</span></span></label>').join('');
+  const panel='<div class="send"><div class="hd"><h3 style="margin:0">Finish your review</h3>'
+    +'<span class="sub" id="pcount"></span></div>'
+    +'<div class="tabs"><button class="tab on" data-rt="w">Write</button>'
+    +'<button class="tab" data-rt="p">Preview</button><span class="sub">'+draft+'</span></div>'
+    +'<textarea class="rbody" id="rbody" placeholder="Summary of the review — markdown">'
+    +esc(d.draft)+'</textarea><div class="prev" id="rprev" hidden></div>'
+    +'<div class="bar">'+evs+'</div><div id="plist"></div>'
+    +'<div class="bar"><button class="go" id="go"'+(d.readonly?' disabled':'')+'>'
+    +(d.readonly?'Read-only — BENCH_HUB_READONLY is set'
+               :'Send to '+esc(d.repo)+' #'+esc(d.pr))+'</button>'
+    +'<span class="sub" id="sendmsg"></span></div><div id="sent"></div></div>';
+  cmp.innerHTML=head+files+panel;
+  paintPending();
+}
+
+// ---- line comments
+function rowFor(path,line,side){
+  return [...cmp.querySelectorAll('tr.cl')].find(t=>t.dataset.path===path
+    && +t.dataset.line===line && t.dataset.side===side);
+}
+function closeBoxes(){cmp.querySelectorAll('tr.box[data-box]').forEach(b=>b.remove());
+  cmp.querySelectorAll('tr.sel').forEach(t=>t.classList.remove('sel'));}
+
+function openBox(tr,existing,start){
+  closeBoxes();
+  const p=tr.dataset.path,l=+tr.dataset.line,s=tr.dataset.side;
+  const id=existing?existing.id:'c'+(++CM.seq);
+  const where=(start&&start!==l)?start+'–'+l:l;
+  const at=p.split('/').pop()+':'+where;
+  const row=document.createElement('tr');
+  row.className='box';row.dataset.box=id;
+  row.innerHTML='<td class="cw" colspan="3"><div class="cbox" data-id="'+id+'" data-path="'+esc(p)
+    +'" data-line="'+l+'" data-start="'+(start||'')+'" data-side="'+s+'">'
+    +'<div class="tabs"><button class="tab on" data-ct="w">Write</button>'
+    +'<button class="tab" data-ct="p">Preview</button><span class="sub" title="'+esc(p)+'">'
+    +esc(at)+' · '+(s==='LEFT'?'base':'head')+' · markdown</span></div>'
+    +'<textarea placeholder="Comment on this line…">'+esc(existing?existing.body:'')+'</textarea>'
+    +'<div class="prev" hidden></div>'
+    +'<div class="bar"><button class="btn" data-act="save">'
+    +(existing?'Update':'Add')+' comment</button>'
+    +'<button class="btn" data-act="cancel">Cancel</button></div></div></td>';
+  const after=cmp.querySelector('tr[data-thread="'+id+'"]')||tr;
+  after.parentNode.insertBefore(row,after.nextSibling);
+  // Show the range you are about to comment on, so "the wrong line" is visible
+  // before it is posted rather than after.
+  if(start&&start!==l){
+    [...tr.parentNode.children].forEach(t=>{
+      if(t.classList.contains('cl')&&t.dataset.path===p&&t.dataset.side===s
+         &&+t.dataset.line>=start&&+t.dataset.line<=l)t.classList.add('sel');});
+  }else tr.classList.add('sel');
+  row.querySelector('textarea').focus();
+}
+
+function saveBox(box){
+  const body=box.querySelector('textarea').value.trim();
+  if(!body){box.querySelector('textarea').focus();return}
+  const id=box.dataset.id,path=box.dataset.path,line=+box.dataset.line;
+  const side=box.dataset.side,start=box.dataset.start?+box.dataset.start:null;
+  const tr=rowFor(path,line,side);
+  const code=tr?tr.dataset.code:'';
+  const i=CM.comments.findIndex(c=>c.id===id);
+  const c={id:id,path:path,line:line,side:side,start_line:start,body:body,code:code};
+  if(i<0)CM.comments.push(c); else CM.comments[i]=c;
+  closeBoxes();
+  cmp.querySelectorAll('tr[data-thread="'+id+'"]').forEach(t=>t.remove());
+  if(!tr){paintPending();return}
+  const row=document.createElement('tr');
+  row.className='box';row.dataset.thread=id;
+  const at=path.split('/').pop()+':'+((start&&start!==line)?start+'–'+line:line);
+  row.innerHTML='<td class="cw" colspan="3"><div class="thr"><div class="who">'
+    +'<strong>pending</strong> · <span title="'+esc(path)+'">'+esc(at)+'</span>'
+    +' · sends with the review</div>'
+    +'<div class="prev" data-body></div>'
+    +'<div class="bar"><button class="btn" data-act="edit" data-id="'+id+'">Edit</button>'
+    +'<button class="btn" data-act="del" data-id="'+id+'">Delete</button></div></div></td>';
+  tr.parentNode.insertBefore(row,tr.nextSibling);
+  render(body,row.querySelector('[data-body]'));
+  paintPending();
+}
+
+function paintPending(){
+  const n=CM.comments.length;
+  const c=document.getElementById('pcount');
+  if(c)c.textContent=n?(n+' line comment'+(n===1?'':'s')+' pending'):'no line comments yet';
+  const list=document.getElementById('plist');
+  if(!list)return;
+  list.innerHTML=n?('<div class="tw"><table><thead><tr><th>where</th><th>the line</th>'
+    +'<th>comment</th><th></th></tr></thead><tbody>'
+    +CM.comments.map(x=>'<tr><td><code>'+esc(x.path.split("/").pop())+':'
+      +(x.start_line&&x.start_line!==x.line?x.start_line+'–'+x.line:x.line)+'</code>'
+      +'<div class="sub">'+(x.side==='LEFT'?'base':'head')+'</div></td>'
+      +'<td><code>'+esc((x.code||'').trim().slice(0,72))+'</code></td>'
+      +'<td>'+esc(x.body.length>90?x.body.slice(0,90)+'…':x.body)+'</td>'
+      +'<td><button class="btn" data-act="jump" data-id="'+x.id+'">show</button> '
+      +'<button class="btn" data-act="del" data-id="'+x.id+'">delete</button></td></tr>').join('')
+    +'</tbody></table></div>'):'';
+}
+
+function send(){
+  const ev=(cmp.querySelector('input[name=ev]:checked')||{}).value||'COMMENT';
+  const body=document.getElementById('rbody').value;
+  const n=CM.comments.length;
+  const msg=document.getElementById('sendmsg'), go=document.getElementById('go');
+  if(ev==='ISSUE_COMMENT'&&n){
+    msg.textContent='a plain comment cannot carry line comments — choose Comment';
+    msg.className='sub bad';return;
+  }
+  if(!confirm('Post to '+CM.repo+' #'+CM.pr+' now?\\n\\n'+EVL[ev]
+      +'\\n'+n+' line comment'+(n===1?'':'s')
+      +'\\nsummary: '+(body.trim()?body.trim().length+' characters':'(empty)')
+      +'\\n\\nThis is public, under your account.'))return;
+  go.disabled=true;msg.className='sub';msg.textContent='posting…';
+  fetch('review',{method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({repo:CM.repo,pr:CM.pr,sha:CM.sha,event:ev,body:body,
+      comments:CM.comments.map(c=>({path:c.path,line:c.line,side:c.side,
+        start_line:c.start_line,body:c.body}))})})
+  .then(r=>r.json()).then(d=>{
+    if(d.error){msg.textContent=d.error;msg.className='sub bad';go.disabled=false;return}
+    CM.sent=true;msg.textContent='';
+    document.getElementById('sent').innerHTML='<div class="sent"><strong class="ok">Sent.</strong> '
+      +esc(d.kind)+' with '+d.count+' line comment'+(d.count===1?'':'s')+' — '
+      +'<a href="'+esc(d.url)+'">open it on GitHub</a>'
+      +(d.ledger?'<div class="sub">'+esc(d.ledger)+'</div>':'')
+      +'<div class="sub">The To-do board still shows the old state until it is synced.</div>'
+      +'</div>';
+    go.textContent='Sent';
+  }).catch(()=>{msg.textContent='lost the server — nothing was posted';
+    msg.className='sub bad';go.disabled=false});
+}
+
+cmp.addEventListener('click',e=>{
+  const gut=e.target.closest('td.n.hit');
+  if(gut){
+    const tr=gut.closest('tr.cl');
+    const p=tr.dataset.path,l=+tr.dataset.line,s=tr.dataset.side;
+    // Shift-click extends the last click into a range, but only within one file
+    // and one side — a range that crosses either is not a thing GitHub accepts.
+    let start=null;
+    if(e.shiftKey&&CM.anchor&&CM.anchor.path===p&&CM.anchor.side===s&&CM.anchor.line<l)
+      start=CM.anchor.line;
+    else CM.anchor={path:p,line:l,side:s};
+    openBox(tr,null,start);return;
+  }
+  const tab=e.target.closest('.tab');
+  if(tab&&tab.dataset.ct){
+    const box=tab.closest('.cbox'),ta=box.querySelector('textarea'),pv=box.querySelector('.prev');
+    box.querySelectorAll('.tab').forEach(t=>t.classList.toggle('on',t===tab));
+    const p=tab.dataset.ct==='p';
+    ta.hidden=p;pv.hidden=!p;if(p)render(ta.value,pv);return;
+  }
+  if(tab&&tab.dataset.rt){
+    const ta=document.getElementById('rbody'),pv=document.getElementById('rprev');
+    tab.parentNode.querySelectorAll('.tab').forEach(t=>t.classList.toggle('on',t===tab));
+    const p=tab.dataset.rt==='p';
+    ta.hidden=p;pv.hidden=!p;if(p)render(ta.value,pv);return;
+  }
+  const act=e.target.closest('[data-act]');
+  if(!act)return;
+  const a=act.dataset.act;
+  if(a==='cancel'){closeBoxes();return}
+  if(a==='save'){saveBox(act.closest('.cbox'));return}
+  if(a==='del'){
+    const id=act.dataset.id;
+    CM.comments=CM.comments.filter(c=>c.id!==id);
+    cmp.querySelectorAll('tr[data-thread="'+id+'"]').forEach(t=>t.remove());
+    paintPending();return;
+  }
+  if(a==='edit'||a==='jump'){
+    const c=CM.comments.find(x=>x.id===act.dataset.id);
+    if(!c)return;
+    const tr=rowFor(c.path,c.line,c.side);
+    if(!tr)return;
+    const box=tr.closest('details'); if(box)box.open=true;
+    tr.scrollIntoView({block:'center'});
+    if(a==='edit')openBox(tr,c,c.start_line);
+    return;
+  }
+});
+document.getElementById('cmp').addEventListener('click',e=>{
+  if(e.target.id==='c-reload'&&CM.pr)openPR(CM.repo,CM.pr,true);
+});
+document.addEventListener('click',e=>{
+  const o=e.target.closest('[data-open]');
+  if(o){e.preventDefault();const[r,n]=o.dataset.open.split('#');openPR(r,n,false)}
+  if(e.target.id==='go')send();
+  if(e.target.id==='c-load'){
+    const r=document.getElementById('c-repo').value.trim();
+    const n=document.getElementById('c-pr').value.trim().replace(/^#/,'');
+    if(r&&n)openPR(r,n,false);
+  }
+});
+document.addEventListener('keydown',e=>{
+  if(e.key==='Enter'&&e.target.id==='c-pr'){e.preventDefault();
+    document.getElementById('c-load').click()}
+});
+// A tab closed with comments in it loses them — they live in the page, never on
+// the server, so nothing half-written can be posted by anything but you.
+window.addEventListener('beforeunload',e=>{
+  if(CM.comments.length&&!CM.sent){e.preventDefault();e.returnValue=''}
+});
+
+// ?pr=4245 — one link straight into the composer, so `bench hub --pr 4245`, a
+// bookmark and a paste into a chat all land on the diff rather than the board.
+const qs=new URLSearchParams(location.search);
+if(qs.get('pr'))openPR((qs.get('repo')||'').trim()||document.getElementById('c-repo').value.trim(),
+                       qs.get('pr').replace(/^#/,''),false);
 """
 
 
@@ -640,6 +1332,141 @@ def triage_page(theme="auto"):
 # on its own thread, polled by the browser. Nothing runs on the request path,
 # because this is a single-threaded server — a synchronous sweep would freeze the
 # page it is refreshing. A job already running is joined, not started twice.
+# ------------------------------------------------------------------ report ---
+# What happened today, across the three repos and nothing else. Upstream is
+# deliberately not in here: this is a report on your own work, and the one view
+# that looks at apache/logging-log4j2 is the To-do board, which reads.
+#
+# One file per day under .bench/hub/report, because a day that has passed does
+# not change and re-deriving it from git every load would be slower and would
+# lose the days when a clone was elsewhere. Today's file is rewritten on every
+# refresh; yesterday's is left exactly as it was written.
+REPORT_DIR = WORKOUT / ".bench" / "hub" / "report"
+REPORT_KEEP = 60
+
+
+def today_str():
+    """Local, not UTC. A daily report is read by someone in a timezone."""
+    return datetime.now().strftime("%Y-%m-%d")
+
+
+def repo_slug(path):
+    """owner/name from origin, for the API half. Returns "" for a clone with no
+    origin, which is not an error — the git half of the report still works."""
+    url = git(path, "remote", "get-url", "origin")
+    m = re.search(r"[:/]([\w.-]+/[\w.-]+?)(?:\.git)?$", url)
+    return m.group(1) if m else ""
+
+
+def day_commits(path, day):
+    """Commits authored on `day`, on every local branch, not just the checked-out
+    one — a day's work often sits on a feature branch that was never merged."""
+    fmt = "%H%x1f%s%x1f%an%x1f%cI%x1f%D"
+    raw = git(path, "log", "--all", "--no-merges", "--date-order",
+              f"--since={day} 00:00:00", f"--until={day} 23:59:59", f"--format={fmt}")
+    out = []
+    for line in raw.split("\n"):
+        if not line.strip():
+            continue
+        parts = line.split("\x1f")
+        if len(parts) < 4:
+            continue
+        sha, subject, who, when = parts[0], parts[1], parts[2], parts[3]
+        stat = git(path, "show", "--shortstat", "--format=", sha)
+        files = adds = dels = 0
+        m = re.search(r"(\d+) files? changed", stat)
+        if m:
+            files = int(m.group(1))
+        m = re.search(r"(\d+) insertions?", stat)
+        if m:
+            adds = int(m.group(1))
+        m = re.search(r"(\d+) deletions?", stat)
+        if m:
+            dels = int(m.group(1))
+        out.append({"sha": sha[:8], "subject": subject, "who": who, "when": when,
+                    "files": files, "adds": adds, "dels": dels})
+    return out
+
+
+def day_prs(slug, day):
+    """Pull requests on your own repo that moved on `day`. Read-only, and it
+    degrades to an empty list rather than failing the report when gh is not
+    logged in or the laptop is offline."""
+    if not slug:
+        return []
+    d = gh_json("pr", "list", "-R", slug, "--state", "all", "--limit", "50",
+                "--search", f"updated:>={day}", "--json",
+                "number,title,state,createdAt,mergedAt,closedAt,url") or []
+    out = []
+    for p in d:
+        moved = []
+        for label, key in (("opened", "createdAt"), ("merged", "mergedAt"),
+                           ("closed", "closedAt")):
+            v = p.get(key) or ""
+            if v[:10] == day:
+                moved.append(label)
+        if moved:
+            out.append({"number": p.get("number"), "title": p.get("title", ""),
+                        "url": p.get("url", ""), "state": p.get("state", ""),
+                        "moved": moved})
+    return out
+
+
+def report_build(day=None):
+    """Derive one day and write it. Returns the report."""
+    day = day or today_str()
+    repos = []
+    for name, path, role, _ in REPOS:
+        if not (path / ".git").exists():
+            repos.append({"name": name, "role": role, "missing": str(path)})
+            continue
+        s = repo_state(path)
+        slug = repo_slug(path)
+        commits = day_commits(path, day)
+        repos.append({
+            "name": name, "role": role, "slug": slug,
+            "branch": s.get("branch", ""), "dirty": s.get("dirty", 0),
+            "ahead": s.get("ahead", 0), "behind": s.get("behind", 0),
+            "commits": commits,
+            "adds": sum(c["adds"] for c in commits),
+            "dels": sum(c["dels"] for c in commits),
+            "prs": day_prs(slug, day) if day == today_str() else [],
+        })
+    d = {"day": day, "at": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
+         "repos": repos}
+    REPORT_DIR.mkdir(parents=True, exist_ok=True)
+    (REPORT_DIR / f"{day}.json").write_text(json.dumps(d, indent=1))
+    for old in sorted(REPORT_DIR.glob("20*.json"))[:-REPORT_KEEP]:
+        old.unlink()
+    return d
+
+
+def report_days():
+    """Newest first. The filename is the day, so no file needs opening to sort."""
+    return sorted((p.stem for p in REPORT_DIR.glob("20*.json")), reverse=True)
+
+
+def report_load(day=None):
+    """Today's report if it has been written, otherwise the newest there is."""
+    days = report_days()
+    want = day or today_str()
+    if want not in days:
+        want = days[0] if days else None
+    if not want:
+        return None
+    try:
+        return json.loads((REPORT_DIR / f"{want}.json").read_text())
+    except Exception:
+        return None
+
+
+def report_sweep():
+    d = report_build()
+    n = sum(len(r.get("commits") or []) for r in d["repos"])
+    p = sum(len(r.get("prs") or []) for r in d["repos"])
+    return f"{d['day']}: {n} commits, {p} PRs"
+
+
 def fetch_all():
     """`git fetch` in all three clones, so 'behind' means today rather than
     whenever you last fetched by hand. Fetch only — it never touches a worktree."""
@@ -675,9 +1502,12 @@ JOBS = {
     "todo": ("To do", lambda: f"{len(todo_refresh()['rows'])} PRs"),
     "triage": ("Backlog triage", triage_sweep),
     "fetch": ("Repo status", fetch_all),
+    "report": ("Daily report", report_sweep),
     "all": ("Everything", sync_all),
 }
-SYNC_ORDER = ("fetch", "todo", "triage")
+# report runs after fetch, so the day it writes counts commits that were only
+# fetched a moment ago rather than whatever was local this morning.
+SYNC_ORDER = ("fetch", "todo", "report", "triage")
 
 LOCK_DIR = WORKOUT / ".bench" / "hub" / "locks"
 _jobs_lock = threading.Lock()
@@ -810,6 +1640,10 @@ def todo_html(todo, age):
                        else f' · <em>{html.escape(r["verdict"])}</em>')
             who = ("<strong>yours</strong>" if r["role"] == "mine"
                    else f'review of @{html.escape(r["author"])}{verdict}')
+            # Straight from the row into the composer, at the head it is at now.
+            go = ("" if r["state"] != "OPEN" else
+                  f'<button class="btn" data-open="{html.escape(r["repo"])}#{r["pr"]}">'
+                  f"Review →</button>")
             body += (
                 f'<tr><td class="sub">{html.escape(r["repo"])}</td>'
                 f'<td><a href="https://github.com/{html.escape(r["repo"])}/pull/{r["pr"]}">'
@@ -817,12 +1651,13 @@ def todo_html(todo, age):
                 f'<td>{html.escape(r["title"][:66])}{flags}</td>'
                 f"<td>{who}</td>"
                 f'<td>{html.escape(r["updated"])}</td>'
-                f'<td class="sub">{html.escape(r["why"])}</td></tr>')
+                f'<td class="sub">{html.escape(r["why"])}</td>'
+                f"<td>{go}</td></tr>")
         cls = "bad" if key == "you" else ("warn" if key == "them" else "")
         out.append(
             f'<h3 class="{cls}">{title} <span class="sub">({len(rows)}) — {blurb}</span></h3>'
             f'<div class="tw"><table><thead><tr><th>repo</th><th>PR</th><th>title</th>'
-            f'<th>role</th><th>updated</th><th>why</th></tr></thead>'
+            f'<th>role</th><th>updated</th><th>why</th><th></th></tr></thead>'
             f"<tbody>{body}</tbody></table></div>")
 
     out.append('<p class="sub">Two of these signals exist nowhere on GitHub, and come '
@@ -836,6 +1671,75 @@ def todo_html(todo, age):
                'bench review &lt;n&gt;              # the mechanical facts\n'
                'bench hub --refresh          # re-fetch this view</code></pre>')
     return "".join(out)
+
+
+def compose_html(todo):
+    """The composer's server-rendered half: which PRs are waiting on a review
+    from you, and the box that loads one. The diff, the comment boxes and the
+    Send are built in the page, from JSON, because a comment is a draft until
+    you send it and a draft has no business on a server."""
+    rows = [r for r in (todo or {}).get("rows", [])
+            if r["bucket"] == "you" and r["state"] == "OPEN"]
+    # An unsent write-up first: it is the one where the work is already done and
+    # only the posting is missing.
+    rows.sort(key=lambda r: (not r["unsent"], r["repo"], -int(r["pr"])))
+
+    cells = []
+    for r in rows:
+        draft, draft_file = draft_body(r["pr"])
+        wrote = (f'<span class="pill ok">write-up</span> <span class="sub">{html.escape(draft_file)}</span>'
+                 if draft else '<span class="sub">—</span>')
+        flags = ' <span class="pill warn">unsent</span>' if r["unsent"] else ""
+        flags += ' <span class="pill warn">pushed since review</span>' if r["moved"] else ""
+        cells.append(f'<tr><td class="sub">{html.escape(r["repo"])}</td>'
+                 f'<td><a href="https://github.com/{html.escape(r["repo"])}/pull/{r["pr"]}">'
+                 f'#{r["pr"]}</a></td>'
+                 f'<td>{html.escape(r["title"][:60])}{flags}</td>'
+                 f'<td class="sub">{html.escape(r["why"])}</td><td>{wrote}</td>'
+                 f'<td><button class="btn" data-open="{html.escape(r["repo"])}#{r["pr"]}">'
+                 f"Review →</button></td></tr>")
+
+    # The board can hold thirty of these. All of them above the composer buries
+    # the thing you came here to use, so the top of the queue is the list and the
+    # tail is one click away.
+    head_n, rest = 10, ""
+    if len(cells) > head_n:
+        rest = (f'<details><summary class="sub">and {len(cells) - head_n} more '
+                f'waiting on you</summary><div class="tw"><table><tbody>'
+                f'{"".join(cells[head_n:])}</tbody></table></div></details>')
+    body = "".join(cells[:head_n])
+    unsent = sum(1 for r in rows if r["unsent"])
+
+    note = ('<p class="bad"><strong>Read-only.</strong> <code>BENCH_HUB_READONLY</code> is set, '
+            'so the boxes and the preview work and <em>Send</em> refuses.</p>' if READONLY else "")
+
+    return f"""<div class="hd"><h2>Send a review</h2>
+    <span class="sub">the diff, the line comments and the summary — posted with one Send</span>
+    {button("todo", "Sync now")}<span class="sub" data-msg="todo"></span></div>
+    {note}
+    <p class="sub">The only view here that writes to GitHub. It posts through
+    <code>gh</code>, as you, and posts nothing until you press <em>Send</em> and confirm
+    what it names. The summary is prefilled from the paste-ready block of the write-up
+    under <code>docs/pr-reviews/</code>, if there is one — the same block
+    <code>bench followup --comment &lt;n&gt;</code> prints. <em>Preview</em> renders with this
+    site's own markdown, which is close to GitHub's and not identical: it is here to catch a
+    broken list or an unclosed code fence, not to be the last word on spacing.</p>
+
+    <h3>Waiting on you <span class="sub">({len(rows)} from the To-do board ·
+    {unsent} written and never posted)</span></h3>
+    <div class="tw"><table><thead><tr><th>repo</th><th>PR</th><th>title</th><th>why</th>
+    <th>write-up</th><th></th></tr></thead>
+    <tbody>{body or '<tr><td colspan=6 class=sub>nothing is waiting on you — or the board has never been synced</td></tr>'}</tbody>
+    </table></div>{rest}
+
+    <h3>Or open any pull request</h3>
+    <div class="bar">
+      <input id="c-repo" value="{html.escape(UPSTREAM)}" size="30" aria-label="repository">
+      <input id="c-pr" class="n" placeholder="4245" aria-label="PR number">
+      <button class="btn" id="c-load">Load the diff</button>
+      <span class="sub">any repository you can see — the composer is not Log4j-specific</span>
+    </div>
+    <div id="cmp"><p class="sub">Nothing loaded. Pick a PR above.</p></div>"""
 
 
 def status_badge(s):
@@ -853,7 +1757,100 @@ def status_badge(s):
     return " ".join(bits)
 
 
-def build():
+def report_html(rep, days):
+    """Today across the three repos, then a strip of the days before it.
+
+    Detail for one day only. A month of full commit lists on one page is not a
+    report, it is a log — the strip is there to show the shape, and any day in it
+    is one click away from being the detailed one.
+    """
+    if not rep:
+        return f"""<div class="hd"><h2>Daily report</h2>{button("report", "Build today")}
+        <span class="sub" data-msg="report"></span></div>
+        <p>No report yet. This one is derived from the three clones and your own
+        GitHub repos — nothing upstream — and it is written once a day by the
+        launchd agent. Press <em>Build today</em>, or:</p>
+        <pre><code>bench hub --sync report</code></pre>"""
+
+    day = rep.get("day", "")
+    is_today = day == today_str()
+    tot_c = sum(len(r.get("commits") or []) for r in rep["repos"])
+    tot_a = sum(r.get("adds", 0) for r in rep["repos"])
+    tot_d = sum(r.get("dels", 0) for r in rep["repos"])
+    tot_p = sum(len(r.get("prs") or []) for r in rep["repos"])
+
+    when = " · today" if is_today else ""
+    if not is_today:
+        # Distinguish "you clicked 2026-08-04" from "today has not been built yet,
+        # so here is the last day that was" — they look identical otherwise.
+        when = " · today has no report yet" if day == (days[0] if days else "") else ""
+    head = (f'<div class="hd"><h2>Daily report</h2>'
+            f'{button("report", "Rebuild today")}'
+            f'<span class="sub" data-msg="report"></span></div>'
+            f'<p class="sub">{html.escape(day)}{when}'
+            f' · built {html.escape(rep.get("at", ""))}'
+            f'{"" if is_today else " · <a href=\"?#report\">back to today</a>"}</p>')
+
+    if not tot_c and not tot_p:
+        head += ('<p><strong>Nothing committed in any of the three.</strong> '
+                 'A quiet day is a result, so it is still written down.</p>')
+    else:
+        pr_bit = ""
+        if tot_p:
+            pr_bit = f", {tot_p} pull request{'' if tot_p == 1 else 's'} moved"
+        head += (f'<p><strong>{tot_c} commit{"" if tot_c == 1 else "s"}</strong>, '
+                 f'<span class="ok">+{tot_a}</span> <span class="bad">−{tot_d}</span>'
+                 f'{pr_bit}.</p>')
+
+    cards = []
+    for r in rep["repos"]:
+        if r.get("missing"):
+            cards.append(f"""<div class="card"><h3>{html.escape(r["name"])}</h3>
+            <div class="sub">no clone at <code>{html.escape(r["missing"])}</code></div></div>""")
+            continue
+        commits = r.get("commits") or []
+        rows = "".join(
+            f'<tr><td><code>{html.escape(c["sha"])}</code></td>'
+            f'<td>{html.escape(c["subject"])}</td>'
+            f'<td class="num"><span class="ok">+{c["adds"]}</span> '
+            f'<span class="bad">−{c["dels"]}</span></td>'
+            f'<td class="num sub">{html.escape(c["when"][11:16])}</td></tr>'
+            for c in commits)
+        body = (f'<table class="tbl"><tbody>{rows}</tbody></table>' if rows
+                else '<p class="sub">nothing committed</p>')
+
+        prs = r.get("prs") or []
+        if prs:
+            body += '<div class="sub" style="margin-top:8px">pull requests</div>' + "".join(
+                f'<div class="kv"><a href="{html.escape(p["url"], quote=True)}">'
+                f'#{p["number"]}</a> {html.escape(p["title"])} '
+                f'<em>{html.escape(", ".join(p["moved"]))}</em></div>' for p in prs)
+
+        flags = []
+        if r.get("dirty"):
+            flags.append(f'{r["dirty"]} uncommitted')
+        if r.get("ahead"):
+            flags.append(f'{r["ahead"]} unpushed')
+        if r.get("behind"):
+            flags.append(f'{r["behind"]} behind')
+        cards.append(f"""<div class="card"><div class="role">{html.escape(r.get("role", ""))}</div>
+        <h3>{html.escape(r["name"])}</h3>
+        <div class="sub">{html.escape(r.get("branch", ""))}
+        {(" · " + " · ".join(flags)) if flags else ""}</div>
+        <div style="margin-top:10px">{body}</div></div>""")
+
+    strip = ""
+    others = [d for d in days if d != day][:14]
+    if others:
+        links = " ".join(f'<a href="?day={html.escape(d, quote=True)}#report">{html.escape(d)}</a>'
+                         for d in others)
+        strip = (f'<div class="hd" style="margin-top:20px"><h3>Days before this one</h3></div>'
+                 f'<p class="sub">{links}</p>')
+
+    return head + f'<div class="cards">{"".join(cards)}</div>' + strip
+
+
+def build(day=None):
     states = {name: repo_state(p) for name, p, _, _ in REPOS}
     cmds = {c: installed(c) for c in ("bench", "oss-cli", "kb")}
     led, evid, files = reviews()
@@ -865,6 +1862,8 @@ def build():
     nav = ['<h1>bench hub</h1><div class="sub">three repos, one page</div>',
            '<div class="grp">start</div>',
            f'<a href="#todo" data-t="todo">To do{f" <b>({n_you})</b>" if n_you else ""}</a>',
+           '<a href="#compose" data-t="compose">Send a review</a>',
+           f'<a href="#report" data-t="report">Daily report</a>',
            '<a href="#home" data-t="home">Overview &amp; status</a>',
            '<a href="#flow" data-t="flow">Reviewing a PR</a>',
            '<a href="#reviews" data-t="reviews">Reviews</a>',
@@ -876,6 +1875,13 @@ def build():
 
     # ---- to do
     secs.append(f'<section id="todo">{todo_html(todo, age)}</section>')
+
+    # ---- compose
+    secs.append(f'<section id="compose" hidden>{compose_html(todo)}</section>')
+
+    # ---- daily report
+    secs.append(f'<section id="report" hidden>'
+                f'{report_html(report_load(day), report_days())}</section>')
 
     # ---- home
     cards = []
@@ -981,6 +1987,7 @@ def build():
 <div class="wrap"><nav>{''.join(nav)}</nav><main>{''.join(secs)}
 <div class="foot">generated {stamp} · the working tree is read on every request ·
 sync pulls what only GitHub knows</div></main></div>
+<script id="ev-json" type="application/json">{json.dumps(EVENTS)}</script>
 <script>{JS}</script></body></html>"""
 
 
@@ -1121,6 +2128,42 @@ class Handler(BaseHTTPRequestHandler):
     def log_message(self, *a):
         pass
 
+    def _reply(self, body, ctype, code=200):
+        self.send_response(code)
+        self.send_header("Content-Type", ctype)
+        self.send_header("Content-Length", str(len(body)))
+        self.send_header("Cache-Control", "no-store")
+        self.end_headers()
+        self.wfile.write(body)
+
+    def _json(self, obj, code=200):
+        self._reply(json.dumps(obj).encode(), "application/json", code)
+
+    def do_POST(self):
+        """Two endpoints, both from the composer: render markdown, and send.
+
+        Errors come back as 200 with an `error` key rather than a status code —
+        every one of them is a message for the person writing the review ("line
+        must be part of the diff", "you cannot approve your own pull request"),
+        and a 422 in the console is not that message.
+        """
+        path = urlparse(self.path).path
+        try:
+            n = int(self.headers.get("Content-Length") or 0)
+            req = json.loads(self.rfile.read(n) or b"{}")
+        except Exception:
+            self._json({"error": "malformed request"}, 400)
+            return
+        try:
+            if path == "/preview":
+                self._json({"html": md_to_html(req.get("text") or "")})
+            elif path == "/review":
+                self._json(send_review(req))
+            else:
+                self._json({"error": f"no such endpoint: {path}"}, 404)
+        except Exception as e:
+            self._json({"error": str(e) or e.__class__.__name__})
+
     def do_GET(self):
         q = parse_qs(urlparse(self.path).query)
         if self.path.startswith("/triage.html"):
@@ -1141,6 +2184,17 @@ class Handler(BaseHTTPRequestHandler):
                            else job_state(name))
             body = json.dumps(payload).encode()
             ctype = "application/json"
+        elif self.path.startswith("/pr.json"):
+            # On the request path on purpose: you asked for this PR, and it is one
+            # `gh pr view` plus one paginated files call, cached by head SHA after
+            # the first. The server is threaded, so the page stays alive meanwhile.
+            try:
+                body = json.dumps(pr_bundle(q.get("repo", [UPSTREAM])[0],
+                                            q.get("pr", [""])[0],
+                                            force=bool(q.get("reload")))).encode()
+            except Exception as e:
+                body = json.dumps({"error": str(e) or e.__class__.__name__}).encode()
+            ctype = "application/json"
         elif self.path.startswith("/refresh"):
             # Explicit, synchronous, and it says how long it took. The background
             # refresher exists so a page load never waits on twenty API calls.
@@ -1154,14 +2208,21 @@ class Handler(BaseHTTPRequestHandler):
                     for n, p, _, _ in REPOS)}).encode()
             ctype = "application/json"
         else:
-            body = build().encode()
+            # ?day= picks which day the report renders in detail; every other
+            # view is the same page regardless.
+            body = build(day=(q.get("day", [""])[0] or None)).encode()
             ctype = "text/html; charset=utf-8"
-        self.send_response(200)
-        self.send_header("Content-Type", ctype)
-        self.send_header("Content-Length", str(len(body)))
-        self.send_header("Cache-Control", "no-store")
-        self.end_headers()
-        self.wfile.write(body)
+        self._reply(body, ctype)
+
+
+def hub_alive(port):
+    """Is the thing on this port one of these? /status.json is answered by no
+    other server, so this cannot mistake somebody's dev server for the hub."""
+    try:
+        with urlopen(f"http://127.0.0.1:{port}/status.json", timeout=2) as r:
+            return "stamp" in json.loads(r.read())
+    except Exception:
+        return False
 
 
 def main():
@@ -1178,6 +2239,10 @@ def main():
                     help="re-fetch the To-do view from GitHub, then exit")
     ap.add_argument("--sync", choices=sorted(JOBS), metavar="JOB",
                     help=f"run one sync job and exit: {', '.join(sorted(JOBS))}")
+    ap.add_argument("--pr", metavar="N",
+                    help="open the review composer on this pull request")
+    ap.add_argument("--repo", default=UPSTREAM,
+                    help=f"which repository --pr means (default {UPSTREAM})")
     ap.add_argument("--install", action="store_true",
                     help="install the launchd agent so the site starts at login")
     ap.add_argument("--uninstall", action="store_true", help="remove that agent")
@@ -1214,8 +2279,24 @@ def main():
         return
 
     url = f"http://localhost:{args.port}/"
+    if args.pr:
+        url += f"?repo={quote(args.repo)}&pr={quote(str(args.pr).lstrip('#'))}"
+
+    # The launchd agent holds this port all day, so the second `bench hub` of the
+    # day used to die on "cannot bind" — which is exactly wrong, because the page
+    # it wanted is already being served. If something on the port answers as a
+    # hub, hand it the browser and get out of the way.
+    if hub_alive(args.port):
+        print(f"a hub is already serving {url}", file=sys.stderr)
+        if not args.no_open:
+            webbrowser.open(url)
+        return
+
     try:
-        srv = HTTPServer(("127.0.0.1", args.port), Handler)
+        # Threaded since the composer: loading a diff is a GitHub round trip on
+        # the request path, and on a single-threaded server that froze every other
+        # tab — including the preview the same page was waiting on.
+        srv = ThreadingHTTPServer(("127.0.0.1", args.port), Handler)
     except OSError as e:
         sys.exit(f"error: cannot bind {url} — {e}")
     # Refresh off the request path, so the first page load is instant even when
@@ -1234,6 +2315,15 @@ def main():
             if TRIAGE_MAX_AGE_H > 0 and (t_age is None or t_age > TRIAGE_MAX_AGE_H * 3600):
                 s = job_run("triage")
                 print(f"triage {'swept' if s['ok'] else 'sweep failed'}: {s['msg']}",
+                      file=sys.stderr)
+            # The daily report writes itself. Under launchd this is what makes it
+            # daily at all: at midnight today_str() names a new file, which does
+            # not exist, so the first pass after it writes the new day. Nothing
+            # has to be pressed, and yesterday's file is never rewritten.
+            f = REPORT_DIR / f"{today_str()}.json"
+            if not f.exists() or time.time() - f.stat().st_mtime > 1800:
+                s = job_run("report")
+                print(f"report {'built' if s['ok'] else 'FAILED'}: {s['msg']}",
                       file=sys.stderr)
             time.sleep(300)
     threading.Thread(target=refresher, daemon=True).start()
