@@ -1,0 +1,34 @@
+# Dependency updates, opened as pull requests.
+#
+# This repository builds nineteen sample applications against several Log4j
+# versions, so the dependency surface is real -- and a bench that silently rots
+# against old Spring, Jakarta or driver versions stops representing what users
+# actually run, which is the entire point of it.
+#
+# Grouped for routine bumps: ungrouped Dependabot across this many modules opens
+# a wall of pull requests, each costing a ~13-minute matrix run, and the result
+# is merged unread. Security updates stay ungrouped so a CVE fix lands alone.
+version: 2
+updates:
+  - package-ecosystem: maven
+    directory: "/"
+    schedule:
+      interval: weekly
+      day: monday
+    open-pull-requests-limit: 5
+    groups:
+      routine:
+        patterns: ["*"]
+        update-types: ["minor", "patch"]
+    labels: ["dependencies"]
+    commit-message:
+      prefix: "deps"
+
+  - package-ecosystem: github-actions
+    directory: "/"
+    schedule:
+      interval: weekly
+      day: monday
+    labels: ["dependencies", "ci"]
+    commit-message:
+      prefix: "ci"

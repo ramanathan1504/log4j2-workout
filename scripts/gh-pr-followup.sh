@@ -1,4 +1,15 @@
 #!/usr/bin/env bash
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 #
 # gh-pr-followup.sh — what moved on a reviewed pull request since you reviewed it.
 #
@@ -51,7 +62,8 @@ while [[ $# -gt 0 ]]; do
     --since)   SINCE="${2:-}"; [[ -n $SINCE ]] || die "--since needs a PR number"; shift 2 ;;
     --write)   WRITE=1; shift ;;
     --repo)    REPO="$2"; shift 2 ;;
-    -h|--help) sed -n '2,22p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//'; exit 0 ;;
+    -h|--help) sed -n '/limitations under the License\./,$p' "${BASH_SOURCE[0]}" \
+                 | awk 'NR==1 {next} /^#/ {sub(/^# ?/, ""); print; next} {exit}'; exit 0 ;;
     -*)        die "unknown flag: $1" ;;
     *)         ONLY="$1"; shift ;;
   esac

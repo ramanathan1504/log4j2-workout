@@ -1,4 +1,15 @@
 #!/usr/bin/env python3
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 """
 hub.py — one local site over all three repos.
 
@@ -55,44 +66,21 @@ KB = Path(os.environ.get("BENCH_KB_DIR") or HOME / "own repo" / "knowledge-creat
 # list read as three projects you have to hold in your head, which is what this
 # page looked like and what it is not. OSS-CLI is the one that knows; a bench and
 # a kb are the two things it cannot do alone.
+# This page is about this bench. The other repositories are presented by
+# `oss-cli serve`, which owns that job -- listing them here too meant two pages
+# describing the same thing, which is two pages that must be kept in step.
 REPOS = [
-    ("oss-cli", OSSCLI, "core · knows", "facts on any repo from the API — no clone, any language"),
-    ("log4j2-workout", WORKOUT, "bench · runs", "real apps, real JVMs, the version matrix"),
-    ("knowledge-creator", KB, "kb · remembers", "harvest, file, index, retrieve"),
+    ("log4j2-workout", WORKOUT, "the bench", "real apps, real JVMs, the version × config × app matrix"),
 ]
 
 # Same ordering, and the label carries the relationship rather than just a repo
 # name. `kind` is what the sidebar groups by.
 DOCS = [
-    ("oss-cli", "core", OSSCLI, ["README.md", "COMMANDS.md", "SETUP.md", "DEVELOPING.md",
-                                 "MACOS_AUTOMATION.md", "CHANGELOG.md"]),
     ("log4j2-workout", "bench", WORKOUT, ["README.md", "CLAUDE.md", "docs/PR-REVIEW.md",
                                           "docs/BY-HAND.md", "docs/BENCH-NOTES.md", "docs/HANDOVER.md",
                                           "docs/GH-COMMANDS.md", "docs/FEATURE-MATRIX.md",
                                           "docs/ISSUES.md", "docs/GAPS.md"]),
-    ("knowledge-creator", "kb", KB, ["README.md", "SETUP.md", "DEVELOPING.md", "AI-OPTIONAL.md"]),
 ]
-
-# Where OSS-CLI records what is registered. Read so the page shows what is ACTUALLY
-# wired up rather than what this file hardcodes -- a repo present on disk but never
-# registered is a different state from one that is, and the difference is the whole
-# point of an extension model.
-EXT_REGISTRY = Path(os.environ.get("OSS_CLI_HOME") or (HOME / ".oss-cli")) / "extensions.json"
-
-
-def registered_extensions():
-    """[(name, kind, root, verbs)] from OSS-CLI's registry; empty when nothing is registered."""
-    try:
-        raw = json.loads(EXT_REGISTRY.read_text())
-    except Exception:
-        # Not an error: OSS-CLI may not be set up yet, and this page still works without it.
-        return []
-    out = []
-    for e in raw if isinstance(raw, list) else []:
-        out.append((e.get("name", "?"), (e.get("kind") or "?").lower(),
-                    e.get("root", ""), list((e.get("verbs") or {}).keys())))
-    return out
-
 
 # ---------------------------------------------------------------- markdown ---
 INLINE = [
@@ -1953,17 +1941,15 @@ def report_html(rep, days):
 
 
 def build(day=None):
-    # oss-cli is the one that may legitimately be absent as a clone: it is installed.
-    states = {name: repo_state(p, "oss-cli" if name == "oss-cli" else None)
-              for name, p, _, _ in REPOS}
-    cmds = {c: installed(c) for c in ("bench", "oss-cli", "kb")}
+    states = {name: repo_state(p) for name, p, _, _ in REPOS}
+    cmds = {c: installed(c) for c in ("bench",)}
     led, evid, files = reviews()
 
     todo, age = todo_load()
     triage = newest_triage()
 
     n_you = len([r for r in todo["rows"] if r["bucket"] == "you"]) if todo else 0
-    nav = ['<h1>oss-cli hub</h1><div class="sub">one core, and what plugs into it</div>',
+    nav = ['<h1>bench hub</h1><div class="sub">Apache Log4j, on real applications</div>',
            '<div class="grp">start</div>',
            f'<a href="#todo" data-t="todo">To do{f" <b>({n_you})</b>" if n_you else ""}</a>',
            '<a href="#compose" data-t="compose">Send a review</a>',
@@ -2001,38 +1987,12 @@ def build(day=None):
         f"<tr><td><code>{c}</code></td><td>{'<span class=ok>installed</span>' if p else '<span class=bad>not on PATH</span>'}</td>"
         f"<td><code>{html.escape(p or '—')}</code></td></tr>" for c, p in cmds.items())
 
-    # What OSS-CLI actually has registered, which is not the same as what is on disk.
-    # A repo can be present and still unregistered, and that difference is the whole
-    # point of an extension model -- so the page shows the registry, not this file.
-    exts = registered_extensions()
-    if exts:
-        ext_rows = "".join(
-            f"<tr><td><code>{html.escape(n)}</code></td><td>{html.escape(k)}</td>"
-            f"<td>{len(v)}</td><td><code>{html.escape(r)}</code></td></tr>"
-            for n, k, r, v in exts)
-        ext_html = (f'<div class="tw"><table><thead><tr><th>name</th><th>kind</th>'
-                    f'<th>verbs</th><th>root</th></tr></thead><tbody>{ext_rows}</tbody>'
-                    f'</table></div>')
-    else:
-        ext_html = ('<p class="sub">Nothing registered with OSS-CLI yet. The repos above are on '
-                    'disk, but OSS-CLI cannot dispatch to them until they are registered: '
-                    '<code>oss-cli ext add &lt;repo&gt;</code></p>')
-
-    secs.append(f"""<section id="home" hidden><div class="hd"><h2>One core, and what plugs into it</h2>
-    {button("fetch", "Fetch all three")}<span class="sub" data-msg="fetch"></span></div>
-    <p><strong>OSS-CLI knows.</strong> It reads any repository through the API, without a
-    clone, in any language — and that boundary is why it generalises. The cost is two
-    questions it cannot answer alone: <em>does this actually run?</em> and <em>have I worked
-    this out before?</em></p>
-    <p>A <strong>bench</strong> answers the first by executing something real; a
-    <strong>kb</strong> answers the second by remembering. Both are declared by an
-    <code>oss-ext.json</code> at a repo's root and called as child processes, so an extension
-    can be written in anything. One test decides where new work belongs: <em>does it need to
-    execute code against a real app?</em> If yes it is a bench; if it only needs to be
-    retrievable later it is the kb; if neither, it is OSS-CLI itself.</p>
+    secs.append(f"""<section id="home" hidden><div class="hd"><h2>This bench</h2>
+    {button("fetch", "Fetch")}<span class="sub" data-msg="fetch"></span></div>
+    <p>Apache Log4j, run against real applications on real JVMs across the version ×
+    config × app matrix. This page is the working surface: what is waiting on you, what
+    was reviewed, and what the last sweep found.</p>
     <div class="cards">{''.join(cards)}</div>
-    <h3>Registered with OSS-CLI</h3>
-    {ext_html}
     <h3>Installed commands</h3>
     <div class="tw"><table><thead><tr><th>command</th><th>state</th><th>path</th></tr></thead>
     <tbody>{inst}</tbody></table></div>
