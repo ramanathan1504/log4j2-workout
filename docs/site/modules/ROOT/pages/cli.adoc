@@ -509,30 +509,48 @@ A pack that loads but declares nothing would produce an empty matrix, and an
 empty matrix reports `0 cells, 0 failures` — which reads exactly like a pass. So
 each required declaration is checked at load and named if missing.
 
-== Posting upstream: the passphrase gate
+== Posting upstream: refused by default
 
 Reading a public repository is free to get wrong. Posting to one is not: a
 comment reaches everyone watching the thread, and the mailing list, the instant
 it is sent — and deleting it afterwards reaches neither.
 
-So every outward `POST` from the hub is gated by a passphrase, checked against
-the same `~/.oss-cli/upstream-guard.json` that OSS-CLI writes. One passphrase,
-both doors:
+So **every outward write is refused by default, and there is no setting that
+changes the default.** No stored credential satisfies it, no environment variable
+turns it off, and nothing is remembered between runs — because each of those
+becomes a thing switched on once and then forgotten, after which the protection
+exists only in the belief that it exists.
+
+Two independent things must both be true:
+
+[cols="1,3"]
+|===
+| Requirement | Why it is separate
+
+| The repository is **named on the command line**, as `--approve-upstream owner/name`
+| An approval that did not name a target would approve whatever the command happened to be pointed at. An approval for one repository is **not** an approval for another, so the name is compared, not merely counted.
+
+| The write is **confirmed now, by retyping the repository name**
+| Approval is per invocation and never remembered. A yes/no dialog is answered by reflex; retyping the target is the smallest thing that cannot be done without reading it.
+|===
 
 [source,bash]
 ----
-oss-cli setup --upstream-guard      # set it once
+./bench hub --approve-upstream apache/logging-log4j2   # permits posts, this run only
+oss-cli bench --approve-upstream apache/logging-log4j2 hub --pr 4234
 ----
 
-The browser asks for it at send time, *after* the existing confirm dialog. The
-two are deliberately different kinds of gate: a confirm is a reflex anyone clicks
-through, and this one cannot be satisfied by clicking.
+WARNING: The launchd agent does **not** pass `--approve-upstream`, so the always-on hub at login *cannot post at all*. Posting requires starting a hub by hand, deliberately, with the repository named. That is the intended asymmetry: the thing that runs unattended is the thing that must not be able to write.
 
-WARNING: Refusal is the default in both directions that matter. **No passphrase set means refused, not unguarded** — otherwise the protection would depend on remembering to switch it on. The check also runs before `check_anchors`, so a refused send spends no API calls and nothing has left the machine.
+The check also runs before `check_anchors`, so a refused send spends no API calls
+and nothing has left the machine. Unattended runs are refused even when approved
+— there is no terminal to confirm at, and a write nobody watched is a write
+nobody decided to make.
 
-Dispatching through OSS-CLI is gated the same way: `oss-ext.json` lists which
-verbs write outward, and `oss-cli bench hub` asks before the child process
-starts.
+This applies to every path equally: a command, a dispatched extension, a local
+Ollama model, a cloud model. **A model that has decided a comment should be
+posted has decided nothing** — it still comes through here, and here still asks
+the person.
 
 == Environment variables
 

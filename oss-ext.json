@@ -15,8 +15,15 @@
     "followup": "followup",
     "hub": "hub"
   },
-  "axes": ["app", "version", "config", "scenario"],
-
-  "writes": ["hub"],
-  "writesTo": "apache/logging-log4j2 (a post reaches the mailing list; there is no undo)"
+  "axes": [
+    "app",
+    "version",
+    "config",
+    "scenario"
+  ],
+  "writes": [
+    "hub"
+  ],
+  "writesTo": "apache/logging-log4j2",
+  "writesNote": "A post reaches every watcher and the mailing list at once; there is no undo."
 }

@@ -30,10 +30,7 @@ BENCH_HUB_READONLY=1 takes even that away.
 """
 
 import argparse
-import base64
 import fcntl
-import hashlib
-import hmac
 import html
 import json
 import os
@@ -598,37 +595,42 @@ def pr_bundle(repo, pr, force=False):
     return d
 
 
-GUARD_FILE = Path(os.environ.get("OSS_CLI_HOME") or (HOME / ".oss-cli")) / "upstream-guard.json"
+# Which repository this server has been approved to write to, for this run only.
+# Set from `--approve-upstream owner/name` at startup; never persisted, never
+# defaulted, and never inferred from the repository being viewed.
+APPROVED_UPSTREAM = ""
 
 
-def guard_ok(passphrase):
-    """Verify a passphrase against OSS-CLI's upstream-write guard.
+def guard_ok(target_repo, typed):
+    """Refuse any outward write that was not approved by name and confirmed now.
 
-    The same file, format and iteration count OSS-CLI writes, so one passphrase
-    covers both doors. Reading a public repo is free to get wrong; posting to one
-    is not -- it reaches every watcher and the mailing list at once, and deleting
-    it afterwards reaches neither.
+    Two independent things must both be true, and neither can be switched on
+    permanently:
 
-    Refuses in both directions that matter: no guard file means refused, not
-    allowed. Defaulting to "unguarded when unconfigured" would make the
-    protection depend on remembering to switch it on.
+      1. The server was started with `--approve-upstream owner/name` naming THIS
+         repository. An approval for one repository is not an approval for
+         another, which is why the name is compared rather than merely present.
+      2. The sender retyped the repository name for this specific send. A yes/no
+         dialog is answered by reflex; retyping the target is the smallest thing
+         that cannot be done without reading it.
+
+    There is no stored credential and no setting that satisfies this, because
+    either becomes a thing switched on once and then forgotten -- after which the
+    protection exists only in the belief that it exists.
     """
-    if not GUARD_FILE.is_file():
+    target = (target_repo or "").strip()
+    if not target:
+        raise RuntimeError("refused — the target repository is not known, so no approval can apply")
+    if not APPROVED_UPSTREAM:
         raise RuntimeError(
-            "refused — no upstream passphrase is set on this machine. "
-            "Set one with: oss-cli setup --upstream-guard")
-    if not passphrase:
-        raise RuntimeError("refused — this posts to a public repository; enter the passphrase to send")
-    try:
-        g = json.loads(GUARD_FILE.read_text())
-        salt = base64.b64decode(g["salt"])
-        expected = base64.b64decode(g["hash"])
-        actual = hashlib.pbkdf2_hmac("sha256", passphrase.encode(), salt, int(g["iterations"]), len(expected))
-    except Exception as e:
-        raise RuntimeError(f"refused — could not read the guard file: {e}")
-    # Constant-time: a plain == would leak how much of the passphrase was right.
-    if not hmac.compare_digest(expected, actual):
-        raise RuntimeError("refused — passphrase did not match")
+            f"refused — this hub was not started with --approve-upstream {target}. "
+            "Nothing was sent. Restart it with that flag to permit writes to that repository.")
+    if APPROVED_UPSTREAM.lower() != target.lower():
+        raise RuntimeError(
+            f"refused — this hub is approved for {APPROVED_UPSTREAM}, not {target}. "
+            "An approval for one repository is not an approval for another.")
+    if (typed or "").strip().lower() != target.lower():
+        raise RuntimeError(f"refused — type {target} exactly to confirm this post. Nothing was sent.")
     return True
 
 
@@ -794,7 +796,7 @@ def send_review(req):
 
     # Before any POST, and before check_anchors spends API calls: this is the
     # last point at which nothing has left the machine.
-    guard_ok(req.get("passphrase") or "")
+    guard_ok(repo, req.get("confirm") or "")
 
     if event == "ISSUE_COMMENT":
         if comments:
@@ -1195,12 +1197,12 @@ function send(){
   // Second gate, and a different KIND of gate. The confirm above is a reflex
   // check anyone clicks through; this one cannot be satisfied by clicking. The
   // server refuses without it, so a stray Enter cannot post.
-  const pass=prompt('Upstream passphrase to post to '+CM.repo+':');
-  if(pass===null){msg.className='sub';msg.textContent='not sent';return}
+  const typed=prompt('This posts to '+CM.repo+'. Type the repository name exactly to confirm:');
+  if(typed===null){msg.className='sub';msg.textContent='not sent';return}
   go.disabled=true;msg.className='sub';msg.textContent='posting…';
   fetch('review',{method:'POST',headers:{'Content-Type':'application/json'},
     body:JSON.stringify({repo:CM.repo,pr:CM.pr,sha:CM.sha,event:ev,body:body,
-      passphrase:pass,
+      confirm:typed,
       comments:CM.comments.map(c=>({path:c.path,line:c.line,side:c.side,
         start_line:c.start_line,body:c.body}))})})
   .then(r=>r.json()).then(d=>{
@@ -2348,6 +2350,10 @@ def main():
     ap.add_argument("--install", action="store_true",
                     help="install the launchd agent so the site starts at login")
     ap.add_argument("--uninstall", action="store_true", help="remove that agent")
+    ap.add_argument("--approve-upstream", metavar="OWNER/NAME", default="",
+                    help="permit posts to exactly this repository, for this run only; "
+                         "each send is still confirmed by typing the name. Without it, "
+                         "every outward write is refused.")
     args = ap.parse_args()
 
     if args.install or args.uninstall:
@@ -2372,6 +2378,16 @@ def main():
     if missing:
         print(f"note: not a git clone — {', '.join(missing)} "
               f"(set BENCH_OSSCLI_DIR / BENCH_KB_DIR)", file=sys.stderr)
+
+    # Per run, never persisted. The agent's plist does not pass this, so the
+    # always-on hub cannot post at all -- posting requires starting one by hand,
+    # deliberately, with the repository named.
+    global APPROVED_UPSTREAM
+    if args.approve_upstream:
+        if not re.fullmatch(r"[\w.-]+/[\w.-]+", args.approve_upstream):
+            sys.exit(f"--approve-upstream takes a repository as owner/name — got {args.approve_upstream!r}")
+        APPROVED_UPSTREAM = args.approve_upstream
+        print(f"upstream writes APPROVED for {APPROVED_UPSTREAM} (each send still confirmed)")
 
     if args.once:
         out = WORKOUT / ".bench" / "hub" / "index.html"
