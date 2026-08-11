@@ -470,11 +470,79 @@ neither can be re-derived: the daily reports are the only record of days whose
 commits have since been squashed away, and `.bench/reviews/` is evidence a
 written finding cites. `clean` says how many report days it kept.
 
+== Packs: pointing the engine at something else
+
+`bench` is an engine — it forks JVMs, walks a matrix, caches classpaths and
+reports cells. None of that is specific to Log4j. What *is* specific lives in a
+**pack**, so the same engine runs against another project by writing one file
+rather than by editing `bench`.
+
+[source,bash]
+----
+BENCH_PACK=example ./bench list      # loads packs/example/pack.sh
+----
+
+A pack is sourced, not executed, and declares exactly five things:
+
+[cols="1,3"]
+|===
+| Declaration | Meaning
+
+| `PACK_NAME` / `PACK_DESC` | What this is, for listings and error messages
+| `VERSIONS` / `DEFAULT_VERSION` | The version axis, oldest → newest, and what `--log4j` defaults to
+| `APPS` | The app axis
+| `APPS_2X_ONLY` | Apps the newest major cannot build; `matrix` reports them `SKIP`, not `FAIL`
+| `pack_module_path` | App name → module directory. A function, not concatenation, because several apps share one module (`db` and `nosql` are the same project under two configurations)
+|===
+
+Everything a pack sets is read by the engine and never written back, so a pack
+cannot change how the engine *behaves* — only what it runs against.
+
+`packs/example/` is a worked example: copy the directory, change the five
+declarations, done. It deliberately names apps that do not exist on disk, so
+`list` works (listing an axis reads no files) while anything that builds fails
+with a missing module — the honest outcome for a pack with no content behind it.
+
+NOTE: Paths stay where they are on purpose. Moving `configs/` and `apps/` inside the pack directory would have been tidier, and would also have rewritten every path in the CI workflow, the docs and seven repro directories — a large diff whose only content is renames, on a tool whose CI is ~200 cells. A pack points *at* its content instead, through `PACK_CONFIGS_DIR` and `PACK_APPS_DIR`.
+
+A pack that loads but declares nothing would produce an empty matrix, and an
+empty matrix reports `0 cells, 0 failures` — which reads exactly like a pass. So
+each required declaration is checked at load and named if missing.
+
+== Posting upstream: the passphrase gate
+
+Reading a public repository is free to get wrong. Posting to one is not: a
+comment reaches everyone watching the thread, and the mailing list, the instant
+it is sent — and deleting it afterwards reaches neither.
+
+So every outward `POST` from the hub is gated by a passphrase, checked against
+the same `~/.oss-cli/upstream-guard.json` that OSS-CLI writes. One passphrase,
+both doors:
+
+[source,bash]
+----
+oss-cli setup --upstream-guard      # set it once
+----
+
+The browser asks for it at send time, *after* the existing confirm dialog. The
+two are deliberately different kinds of gate: a confirm is a reflex anyone clicks
+through, and this one cannot be satisfied by clicking.
+
+WARNING: Refusal is the default in both directions that matter. **No passphrase set means refused, not unguarded** — otherwise the protection would depend on remembering to switch it on. The check also runs before `check_anchors`, so a refused send spends no API calls and nothing has left the machine.
+
+Dispatching through OSS-CLI is gated the same way: `oss-ext.json` lists which
+verbs write outward, and `oss-cli bench hub` asks before the child process
+starts.
+
 == Environment variables
 
 [cols="1,1,3"]
 |===
 | Variable | Default | Effect
+
+| `BENCH_PACK`
+| `log4j`
+| Which pack under `packs/` declares the axes. See <<Packs: pointing the engine at something else>>
 
 | `BENCH_JVM_ARGS`
 | _empty_
