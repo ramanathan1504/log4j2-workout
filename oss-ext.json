@@ -1,6 +1,6 @@
 {
   "name": "log4j",
-  "kind": "bench",
+  "kind": "runner",
   "description": "Apache Log4j across a version x config x app matrix, on real JVMs",
   "exec": "./bench",
   "verbs": {
