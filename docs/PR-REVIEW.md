@@ -343,9 +343,43 @@ The badges answer the questions a second visit is actually asking:
 When something moved, re-read before trusting the file:
 
 ```bash
-./bench pr 4185 --diff
-./bench followup --sync 4185     # only once you actually have
+./bench followup --since 4185            # what landed after you reviewed
+./bench followup --since 4185 --write    # ... appended to the review file
+./bench followup --sync 4185             # only once you actually have re-read it
 ```
+
+### `--since`: what landed after the review
+
+`pushed` tells you the branch grew. `--since` tells you *what* grew — the new
+commits, the files the author touched, what was said on the PR since, and the
+hunks. `--write` appends that as a dated `## Since the review` section to the
+review file, so the answer sits next to the verdict it affects instead of in
+scrollback. It is fenced by an HTML comment carrying the head SHA, so re-running
+it at the same head appends nothing.
+
+It also crosses the files your review file *named* against the files these
+commits touched:
+
+| file named in the review | in these commits |
+|---|---|
+| `AppenderDynamicMBean.java` | **touched** |
+| `delegating.adoc` | — |
+
+**Touched is not addressed.** That column is file overlap and nothing more — it
+points at where to look. Whether the blocking finding was actually answered is
+the re-read, and the verdict stays yours.
+
+One trap worth knowing, because the obvious implementation walks into it:
+comparing `head_at_review...head_now` through the compare API blames the author
+for everything they merged in from the base branch. On #4185 that reported 20
+commits and 89 files, nearly all dependabot bumps from `2.x`. `--since` instead
+takes commits from the PR's own commit list and files from each commit
+separately, skipping merges — a merge is listed and marked, but its file list
+(which GitHub computes against its first parent, i.e. the whole base branch) is
+kept out of the counts.
+
+If the reviewed head is no longer on the branch, it was rebased or force-pushed
+and that history is gone; `--since` falls back to listing by date and says so.
 
 **`--sync` is deliberately manual.** If it ran automatically it would erase the
 one signal it exists to show. A ledger rewritten to silence `followup` is a
@@ -377,6 +411,7 @@ GitHub's own UI, and is right to.
 | Post it | `./bench followup --comment <n> \| gh pr comment <n> -R apache/logging-log4j2 --body-file -` |
 | Post it with line comments | `./bench hub --pr <n>` |
 | What moved since | `./bench followup [--changed\|--mine] [<n>]` |
+| What landed since | `./bench followup --since <n>` · `--write` to append it to the review |
 | Re-record after re-reading | `./bench followup --sync <n>` |
 
 Related: [`BY-HAND.md`](BY-HAND.md) · [`GH-COMMANDS.md`](GH-COMMANDS.md) ·
