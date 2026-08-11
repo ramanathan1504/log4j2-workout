@@ -14,6 +14,7 @@
 #   ./bench pr 4133 --checkout --install            read a PR, and run it here
 #   ./bench review 4133                             every mechanical fact about a PR
 #   ./bench followup                                what moved since you reviewed
+#   ./bench followup --since 4133 --write           what landed, into the review
 #   ./bench hub                                     all three repos, one local page
 #   ./bench hub --pr 4133                           write and send the review, on the page
 #

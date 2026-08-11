@@ -14,6 +14,18 @@
 > there — re-read, then `./bench followup --sync <n>`. That step is manual on
 > purpose; automating it would erase the signal.
 >
+> To see *what* was pushed, and keep it with the review rather than in
+> scrollback:
+>
+> ```bash
+> ./bench followup --since 4234            # commits, files, hunks, what was said
+> ./bench followup --since 4234 --write    # append it here as `## Since the review`
+> ```
+>
+> Those appended sections are generated. They sit after the paste-ready block, so
+> `--comment` still extracts only the comment; and they record the head SHA, so
+> writing twice at the same head does nothing.
+>
 > Each paste-ready block is plain markdown with **no `>` prefix** — a quoted
 > block posts as though you were quoting someone else. `./bench followup
 > --comment <n>` extracts just that block, since the rest of the file is notes
