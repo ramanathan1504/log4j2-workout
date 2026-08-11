@@ -43,7 +43,7 @@
   -->
 
   <properties>
-    <spring-cloud.version>2024.0.0</spring-cloud.version>
+    <spring-cloud.version>2025.1.2</spring-cloud.version>
   </properties>
 
   <dependencyManagement>
