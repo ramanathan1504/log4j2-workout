@@ -17,7 +17,7 @@ drafted here and filed by hand; fixes go in the Log4j clone, never here.
 | Reviews already written, and what moved since | `docs/pr-reviews/`, `oss followup` |
 | The local site, the daily report, the launchd agent | `docs/HUB.md` |
 | Every `gh` command | `docs/GH-COMMANDS.md` |
-| Every `./bench` flag, env var, output path | `docs/site/modules/ROOT/pages/cli.adoc` |
+| Every `./bench` flag, env var, output path | `docs/CLI.md` |
 | The operator's manual, and the collected traps | `docs/HANDOVER.md` |
 | One app's flags, services and quirks | `docs/BENCH-NOTES.md` |
 | What is covered, and the 56 findings | `docs/FEATURE-MATRIX.md` (§17 findings, §19 3.x) |

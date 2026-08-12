@@ -112,9 +112,12 @@ That is an upstream change, not a bench one.
 
 ## 5. Infrastructure
 
-- The published documentation site has **no URL**. `docs/site/index.html` is
-  self-contained and opens in any browser; the Antora sources are alongside it.
-  Publishing failed with `init 404` — a service problem, not a content one.
+- ~~The published documentation site has **no URL**.~~ **Closed by removing it.**
+  An Antora site nobody built and nobody published was a second copy of
+  `docs/*.md` that had to be edited twice for every change, and was — the last
+  round of edits touched four `.adoc` pages purely to keep an unpublished site
+  honest. The one page with no markdown counterpart, the command reference,
+  became `docs/CLI.md`. Product documentation lives at <https://ubuos.com/docs/>.
 
 ---
 
