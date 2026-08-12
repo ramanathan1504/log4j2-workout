@@ -90,14 +90,9 @@ PACK_APPS_DIR="${PACK_APPS_DIR:-apps}"
 # Only defaulted when the pack did not set it. `("${APPS_2X_ONLY[@]:-}")` looks
 # like an empty-array default and is not: for an UNSET array it produces one
 # element containing the empty string, so a pack declaring no exclusions reported
-# one, and is_2x_only matched an empty app name.
+# one, and pack_is_2x_only matched an empty app name.
 [[ ${APPS_2X_ONLY+x} ]] || APPS_2X_ONLY=()
 
-is_2x_only() {
-  local app="$1" a
-  for a in "${APPS_2X_ONLY[@]}"; do [[ "$a" == "$app" ]] && return 0; done
-  return 1
-}
 
 # ── The JDK axis ────────────────────────────────────────────────────────────
 # Major versions of every JDK installed, oldest first. Derived rather than
@@ -124,88 +119,15 @@ installed_javas() {
   } 2>/dev/null | grep -E '^[0-9]+$' | sort -un
 }
 
-# The oldest JDK an app's own bytecode can run on. Everything is compiled at
-# release 17 except the Java 8 baseline module, which exists precisely so the
-# oldest JDK Log4j 2 supports is testable at all.
-min_java_for() {
-  case "$1" in
-    java8-baseline) echo 8 ;;
-    *)              echo 17 ;;
-  esac
-}
 
-# Apps whose main() is a server: they start a container, print an endpoint and
-# serve until interrupted. They are driven by hand or by an HTTP client, and can
-# never complete a matrix cell — under a bound they burn the whole timeout and
-# then FAIL, which is 300 seconds spent to learn nothing.
-#
-# Empty, and kept for the next app that needs it. Every server app in the bench
-# now drives its own endpoints and exits: spring-boot-maven and
-# spring-boot-gradle through SelfTestRunner, jakarta-web and javax-web through
-# the selfTest() in each launcher. See extra_jvm_args_for, which is what turns
-# the mode on. A server app added without one belongs here, so a sweep states
-# the reason rather than reporting a false failure.
-INTERACTIVE_APPS=()
 
-# The appender an app asserts on. An app that checks rows reached a JDBC
-# appender cannot pass under a console-only configuration — it is not a failure,
-# it is a question with no meaning. The sweep's cross product generates plenty
-# of those: `db` under xml/baseline-console produced 81 of them in one run,
-# every one reported as FAIL.
-#
-# Maps app -> a substring every configuration able to satisfy it contains.
-requires_config_for() {
-  case "$1" in
-    db)        echo "appender-jdbc" ;;
-    jdbc-jndi) echo "appender-jdbc-jndi" ;;
-    jpa)       echo "appender-jpa" ;;
-    nosql)     echo "appender-nosql" ;;
-    smtp)      echo "appender-smtp" ;;
-    jms)       echo "appender-jms" ;;
-    network)   echo "appender-network" ;;
-    *)         echo "" ;;
-  esac
-}
 
-# The mirror of requires_config_for: configurations whose destinations are
-# supplied in-process by one particular app, and which therefore cannot work
-# under any other. `appender-network` posts to localhost:4560, :5514 and :8123 —
-# listeners that apps/network's NetworkBench opens itself. Loaded by core-java
-# those are simply Connection refused, once per appender per event.
-#
-# Left unconstrained this produced 21 failures in the first 2000 cells and would
-# have produced thousands more: every app, every one of these configs, every JDK
-# and version. All of them saying nothing except "the listener was not there".
-#
-# appender-nosql is deliberately absent: Mongo, CouchDB and Cassandra run in
-# containers, so any app can write to them. Only in-process infrastructure
-# creates this coupling.
-requires_app_for() {
-  case "$1" in
-    */appender-network)    echo "network" ;;     # in-process socket/HTTP listeners
-    */appender-smtp)       echo "smtp" ;;        # embedded GreenMail
-    */appender-jms)        echo "jms" ;;         # embedded ActiveMQ Artemis
-    */appender-jpa)        echo "jpa" ;;         # its own persistence unit
-    */appender-jdbc-jndi)  echo "jdbc-jndi" ;;   # in-process InitialContext
-    *)                     echo "" ;;
-  esac
-}
 
-# The oldest 2.x line an app can run on, where one of its Log4j modules is
-# younger than the oldest version in VERSIONS. Empty means "any".
-min_log4j_for() {
-  case "$1" in
-    # log4j-jakarta-jms was first released at 2.25.0; before that only the
-    # javax JMS appender in log4j-core existed.
-    jms) echo "2.25.0" ;;
-    *)   echo "" ;;
-  esac
-}
 
-# True when $1 is an older 2.x version than $2. sort -V orders SNAPSHOTs after
+# True when $1 is an older version than $2. sort -V orders SNAPSHOTs after
 # their release, which is what we want: 2.27.0-SNAPSHOT is not "older than"
 # 2.25.0.
-log4j_version_lt() {
+version_lt() {
   [[ "$1" == "$2" ]] && return 1
   [[ "$(printf '%s\n%s\n' "$1" "$2" | sort -V | head -1)" == "$1" ]]
 }
@@ -218,21 +140,18 @@ log4j_version_lt() {
 cell_skip_reason() {
   local app="$1" config="$2" java="$3" version="$4"
 
-  if [[ "$version" == 3.* ]]; then
-    is_2x_only "$app" && { echo "$app has no 3.x release path"; return; }
-    [[ "$java" -lt 17 ]] && { echo "Log4j 3 requires Java 17+"; return; }
-    [[ "$config" == properties/* ]] && {
-      echo "properties format removed in 3.x (JavaPropsConfigurationFactory uses other keys)"; return; }
-  fi
+  # The pack goes first: only it knows what its own versions and formats mean.
+  local packsays; packsays="$(pack_skip_reason "$app" "$config" "$java" "$version")"
+  [[ -n "$packsays" ]] && { echo "$packsays"; return; }
 
-  local min; min="$(min_java_for "$app")"
+  local min; min="$(pack_min_java_for "$app")"
   [[ "$java" -lt "$min" ]] && { echo "$app is compiled at release $min"; return; }
 
   # A server app cannot finish a cell. Say so instead of timing it out.
   # ${arr[@]+"${arr[@]}"}: the list is empty now, and bash 3.2 under `set -u`
   # treats an empty array as unbound.
   local ia
-  for ia in ${INTERACTIVE_APPS[@]+"${INTERACTIVE_APPS[@]}"}; do
+  for ia in ${PACK_INTERACTIVE_APPS[@]+"${PACK_INTERACTIVE_APPS[@]}"}; do
     if [[ "$app" == "$ia" ]]; then
       echo "$app serves until interrupted — drive it by hand, or give it a self-test like SelfTestRunner"
       return
@@ -241,22 +160,22 @@ cell_skip_reason() {
 
   # An app that asserts on a specific appender, paired with a config that has
   # no such appender. The cell cannot pass however correct Log4j is.
-  local needs; needs="$(requires_config_for "$app")"
+  local needs; needs="$(pack_requires_config_for "$app")"
   if [[ -n "$needs" && "$config" != *"$needs"* ]]; then
     echo "$app asserts on $needs; $config cannot satisfy it"
     return
   fi
 
   # The mirror: a config whose destinations only one app provides.
-  local owner; owner="$(requires_app_for "$config")"
+  local owner; owner="$(pack_requires_app_for "$config")"
   if [[ -n "$owner" && "$app" != "$owner" ]]; then
     echo "$config needs the in-process infrastructure only $owner starts"
     return
   fi
 
   # An app whose Log4j module is younger than the version under test.
-  local minv; minv="$(min_log4j_for "$app")"
-  if [[ -n "$minv" && "$version" != 3.* ]] && log4j_version_lt "$version" "$minv"; then
+  local minv; minv="$(pack_min_version_for "$app")"
+  if [[ -n "$minv" && "$version" != 3.* ]] && version_lt "$version" "$minv"; then
     echo "$app needs Log4j >= $minv (its module did not exist at $version)"
     return
   fi
@@ -272,11 +191,6 @@ cell_skip_reason() {
     return
   fi
 
-  # The 1.x config formats are only readable where log4j-1.2-api is present.
-  if [[ "$config" == log4j1/* && "$app" != log4j1-bridge ]]; then
-    echo "1.x config needs the log4j-1.2-api bridge, which only log4j1-bridge has"
-    return
-  fi
 
   # The Java 8 module is deliberately small: it has log4j-api/core and the
   # config formats, and nothing that would drag in a Java 17 dependency.
@@ -337,11 +251,14 @@ java_home_for() {
 # macOS ships bash 3.2, which has no mapfile/readarray to capture one.
 MVN_FLAGS=()
 set_mvn_flags() {
-  local version="$1"
-  MVN_FLAGS=(-Dlog4j.version="$version")
-  if [[ "$version" == 3.* ]]; then
-    MVN_FLAGS+=(-Plog4j-3x -Dlog4j3=true)
-  fi
+  # How a version reaches the build is the pack's business: the property name,
+  # the profile, whether a major needs either. An engine that hardcoded
+  # -Dlog4j.version could only ever build one project.
+  MVN_FLAGS=()
+  local f
+  while IFS= read -r f; do
+    [[ -n "$f" ]] && MVN_FLAGS+=("$f")
+  done < <(pack_build_flags "$1")
 }
 
 # The mapping itself is pack content; the error is the engine's, so that every
@@ -354,29 +271,6 @@ module_path_for() {
 # Apps built by Gradle rather than Maven.
 is_gradle() { [[ "$1" == spring-boot-gradle ]]; }
 
-main_class_for() {
-  case "$1" in
-    core-java)          echo "org.apache.logging.bench.Bench" ;;
-    spring-boot-maven)  echo "org.apache.logging.bench.spring.BenchApplication" ;;
-    spring-boot-gradle) echo "org.apache.logging.bench.spring.BenchApplication" ;;
-    db)                 echo "org.apache.logging.bench.db.DbBench" ;;
-    nosql)              echo "org.apache.logging.bench.db.NoSqlBench" ;;
-    log4j1-bridge)      echo "org.apache.logging.bench.log4j1.Log4j1Bench" ;;
-    jakarta-web)        echo "org.apache.logging.bench.web.WebBench" ;;
-    java8-baseline)     echo "org.apache.logging.bench.java8.Java8Bench" ;;
-    custom-plugins)     echo "org.apache.logging.bench.plugins.CustomPluginBench" ;;
-    jpa)                echo "org.apache.logging.bench.jpa.JpaBench" ;;
-    smtp)               echo "org.apache.logging.bench.smtp.SmtpBench" ;;
-    javax-web)          echo "org.apache.logging.bench.javaxweb.JavaxWebBench" ;;
-    jdbc-jndi)          echo "org.apache.logging.bench.jndi.JdbcJndiBench" ;;
-    jms)                echo "org.apache.logging.bench.jms.JmsBench" ;;
-    network)            echo "org.apache.logging.bench.network.NetworkBench" ;;
-    spring-cloud-config) echo "org.apache.logging.bench.cloud.CloudConfigBench" ;;
-    bridges-in)         echo "org.apache.logging.bench.bridges.BridgesInBench" ;;
-    bridges-out)        echo "org.apache.logging.bench.bridges.BridgesOutBench" ;;
-    bridges-to-jul)     echo "org.apache.logging.bench.bridges.ToJulBench" ;;
-  esac
-}
 
 # JVM flags an app needs regardless of config. Sets the global EXTRA_JVM_ARGS
 # array (bash 3.2 again — no way to return an array).
@@ -406,7 +300,7 @@ extra_jvm_args_for() {
       # Without this the launcher starts Tomcat and serves until interrupted, so
       # every sweep cell burns BENCH_CELL_TIMEOUT and then FAILs. selfTest()
       # drives the bench endpoints over real HTTP and exits with a status, which
-      # is what lets these two off the INTERACTIVE_APPS list.
+      # is what lets these two off the PACK_INTERACTIVE_APPS list.
       EXTRA_JVM_ARGS+=(-Dbench.selfTest=true)
       ;;
     jpa)
@@ -626,28 +520,14 @@ cmd_run() {
       resolved="$(resolve_config "$config")"
     fi
 
-    if [[ "$resolved" == */configs/log4j1/* ]]; then
-      # Log4j 1.x config formats need the bridge's factories, which are off by
-      # default. They are also selected by a different system property: the 1.x
-      # name is log4j.configuration (no "File"), and it takes a URL.
-      jvm_args+=("-Dlog4j1.compatibility=true" "-Dlog4j.configuration=file:$resolved")
-    elif [[ "$version" == 3.* ]]; then
-      # Log4j 3 rebuilt its property system: the location of the configuration
-      # is log4j.configuration.location (CoreProperties.ConfigurationProperties),
-      # and log4j.configurationFile is simply not read. Passing the 2.x name
-      # against 3.x does not fail — Log4j falls back to DefaultConfiguration and
-      # logs to the console, which looks enough like success that an entire 3.x
-      # matrix column can pass while testing nothing but the default config.
-      jvm_args+=("-Dlog4j.configuration.location=$resolved")
-    else
-      jvm_args+=("-Dlog4j.configurationFile=$resolved")
-    fi
-
-    # Spring Boot's Log4J2LoggingSystem reconfigures Log4j during startup and
-    # ignores Log4j's own property — it honours `logging.config` instead.
-    if [[ "$app" == spring-boot-* && "$resolved" != */configs/log4j1/* ]]; then
-      jvm_args+=("-Dlogging.config=$resolved")
-    fi
+    # HOW a configuration is selected is the pack's deepest secret. Get it wrong
+    # and nothing fails -- the framework falls back to its default and logs
+    # happily, which looks enough like success that a whole column can pass while
+    # testing nothing. One flag per line; bash 3.2 has no mapfile.
+    local cfg_flag
+    while IFS= read -r cfg_flag; do
+      [[ -n "$cfg_flag" ]] && jvm_args+=("$cfg_flag")
+    done < <(pack_config_args "$app" "$resolved" "$version")
   fi
 
   # Run from the repo root so relative log paths in configs land in ./logs
@@ -657,7 +537,7 @@ cmd_run() {
   exec "$jhome/bin/java" \
     ${jvm_args[@]+"${jvm_args[@]}"} \
     -cp "$cp" \
-    "$(main_class_for "$app")" \
+    "$(pack_main_class_for "$app")" \
     ${args[@]+"${args[@]}"}
 }
 
