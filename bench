@@ -89,7 +89,11 @@ declare -F pack_module_path >/dev/null 2>&1 || {
 # Optional, with the historic layout as the default so an older pack still works.
 PACK_CONFIGS_DIR="${PACK_CONFIGS_DIR:-configs}"
 PACK_APPS_DIR="${PACK_APPS_DIR:-apps}"
-APPS_2X_ONLY=("${APPS_2X_ONLY[@]:-}")
+# Only defaulted when the pack did not set it. `("${APPS_2X_ONLY[@]:-}")` looks
+# like an empty-array default and is not: for an UNSET array it produces one
+# element containing the empty string, so a pack declaring no exclusions reported
+# one, and is_2x_only matched an empty app name.
+[[ ${APPS_2X_ONLY+x} ]] || APPS_2X_ONLY=()
 
 is_2x_only() {
   local app="$1" a
