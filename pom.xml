@@ -48,7 +48,7 @@
     <ecs-layout.version>1.8.0</ecs-layout.version>
     <jackson.version>2.18.2</jackson.version>
     <commons-compress.version>1.27.1</commons-compress.version>
-    <kafka.version>3.9.0</kafka.version>
+    <kafka.version>4.3.1</kafka.version>
     <mysql.version>8.3.0</mysql.version>
     <postgresql.version>42.7.5</postgresql.version>
     <h2.version>2.3.232</h2.version>
