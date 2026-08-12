@@ -10,7 +10,6 @@
     "coverage": "coverage",
     "repro": "repro",
     "review": "review",
-    "issue": "issue",
     "pr": "pr",
     "followup": "followup",
     "hub": "hub"
@@ -22,5 +21,6 @@
     "scenario"
   ],
   "writes": [],
-  "writesNote": "No verb here writes upstream. `hub` only serves and writes a local page; the one path that can POST is guarded inside hub.py at api_post, which refuses unless the hub was started with --approve-upstream <repo> AND the repository name is retyped for that specific send. Listing `hub` here as a write blocked merely VIEWING the page, which sends nothing."
+  "writesNote": "No verb here writes upstream. `hub` only serves and writes a local page; the one path that can POST is guarded inside hub.py at api_post, which refuses unless the hub was started with --approve-upstream <repo> AND the repository name is retyped for that specific send. Listing `hub` here as a write blocked merely VIEWING the page, which sends nothing.",
+  "verbsNote": "Reading a pull request or an issue is `oss pr` / `oss issue` -- it needs no clone. What is kept here is what needs this bench: `pr --checkout/--install` fetches the branch and publishes it as a SNAPSHOT, and `followup --since/--write` maintains the review files that live in this repository."
 }
