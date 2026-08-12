@@ -21,7 +21,6 @@
 #   ./bench matrix --all                            every valid cell — hours
 #   ./bench coverage                                what is reached, what is not
 #   ./bench repro 4143 --log4j 2.26.0               build a standalone repro zip
-#   ./bench issue 4143                              read an upstream issue
 #   ./bench pr 4133 --checkout --install            read a PR, and run it here
 #   ./bench review 4133                             every mechanical fact about a PR
 #   ./bench followup                                what moved since you reviewed
@@ -939,7 +938,13 @@ case "${1:-help}" in
   matrix)   shift; cmd_matrix "$@" ;;
   coverage) shift; cmd_coverage "$@" ;;
   repro)    shift; cmd_repro "$@" ;;
-  issue)    shift; cmd_issue "$@" ;;
+  issue)
+    # Reading an issue needs an API call and nothing else, so it belongs in the
+    # core rather than in a bench somebody has to attach first.
+    shift
+    printf 'moved: reading an issue needs no bench.\n\n  oss issue %s --repo %s\n' \
+      "${1:-<n>}" "${BENCH_UPSTREAM_REPO:-apache/logging-log4j2}" >&2
+    exit 2 ;;
   pr)       shift; cmd_pr "$@" ;;
   review)   shift; cmd_review "$@" ;;
   followup) shift; cmd_followup "$@" ;;
