@@ -141,11 +141,11 @@ obvious from this file:
   it correctly and lost that behaviour.
 - **Build a control into the config.** Two appenders differing in one attribute
   turn "seems slow" into 2.996 s against 0.000118 s.
-- **Follow it afterwards.** `./bench followup` reports what moved since you
+- **Follow it afterwards.** `oss followup` reports what moved since you
   reviewed — a push, a maintainer reply, a merge. `./bench pr` cannot: it is a
   snapshot with nothing to compare against.
 
-Reviews already written live in `docs/pr-reviews/`, each ending in a
+Reviews already written live in `docs/pr-reviews/` as an archive, each ending in a
 paste-ready comment. None have been posted yet.
 
 ---
@@ -322,8 +322,11 @@ rather than a round trip. It is a convenience; the server is the control.
 With one branch there is no second merge to get wrong. The rule that used to
 matter here — never `--rebase` a sync, because it duplicates every commit under
 new SHAs and the branches diverge until the next sync conflicts — no longer has
-anything to apply to. It is why linear history is off for `main`, which is the
-only trace of it left.
+anything to apply to.
+
+`required_linear_history` is now **on**, which it could not be while `main`
+received merge commits from the sync. The server rejects anything but a squash,
+so the strategy is no longer something to remember.
 
 `required_approving_review_count` is **0** on purpose: at 1 a solo maintainer
 cannot approve their own PR and the branch deadlocks. Direct pushes are still

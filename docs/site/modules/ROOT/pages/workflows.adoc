@@ -130,13 +130,13 @@ maintainer replies, CI turns red — and none of it reaches you unless you look.
 `./bench pr` cannot help: it is a snapshot, with nothing to compare against.
 
 `docs/pr-reviews/ledger.tsv` records the head SHA each pull request was at when
-it was reviewed, and xref:cli.adoc#_followup[`./bench followup`] diffs against it.
+it was reviewed, and xref:cli.adoc#_followup[`oss followup`] diffs against it.
 
 [source,bash]
 ----
-./bench followup             # every reviewed pull request, one line each
-./bench followup --changed   # only the ones that moved
-./bench followup 4234        # one, in full
+oss followup             # every reviewed pull request, one line each
+oss followup --changed   # only the ones that moved
+oss followup 4234        # one, in full
 ----
 
 `pushed` is the badge that matters most: the head moved, so the verdict on file
@@ -144,7 +144,7 @@ describes code that is no longer there. The case it exists for is an approval
 going stale — GitHub keeps showing the green check as the branch advances, so
 whoever merges reads it as covering code no review ever saw.
 
-Re-read before trusting the file again, then `./bench followup --sync <n>`. That
+Re-read before trusting the file again, then `oss followup --record <n>`. That
 step is manual on purpose; automating it would erase the signal.
 
 The written reviews live in `docs/pr-reviews/`, and the judgement half of this

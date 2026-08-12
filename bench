@@ -23,8 +23,6 @@
 #   ./bench repro 4143 --log4j 2.26.0               build a standalone repro zip
 #   ./bench pr 4133 --checkout --install            read a PR, and run it here
 #   ./bench review 4133                             every mechanical fact about a PR
-#   ./bench followup                                what moved since you reviewed
-#   ./bench followup --since 4133 --write           what landed, into the review
 #   ./bench hub                                     all three repos, one local page
 #   ./bench hub --pr 4133                           write and send the review, on the page
 #
@@ -829,7 +827,6 @@ cmd_clean() {
   info "cleared $CACHE ($was → $(du -sh "$CACHE" 2>/dev/null | cut -f1))"
   info "kept hub/ (${days} daily reports) and reviews/ — './bench clean --all' takes those too"
 }
-cmd_followup() { exec "$ROOT/scripts/gh-pr-followup.sh" "$@"; }
 
 # Where the bench actually reaches, as opposed to where it is meant to reach.
 #
@@ -950,7 +947,19 @@ case "${1:-help}" in
     exit 2 ;;
   pr)       shift; cmd_pr "$@" ;;
   review)   shift; cmd_review "$@" ;;
-  followup) shift; cmd_followup "$@" ;;
+  followup)
+    # Following a pull request needs one API read and a record, and nothing that
+    # forks a JVM -- so it belongs in the core, where it works against any
+    # repository rather than only the one this bench is pointed at. The ledger
+    # and every write-up moved with it, to ~/.oss-cli/reviews/.
+    shift
+    {
+      printf 'moved: following a pull request needs no bench.\n\n'
+      printf '  oss followup %s\n' "${1:-<pr>}"
+      printf '  oss followup --since %s   what the author pushed since you reviewed\n' "${1:-<pr>}"
+      printf '  oss hub                     is anyone waiting on you\n'
+    } >&2
+    exit 2 ;;
   hub)      shift; cmd_hub "$@" ;;
   clean)  shift; cmd_clean "$@" ;;
   help|--help|-h) usage ;;

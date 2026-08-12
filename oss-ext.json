@@ -11,7 +11,6 @@
     "repro": "repro",
     "review": "review",
     "pr": "pr",
-    "followup": "followup",
     "hub": "hub"
   },
   "axes": [

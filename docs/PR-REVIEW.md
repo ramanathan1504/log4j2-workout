@@ -261,8 +261,8 @@ as though you were quoting someone else.
 `--comment` extracts exactly that block, so the rest cannot leak:
 
 ```bash
-./bench followup --comment <n>                        # read it first
-./bench followup --comment <n> | gh pr comment <n> -R apache/logging-log4j2 --body-file -
+oss followup --comment <n>                        # read it first
+oss followup --comment <n> | gh pr comment <n> -R apache/logging-log4j2 --body-file -
 ```
 
 Never inline a heredoc you cannot re-read. Always pass `-R` — omitting it targets
@@ -271,7 +271,7 @@ Never inline a heredoc you cannot re-read. Always pass `-R` — omitting it targ
 Record it, and mark it posted:
 
 ```bash
-./bench followup --sync <n>      # after posting, or after any re-read
+oss followup --record <n>      # after posting, or after any re-read
 ```
 
 ### Or post it from the page — including comments on specific lines
@@ -320,10 +320,10 @@ against.
 at when you reviewed it. Everything below is a diff against that.
 
 ```bash
-./bench followup                 # every reviewed PR, one line each
-./bench followup --changed       # only the ones that moved
-./bench followup --mine          # only where the last word is not yours
-./bench followup 4234            # one PR, in full
+oss followup                 # every reviewed PR, one line each
+oss followup --changed       # only the ones that moved
+oss followup --mine          # only where the last word is not yours
+oss followup 4234            # one PR, in full
 ```
 
 ```
@@ -343,9 +343,9 @@ The badges answer the questions a second visit is actually asking:
 When something moved, re-read before trusting the file:
 
 ```bash
-./bench followup --since 4185            # what landed after you reviewed
-./bench followup --since 4185 --write    # ... appended to the review file
-./bench followup --sync 4185             # only once you actually have re-read it
+oss followup --since 4185            # what landed after you reviewed
+oss followup --since 4185 --write    # ... appended to the review file
+oss followup --record 4185             # only once you actually have re-read it
 ```
 
 ### `--since`: what landed after the review
@@ -407,12 +407,12 @@ GitHub's own UI, and is right to.
 | Standalone repro | `./bench repro <n> --pr --config <cfg> --scenario <s> --log4j …` |
 | Install the branch | `./bench pr <n> --checkout --install` |
 | Restore afterwards | `git switch 2.x && mvn install -DskipTests` |
-| Read just the comment | `./bench followup --comment <n>` |
-| Post it | `./bench followup --comment <n> \| gh pr comment <n> -R apache/logging-log4j2 --body-file -` |
+| Read just the comment | `oss followup --comment <n>` |
+| Post it | `oss followup --comment <n> \| gh pr comment <n> -R apache/logging-log4j2 --body-file -` |
 | Post it with line comments | `./bench hub --pr <n>` |
-| What moved since | `./bench followup [--changed\|--mine] [<n>]` |
-| What landed since | `./bench followup --since <n>` · `--write` to append it to the review |
-| Re-record after re-reading | `./bench followup --sync <n>` |
+| What moved since | `oss followup [--changed\|--mine] [<n>]` |
+| What landed since | `oss followup --since <n>` · `--write` to append it to the review |
+| Re-record after re-reading | `oss followup --record <n>` |
 
 Related: [`BY-HAND.md`](BY-HAND.md) · [`GH-COMMANDS.md`](GH-COMMANDS.md) ·
 [`pr-reviews/`](pr-reviews/) · [`HANDOVER.md`](HANDOVER.md)

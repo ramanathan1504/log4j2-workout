@@ -9,7 +9,7 @@ Two wrappers cover the commands you type most; the rest is raw `gh`.
 |---|---|
 | `oss issue <n>` | `gh issue view` with the fields that matter. In the core, not here — see below |
 | `./bench pr <n>` | `gh pr view` + `diff --name-only` + `checks` + `reviews`, and `--checkout --install` to make the PR selectable by `./bench` |
-| `./bench followup` | nothing — `gh` has no notion of *what changed since you reviewed*. See [§5](#5-following-a-pr-after-you-reviewed-it) |
+| `oss followup` | nothing — `gh` has no notion of *what changed since you reviewed*. See [§5](#5-following-a-pr-after-you-reviewed-it) |
 
 Source: [`../scripts/gh-pr.sh`](../scripts/gh-pr.sh). Read-only unless you pass
 `--checkout`, which touches the **Log4j clone** and never this repository.
@@ -221,16 +221,16 @@ gh pr checks 4240 -R apache/logging-log4j2 --watch
 
 `gh` can tell you what a PR looks like now. It cannot tell you what changed since
 you last looked, because it has nothing to compare against.
-[`../docs/pr-reviews/ledger.tsv`](pr-reviews/ledger.tsv) records the head SHA each
-PR was at when it was reviewed, and `./bench followup` diffs against it.
+`~/.oss-cli/reviews/ledger.tsv` records the head SHA each
+PR was at when it was reviewed, and `oss followup` diffs against it.
 
 ```bash
-./bench followup                 # every reviewed PR, one line each
-./bench followup --changed       # only the ones that moved
-./bench followup --mine          # only where the last word is not yours
-./bench followup 4234            # one PR, in full
-./bench followup --sync 4234     # re-record, AFTER re-reading it
-./bench followup --comment 4234  # print ONLY the paste-ready block
+oss followup                 # every reviewed PR, one line each
+oss followup --changed       # only the ones that moved
+oss followup --mine          # only where the last word is not yours
+oss followup 4234            # one PR, in full
+oss followup --record 4234     # re-record, AFTER re-reading it
+oss followup --comment 4234  # print ONLY the paste-ready block
 ```
 
 ```

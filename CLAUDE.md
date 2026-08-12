@@ -14,7 +14,7 @@ drafted here and filed by hand; fixes go in the Log4j clone, never here.
 |---|---|
 | A PR or issue number in front of you | `docs/BY-HAND.md` |
 | **Judging** a contributor PR, and following it after | `docs/PR-REVIEW.md` |
-| Reviews already written, and what moved since | `docs/pr-reviews/`, `./bench followup` |
+| Reviews already written, and what moved since | `docs/pr-reviews/`, `oss followup` |
 | The local site, the daily report, the launchd agent | `docs/HUB.md` |
 | Every `gh` command | `docs/GH-COMMANDS.md` |
 | Every `./bench` flag, env var, output path | `docs/site/modules/ROOT/pages/cli.adoc` |

@@ -32,8 +32,8 @@ for, kept separate: reviewing a pull request, and reproducing then fixing an
 issue. Start there when you have a specific PR or issue number in front of you.
 `docs/PR-REVIEW.md` is the other half of the first job: how to judge whether a
 contributor's pull request should be merged at all, and how to follow it after
-you comment. `docs/pr-reviews/` holds the reviews already written, and
-`./bench followup` says what has moved on them since.
+you comment. `docs/pr-reviews/` archives the reviews written while follow-up lived here, and
+`oss followup` says what has moved on them since.
 
 `docs/GH-COMMANDS.md` is the `gh` reference that goes with it, so the whole loop
 — read the report, run it, file the finding, watch CI — stays in the terminal.
