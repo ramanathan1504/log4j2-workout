@@ -347,100 +347,26 @@ Everything except `--checkout` is read-only. `--checkout` touches the *Log4j
 clone*, never this repository, and refuses outright when that clone has
 uncommitted changes rather than moving branches out from under them.
 
-== followup
+== followup — moved to the core
 
 [source,bash]
 ----
-./bench followup [<number>] [--changed] [--mine] [--sync <number>] [--repo OWNER/NAME]
-./bench followup --since <number> [--write]
+oss followup [<number>] [--changed] [--mine] [--since <n>] [--write] [--comment <n>]
+oss hub                                    # is anyone waiting on you
 ----
 
-What moved on a reviewed pull request since you reviewed it.
+Following a pull request needs one API read and a record — no clone, no build,
+no JVM — so it belongs in `oss`, where it works against *any* repository rather
+than only the one this bench points at. The ledger and every write-up moved with
+it, to `~/.oss-cli/reviews/`.
 
-`./bench pr` is a snapshot: it says what a pull request looks like now. It cannot
-say whether the author pushed after you commented, whether a maintainer replied,
-or whether what you asked for was done — it has nothing to compare against.
-`docs/pr-reviews/ledger.tsv`
-records the head SHA each pull request was at when it was reviewed, and this
-diffs against it.
+`./bench followup` prints that and exits `2`. A command that quietly stopped
+existing is worse than one that says where it went.
 
-[cols="1,1,3"]
-|===
-| Flag | Default | Effect
-
-| _positional 1_ | — | One pull request, reported in full. Omit for every row in the ledger
-| `--changed`  | off | Only the ones that moved
-| `--mine`     | off | Only where the last word is not yours
-| `--sync`     | — | Re-record that pull request at its current head, dated today
-| `--comment`  | — | Print only that review's paste-ready block, for piping into `gh pr comment --body-file -`
-| `--since`    | — | What the author pushed on that pull request after the review: commits, files, hunks, and anything said since
-| `--write`    | off | With `--since`, append that as a dated section to the review file under `docs/pr-reviews/`
-| `--repo`     | `apache/logging-log4j2` | Any repository
-|===
-
-----
-  4185  stale-approval SebTardif        pushed,reply:SebTardif
-  4234  blocked        katstack         —
-----
-
-[cols="1,3"]
-|===
-| Badge | Means
-
-| `pushed` | The head moved, so the recorded verdict describes code that is no longer there
-| `reply:<who>` | Someone else spoke last; a maintainer may have decided something
-| `merged` / `closed` | It resolved. If you had a blocking finding, check it was addressed
-| `ci-fail` | Red, which may be your own finding reproducing in their CI
-|===
-
-The case this exists for is an approval going stale. GitHub keeps showing a green
-check as the branch advances, so whoever merges reads it as covering code no
-review ever saw. `followup` reports that as `pushed` against a `stale-approval`
-verdict.
-
-=== --since: what landed after the review
-
-`pushed` says the branch grew. `--since` says what grew, and `--write` puts that
-in the review file so the answer is in the same place as the verdict it affects.
-
-[source,bash]
-----
-./bench followup --since 4185            # read it
-./bench followup --since 4185 --write    # append it to docs/pr-reviews/4185-*.md
-----
-
-The appended section carries the new commits, the files the author touched, the
-files the review itself named crossed with the ones these commits changed, what
-was said on the pull request since, and the diff hunks last. It is fenced by an
-HTML comment holding the head SHA, so re-running `--write` at the same head does
-nothing rather than appending twice.
-
-WARNING: The `touched` column is file overlap, nothing more. Touched is not addressed. It says where to look; the verdict is still yours to change.
-
-The obvious implementation of this is wrong, and it is worth knowing why. Asking
-the compare API for `head_at_review...head_now` attributes to the author every
-commit they merged in from the base branch. Measured on #4185: comparing two of
-its own commits reported *20 commits and 89 files*, nearly all of them dependabot
-bumps that arrived from `2.x`. So commits come from the pull request's own commit
-list, which excludes base commits, and files come from each commit separately
-with merges skipped — GitHub diffs a merge against its first parent, so a merge
-of the base branch reports the whole base branch as its file list. Merges are
-still listed, marked, and excluded from the counts.
-
-If the reviewed head is no longer on the branch the author rebased or
-force-pushed; that history is gone, so `--since` falls back to listing by date
-and says on its face that it did.
-
-NOTE: `--sync` is deliberately manual, and only correct after actually re-reading the pull request at its new head. Running it automatically would erase the signal it exists to show. `--since --write` does not sync — reading is a separate act from recording that you read.
-
-Read-only against GitHub. `--sync` writes the ledger and `--since --write`
-appends to a review file; neither writes to the upstream repository. Set
-`BENCH_PR_LEDGER` to point at a different ledger, `BENCH_PR_REVIEW_DIR` at a
-different review directory, and `BENCH_GH_USER` to override whose comments count
-as yours.
-
-The playbook this belongs to is
-`docs/PR-REVIEW.md`.
+NOTE: `./bench pr` is still here, and still a snapshot — it says what a pull
+request looks like *now*. That half genuinely needs this bench, because
+`--checkout --install` publishes the branch as a snapshot the matrix can then
+select. Comparing against an earlier state never did.
 
 == clean
 

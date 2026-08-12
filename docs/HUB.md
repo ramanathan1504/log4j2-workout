@@ -21,7 +21,7 @@ bench hub --install        install the launchd agent, so it is always up
 | Send a review | a PR's diff, cached by head SHA | **posts to GitHub** |
 | Daily report | the three clones + your own GitHub repos | its own cache |
 | Overview & status | the three working trees | — |
-| Reviews | `docs/pr-reviews/`, the ledger | — |
+| Reviews | `~/.oss-cli/reviews/`, the ledger (`docs/pr-reviews/` is the archive) | — |
 | Backlog triage | knowledge-creator's `triage.sh` report | — |
 
 Exactly one of them writes to GitHub. It posts nothing until Send is pressed

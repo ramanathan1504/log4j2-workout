@@ -128,7 +128,7 @@ documents rather than reference:
   xref:workflows.adoc[Workflows], plus the full `gh` command reference.
 * `docs/PR-REVIEW.md` — how to *judge* a contributor's pull request rather than
   merely run it, and how to follow it after you comment. The reviews already
-  written are in `docs/pr-reviews/`; xref:cli.adoc#_followup[`./bench followup`]
+  written are in `docs/pr-reviews/`; xref:cli.adoc#_followup[`oss followup`]
   reports what has moved on them since.
 * `docs/SLACK.md` — paste-ready announcements, and a drafted comment for
   https://github.com/apache/logging-log4j2/issues/2314[#2314] that has not been
