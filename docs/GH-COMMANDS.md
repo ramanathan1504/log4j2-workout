@@ -8,7 +8,8 @@ Two wrappers cover the commands you type most; the rest is raw `gh`.
 | Wrapper | Replaces |
 |---|---|
 | `oss issue <n>` | `gh issue view` with the fields that matter. In the core, not here — see below |
-| `./bench pr <n>` | `gh pr view` + `diff --name-only` + `checks` + `reviews`, and `--checkout --install` to make the PR selectable by `./bench` |
+| `oss pr <n>` | the facts about any pull request, in any repository. In the core |
+| `./bench pr <n>` | which `log4j-*` modules the diff lands in, and `--checkout --install` to make the PR selectable by `./bench` |
 | `oss followup` | nothing — `gh` has no notion of *what changed since you reviewed*. See [§5](#5-following-a-pr-after-you-reviewed-it) |
 
 Source: [`../scripts/gh-pr.sh`](../scripts/gh-pr.sh). Read-only unless you pass
@@ -93,7 +94,8 @@ box, or push it somewhere and link it.
 ## 2. Upstream pull requests
 
 ```bash
-./bench pr 4240                     # metadata, files, modules touched, checks, reviews
+oss pr 4240 --repo apache/logging-log4j2    # the facts, for any repository
+./bench pr 4240                     # which log4j-* modules it lands in
 ./bench pr 4240 --diff              # the patch
 ./bench pr 4240 --checkout          # fetch into ~/apache/logging-log4j2 as pr-4240
 ./bench pr 4240 --checkout --install    # ...and publish it as 2.27.0-SNAPSHOT
