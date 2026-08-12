@@ -11,29 +11,22 @@ comment or push anywhere outside this repository, it is out of scope — see
 
 ## Fork, then open a pull request
 
-`main` and `development` are both protected and take no direct pushes from
-anyone.
+`main` is protected and takes no direct pushes from anyone, including the
+maintainer.
 
 ```bash
 gh repo fork ramanathan1504/log4j2-workout --clone
 git switch -c what-it-does
-gh pr create --base development
+gh pr create --base main
 ```
 
-Target **`development`**, not `main`. The flow is:
-
-```
-feature branch --squash--> development --merge--> main
-```
-
-Squash into `development` keeps that branch linear; `development` into `main` is
-a plain merge, because a rebase once duplicated every commit under new SHAs and
-the branches diverged.
+Target **`main`** — it is the only long-lived branch here. Merges are squashed,
+which keeps the history linear and readable.
 
 CI runs roughly 200 matrix cells in about 13 minutes on every pull request into
-`development`, so **batch related work into one branch** rather than opening a
-pull request per fix. A documentation-only change reports no run at all — that
-is the path filter working, not a stuck check.
+`main`, so **batch related work into one branch** rather than opening a pull
+request per fix. A documentation-only change reports no run at all — that is the
+path filter working, not a stuck check.
 
 ## What a good change looks like
 

@@ -286,21 +286,27 @@ anyone who can write the configuration run code.
 
 ## 10. Git workflow
 
-The repository is public. `main` and `development` both carry GitHub branch
-protection: pull request required, `enforce_admins` on, force pushes and
-deletions disabled. A direct push is refused with `GH006` even under
+The repository is public. `main` is the only long-lived branch and carries
+GitHub branch protection: pull request required, `enforce_admins` on, force
+pushes and deletions disabled. A direct push is refused with `GH006` even under
 `--no-verify`.
 
 ```
-feature branch  ->  PR  ->  development  ->  PR  ->  main
+fork or feature branch  ->  PR  ->  main
 ```
 
 ```bash
-git switch development && git pull
+git switch main && git pull
 git switch -c my-change
 git push -u origin my-change
-gh pr create --base development
+gh pr create --base main
 ```
+
+There was a `development` branch in front of `main` until the repository went
+public and contributions began arriving as pull requests from forks. The pull
+request is the gate; a second long-lived branch behind it only added a merge to
+perform and somewhere for the two to drift — which they had, by fifty merge
+commits, by the time it was removed.
 
 Per clone, once — git will not do it for you:
 
@@ -311,12 +317,13 @@ git config core.hooksPath .githooks
 `.githooks/pre-push` refuses direct pushes locally so the mistake costs a second
 rather than a round trip. It is a convenience; the server is the control.
 
-**Merge strategy matters.**
+**Merge strategy matters.** Squash on the way in, which keeps `main` linear.
 
-| Direction | Use | Why |
-|---|---|---|
-| feature → `development` | `--squash` | `development` keeps linear history |
-| `development` → `main` | `--merge` | `--rebase` duplicates commits under new SHAs and the branches diverge until a sync conflicts. That happened; it is why linear history is off for `main`. |
+With one branch there is no second merge to get wrong. The rule that used to
+matter here — never `--rebase` a sync, because it duplicates every commit under
+new SHAs and the branches diverge until the next sync conflicts — no longer has
+anything to apply to. It is why linear history is off for `main`, which is the
+only trace of it left.
 
 `required_approving_review_count` is **0** on purpose: at 1 a solo maintainer
 cannot approve their own PR and the branch deadlocks. Direct pushes are still
@@ -330,13 +337,13 @@ branch commits never become ancestors of `main`. Check the PR state instead.
 ## 11. CI
 
 `.github/workflows/bench.yml` runs ~200 cells in ~13 minutes on every pull
-request into `development`: four Log4j 2 config formats plus both 1.x formats,
-JDK 8/17/21, Log4j 2.24.1 and 2.26.1, across thirteen apps needing no external
+request into `main`: four Log4j 2 config formats plus both 1.x formats, JDK
+8/17/21, Log4j 2.24.1 and 2.26.1, across thirteen apps needing no external
 infrastructure.
 
-It does **not** run on `development` → `main` syncs — nothing reaches `main`
-without passing on the way in. It skips `**.md`, `docs/**`, `.githooks/**`,
-`.gitignore`, `.gitattributes`, `infra/output/**` and `log4j-samples/**`.
+It runs once per change — one branch means one gate. It skips `**.md`,
+`docs/**`, `.githooks/**`, `.gitignore`, `.gitattributes`, `infra/output/**` and
+`log4j-samples/**`.
 
 ⚠️ If this is ever made a **required** status check, a skipped run never reports
 and docs-only PRs block forever. The fix then is a lightweight always-pass job,

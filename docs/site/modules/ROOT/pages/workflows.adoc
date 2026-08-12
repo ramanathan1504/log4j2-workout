@@ -269,32 +269,27 @@ Widen once more before opening the pull request, to catch collateral damage:
 
 == Changing the bench itself
 
-`main` and `development` both carry branch protection: a direct push is refused
-with `GH006`, even under `--no-verify`.
+`main` is the only long-lived branch and carries branch protection: a direct
+push is refused with `GH006`, even under `--no-verify`. Fork first if you are not
+a maintainer here.
 
 [source,bash]
 ----
 git config core.hooksPath .githooks     # once per clone; git will not do it for you
-git switch development && git pull --ff-only
+git switch main && git pull --ff-only
 git switch -c my-change
 git push -u origin my-change
-gh pr create --base development
+gh pr create --base main
 ----
 
-[cols="1,1,3"]
-|===
-| Direction | Merge with | Because
+Merge with `--squash`, which keeps `main` linear.
 
-| feature → `development`
-| `--squash`
-| `development` keeps a linear history
+NOTE: There was a `development` branch in front of `main` until this repository
+went public. It existed so that main received only already-verified commits, and
+a fork-and-pull-request model does that on its own — the second branch only added
+a merge to perform and somewhere for the two to drift.
 
-| `development` → `main`
-| `--merge`
-| `--rebase` duplicates every commit under a new SHA and the branches diverge until a sync conflicts. That happened; it is why linear history is off for `main`
-|===
-
-CI runs ~200 cells in ~13 minutes on every pull request into `development`, so
+CI runs ~200 cells in ~13 minutes on every pull request into `main`, so
 batch related work into one branch rather than opening a pull request per fix.
 It skips `+**.md+`, `docs/**`, `.githooks/**`, `.gitignore`, `.gitattributes`,
 `infra/output/**` and `log4j-samples/**` — a docs-only pull request reports no

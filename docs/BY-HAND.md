@@ -302,18 +302,19 @@ reproduction from A6 as the evidence that the fix closes the issue.
 ## Changes to this repository
 
 Work in this bench — a new config, a new app, a draft — goes through a pull
-request; `development` and `main` both refuse direct pushes.
+request; `main` refuses direct pushes, and it is the only long-lived branch.
+Fork first if you are not a maintainer here.
 
 ```bash
-git switch development && git pull
+git switch main && git pull
 git switch -c my-change
 git push -u origin my-change
-gh pr create --base development
+gh pr create --base main
 ```
 
-Squash into `development`, plain merge from `development` into `main`. CI runs
-~200 cells in ~13 minutes on every PR into `development`, so batch related work
-into one branch rather than opening a PR per fix.
+Squash on the way in, which keeps the history linear. CI runs ~200 cells in ~13
+minutes on every PR into `main`, so batch related work into one branch rather
+than opening a PR per fix.
 
 ```bash
 gh pr checks                                  # CI on the current branch
