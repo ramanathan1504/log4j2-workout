@@ -11,13 +11,22 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-# gh-pr.sh — read an upstream pull request, and put it on your classpath.
+# gh-pr.sh — put an upstream pull request on your classpath.
 #
-#   ./bench pr 4133                    metadata, checks, reviews, files touched
-#   ./bench pr 4133 --diff             the patch itself
+#   ./bench pr 4133                    which log4j-* modules it touches
 #   ./bench pr 4133 --checkout         fetch it into the Log4j clone as pr-4133
 #   ./bench pr 4133 --checkout --install    ...and mvn install it as a SNAPSHOT
 #   ./bench pr 4133 --3x --checkout --install
+#
+# This used to also print the title, author, body, checks and reviews. It no
+# longer does, because `oss pr <n>` prints all of that for ANY repository and
+# printing it twice meant maintaining two formats of the same facts. What is
+# left is the half that genuinely needs this bench:
+#
+#   * which `log4j-*` modules the diff lands in, which is what decides which
+#     app can exercise it — that mapping is pack knowledge, not a GitHub fact
+#   * --checkout / --install, which switch the *Log4j clone* and publish a
+#     snapshot the matrix can then select
 #
 # Without --checkout this is read-only and touches nothing. With it, the *Log4j
 # clone* is switched to a new branch — never this repository, which is left
@@ -45,7 +54,7 @@ CHECKOUT=0
 INSTALL=0
 ID=""
 
-[[ $# -gt 0 ]] || die "usage: ./bench pr <number> [--diff] [--files] [--checkout] [--install] [--3x] [--repo OWNER/NAME] [--clone PATH]"
+[[ $# -gt 0 ]] || die "usage: ./bench pr <number> [--files] [--diff] [--checkout] [--install] [--3x] [--repo OWNER/NAME] [--clone PATH]   (facts: oss pr <number>)"
 ID="$1"; shift
 [[ "$ID" =~ ^[0-9]+$ ]] || die "'$ID' is not a pull request number"
 
@@ -67,38 +76,31 @@ command -v gh >/dev/null || die "gh is not installed (brew install gh)"
 gh auth status >/dev/null 2>&1 || die "gh is not authenticated (gh auth login)"
 gh pr view "$ID" --repo "$REPO" >/dev/null 2>&1 || die "no pull request $ID in $REPO"
 
-# ── What it is ──────────────────────────────────────────────────────────────
-gh pr view "$ID" --repo "$REPO" \
-  --json number,title,state,isDraft,createdAt,author,baseRefName,headRefName,additions,deletions,changedFiles,labels,url,body \
-  --template '{{printf "#%v" .number}} [{{.state}}{{if .isDraft}}/draft{{end}}] {{.title}}
-{{.url}}
-opened {{timeago .createdAt}} by {{.author.login}}   {{.headRefName}} → {{.baseRefName}}
-{{.changedFiles}} file(s)  +{{.additions}} −{{.deletions}}{{if .labels}}   labels: {{range $i, $l := .labels}}{{if $i}}, {{end}}{{$l.name}}{{end}}{{end}}
-
-{{.body}}
-'
-
 # ── Where it lands, which is what decides how you test it ───────────────────
-rule
-info "files touched"
-gh pr diff "$ID" --repo "$REPO" --name-only | sed 's/^/    /'
+# The one fact here that `oss pr` cannot give you: which Log4j modules the diff
+# touches. Everything else about the pull request — title, author, body, checks,
+# reviews, the patch — is `oss pr %s`, and is not reprinted here.
+printf '\033[2mfacts:\033[0m oss pr %s --repo %s\n' "$ID" "$REPO" >&2
+
+FILES_TOUCHED=$(gh pr diff "$ID" --repo "$REPO" --name-only)
 
 rule
 info "modules touched"
-gh pr diff "$ID" --repo "$REPO" --name-only \
-  | sed -n 's#^\(log4j-[a-z0-9-]*\)/.*#\1#p' | sort -u | sed 's/^/    /'
-printf '    (cross-check with ./bench coverage: which app puts that module on a classpath)\n' >&2
+MODULES=$(printf '%s\n' "$FILES_TOUCHED" | sed -n 's#^\(log4j-[a-z0-9-]*\)/.*#\1#p' | sort -u)
+if [[ -n $MODULES ]]; then
+  printf '%s\n' "$MODULES" | sed 's/^/    /'
+  printf '    (cross-check with ./bench coverage: which app puts that module on a classpath)\n' >&2
+else
+  printf '    none — this pull request touches no log4j-* module\n' >&2
+  printf '    (docs, build or changelog only; there may be nothing here to run)\n' >&2
+fi
 
-rule
-info "checks"
-gh pr checks "$ID" --repo "$REPO" 2>/dev/null | sed 's/^/    /' || printf '    none reported\n'
-
-info "reviews"
-gh pr view "$ID" --repo "$REPO" --json reviews \
-  --jq '.reviews[] | "    \(.author.login)  \(.state)"' 2>/dev/null || true
-
-[[ $FILES -eq 1 ]] && { rule; gh pr diff "$ID" --repo "$REPO" --name-only; }
-[[ $DIFF  -eq 1 ]] && { rule; gh pr diff "$ID" --repo "$REPO"; }
+if [[ $FILES -eq 1 ]]; then
+  rule
+  info "files touched"
+  printf '%s\n' "$FILES_TOUCHED" | sed 's/^/    /'
+fi
+[[ $DIFF -eq 1 ]] && { rule; gh pr diff "$ID" --repo "$REPO"; }
 
 # ── Optionally, make it runnable ────────────────────────────────────────────
 if [[ $CHECKOUT -eq 1 ]]; then

@@ -64,7 +64,8 @@ Two rules that save the most time:
 ### A1. Read the PR and decide what it touches
 
 ```bash
-./bench pr 4240                    # metadata, files and modules touched, checks, reviews
+oss pr 4240 --repo apache/logging-log4j2   # the facts: title, author, checks, reviews
+./bench pr 4240                    # which log4j-* modules it lands in
 ./bench pr 4240 --diff             # the patch itself
 ```
 

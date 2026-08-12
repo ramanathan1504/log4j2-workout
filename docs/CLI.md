@@ -213,9 +213,13 @@ existing is worse than one that says where it went.
 ./bench pr <number> [--diff] [--files] [--checkout] [--install] [--3x] [--repo OWNER/NAME] [--clone PATH]
 ```
 
-Prints the pull request, the files and the `log4j-*` modules it touches, its
-checks and its reviews — then, on request, makes it something `./bench` can
-select.
+Prints which `log4j-*` modules the diff lands in — which is what decides
+which app can exercise it — then, on request, makes the pull request something
+`./bench` can select.
+
+It deliberately does **not** print the title, author, body, checks or reviews.
+`oss pr <number> --repo <owner/name>` does all of that, for any repository, and
+printing it in both places meant maintaining two formats of the same facts.
 
 | Flag | Default | Effect |
 |---|---|---|
