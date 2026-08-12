@@ -362,7 +362,7 @@ whose `InternalLoggerFactory` acquires a Log4j logger *while the driver is
 initialising* — which configures Log4j, which starts the Cassandra appender,
 which connects to a keyspace no in-JVM bootstrap has reached yet. `cassandra-init`
 applies `infra/cql/cassandra-init.cql` once the node is healthy, before anything
-touches the driver. Details in `docs/site` → Findings.
+touches the driver. Details in `docs/FEATURE-MATRIX.md` §17.
 
 ---
 
