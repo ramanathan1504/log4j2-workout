@@ -133,5 +133,5 @@ onward, the buggy name is that day's date while the correct name stays
 `20260809`. Alternatively change the schedule to a monthly one (`0 0 0 1 * ?`)
 so the period start is further from today.
 
-Reviews: [`docs/pr-reviews/4226-cron-startup-delay.md`](../../docs/pr-reviews/4226-cron-startup-delay.md),
-[`docs/pr-reviews/4227-directwrite-cron-naming.md`](../../docs/pr-reviews/4227-directwrite-cron-naming.md)
+Reviews: [`~/.oss-cli/reviews/4226-cron-startup-delay.md`](../../~/.oss-cli/reviews/4226-cron-startup-delay.md),
+[`~/.oss-cli/reviews/4227-directwrite-cron-naming.md`](../../~/.oss-cli/reviews/4227-directwrite-cron-naming.md)

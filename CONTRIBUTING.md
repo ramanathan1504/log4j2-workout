@@ -7,7 +7,7 @@ the issue says?* about Apache Log4j.
 **Nothing here is ever pushed to an Apache project.** Findings are drafted here
 and filed by hand, upstream, by a person. If a change you make would post,
 comment or push anywhere outside this repository, it is out of scope — see
-`docs/UPSTREAM-INCIDENT.md` for why that rule exists in this shape.
+the knowledge base (`Reference/unauthorised-writes-to-apachelogging-log4j2`) for why that rule exists in this shape.
 
 ## Fork, then open a pull request
 
@@ -70,4 +70,4 @@ the Security tab.
 
 Note that a finding *about Log4j itself* is not a vulnerability in this
 repository — it belongs upstream, filed by hand, following
-`docs/PR-REVIEW.md` and the Apache process.
+the knowledge base (`Reference/reviewing-a-contributor-pull-request`) and the Apache process.

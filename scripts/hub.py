@@ -75,11 +75,11 @@ REPOS = [
 
 # Same ordering, and the label carries the relationship rather than just a repo
 # name. `kind` is what the sidebar groups by.
+# The operator documents moved to the knowledge base, where they are indexed and
+# findable without knowing this repository exists. What is left is what still
+# describes the checkout itself.
 DOCS = [
-    ("log4j2-workout", "bench", WORKOUT, ["README.md", "CLAUDE.md", "docs/PR-REVIEW.md",
-                                          "docs/BY-HAND.md", "docs/BENCH-NOTES.md", "docs/HANDOVER.md",
-                                          "docs/GH-COMMANDS.md", "docs/FEATURE-MATRIX.md",
-                                          "docs/ISSUES.md", "docs/GAPS.md"]),
+    ("log4j2-workout", "bench", WORKOUT, ["README.md", "CLAUDE.md", "CONTRIBUTING.md"]),
 ]
 
 # ---------------------------------------------------------------- markdown ---
@@ -297,7 +297,7 @@ def gh_json(*args, timeout=60):
 
 def ledger_map():
     out = {}
-    f = WORKOUT / "docs" / "pr-reviews" / "ledger.tsv"
+    f = REVIEW_DIR / "ledger.tsv"
     if f.exists():
         for line in f.read_text().split("\n"):
             if not line.strip() or line.startswith("#"):
@@ -434,7 +434,7 @@ def todo_refresh():
 def reviews():
     """The ledger is the record of what was reviewed; .bench/reviews is evidence."""
     rows = []
-    ledger = WORKOUT / "docs" / "pr-reviews" / "ledger.tsv"
+    ledger = REVIEW_DIR / "ledger.tsv"
     if ledger.exists():
         for line in ledger.read_text().split("\n"):
             if not line.strip() or line.startswith("#"):
@@ -448,7 +448,7 @@ def reviews():
         (p.parent.name for p in (WORKOUT / ".bench" / "reviews").glob("*/00-SUMMARY.md")),
         reverse=True)
     files = {p.name.split("-")[0]: p.name
-             for p in (WORKOUT / "docs" / "pr-reviews").glob("*.md")
+             for p in REVIEW_DIR.glob("*.md")
              if p.name[0].isdigit()}
     return rows, evidence, files
 
@@ -461,7 +461,10 @@ def reviews():
 # pull request and the event in a confirmation before anything is posted. Loading
 # a page, opening a PR and typing all post nothing.
 PR_DIR = WORKOUT / ".bench" / "hub" / "pr"
-REVIEW_DIR = WORKOUT / "docs" / "pr-reviews"
+# Reviews and their ledger moved out of this repository when following a pull
+# request moved into the core: they outlive every checkout that produced them,
+# and `oss followup` reads the same files. OSS_CLI_HOME relocates both together.
+REVIEW_DIR = Path(os.environ.get("OSS_CLI_HOME", str(Path.home() / ".oss-cli"))) / "reviews"
 
 # One switch that makes the composer read-only — for an unattended hub under
 # launchd, or a machine you are not the only one at. The boxes still open and the
@@ -739,7 +742,8 @@ def check_anchors(repo, pr, comments):
     """Refuse a bad line here, naming the lines that would have worked.
 
     This is the check that makes posting to a live pull request an unnecessary
-    way to find out whether an anchor resolves. See docs/UPSTREAM-INCIDENT.md.
+    way to find out whether an anchor resolves. See the knowledge base:
+    Reference/unauthorised-writes-to-apachelogging-log4j2.
     """
     ok = commentable(repo, pr)
     if not ok:
@@ -1077,8 +1081,8 @@ function renderPR(d){
                d.wip?'<span class="pill">draft PR</span>':'',
                d.cached?'<span class="pill">from cache at this head</span>':''].join(' ');
   const draft=d.draft_file
-    ?'prefilled from <code>docs/pr-reviews/'+esc(d.draft_file)+'</code> — the paste-ready block, edit freely'
-    :'no write-up under <code>docs/pr-reviews/</code> for this PR — writing from scratch';
+    ?'prefilled from <code>~/.oss-cli/reviews/'+esc(d.draft_file)+'</code> — the paste-ready block, edit freely'
+    :'no write-up under <code>~/.oss-cli/reviews/</code> for this PR — writing from scratch';
   const head='<div class="card"><div class="role">'+esc(d.repo)+' · '+esc(d.state.toLowerCase())+'</div>'
     +'<h3><a href="'+esc(d.url)+'">#'+esc(d.pr)+'</a> '+esc(d.title)+'</h3>'
     +'<div class="sub">@'+esc(d.author)+' → '+esc(d.base)+' · '+d.changed+' files · '
@@ -1746,7 +1750,7 @@ def todo_html(todo, age):
             f"<tbody>{body}</tbody></table></div>")
 
     out.append('<p class="sub">Two of these signals exist nowhere on GitHub, and come '
-               'from <code>docs/pr-reviews/ledger.tsv</code>: <strong>review unsent</strong> '
+               'from <code>~/.oss-cli/reviews/ledger.tsv</code>: <strong>review unsent</strong> '
                '(you wrote a verdict and never posted it) and <strong>pushed since '
                'review</strong> (the head SHA moved past the one you reviewed at). '
                'GitHub knows what you <em>said</em>; the ledger knows what you '
@@ -1805,7 +1809,7 @@ def compose_html(todo):
     <p class="sub">The only view here that writes to GitHub. It posts through
     <code>gh</code>, as you, and posts nothing until you press <em>Send</em> and confirm
     what it names. The summary is prefilled from the paste-ready block of the write-up
-    under <code>docs/pr-reviews/</code>, if there is one — the same block
+    under <code>~/.oss-cli/reviews/</code>, if there is one — the same block
     <code>bench followup --comment &lt;n&gt;</code> prints. <em>Preview</em> renders with this
     site's own markdown, which is close to GitHub's and not identical: it is here to catch a
     broken list or an unclosed code fence, not to be the last word on spacing.</p>
@@ -2020,7 +2024,7 @@ def build(day=None):
     <span class="sub">{len(led)} in the ledger · {len(evid)} with evidence in .bench/reviews</span>
     <button class="btn" data-job="reload">Re-read from disk</button></div>
     <p class="sub">“posted” is whether the paste-ready comment went upstream. The write-up
-    column is the file under <code>docs/pr-reviews/</code>; evidence is a
+    column is the file under <code>~/.oss-cli/reviews/</code>; evidence is a
     <code>bench review &lt;n&gt;</code> run still on disk.</p>
     <div class="tw"><table><thead><tr><th>PR</th><th>state</th><th>reviewed</th><th>author</th>
     <th>posted</th><th>write-up</th><th>evidence</th><th>note</th></tr></thead>
@@ -2101,7 +2105,7 @@ automatically, so you are never reading a review of code that no longer exists.
 
 ## 2. Judge it — by hand
 
-The part no tool does. `docs/PR-REVIEW.md` §2, in this order:
+The part no tool does. `Reference/reviewing-a-contributor-pull-request` §2, in this order:
 
 - Who filed the linked issue, and when? Hours after your own issue, from an
   account with no history, means the PR was written *from your issue text* — its
@@ -2151,7 +2155,7 @@ through `StatusLogger`, and exits 0. Verify the artefact, not the exit code.
 
 ## 5. Write it up, then post — by hand
 
-One file per PR under `docs/pr-reviews/`, ending in a paste-ready block. Draft
+One file per PR under `~/.oss-cli/reviews/`, ending in a paste-ready block. Draft
 first, post second. Separate blocking from non-blocking so the author knows what
 gates the merge.
 

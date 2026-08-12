@@ -125,4 +125,4 @@ structured-data identifier — which is an application bug. That is why a public
 is the right venue here rather than `security@apache.org`.
 
 Full reasoning and a paste-ready comment:
-[`docs/pr-reviews/4235-rfc5424-sd-id-msgid.md`](../../docs/pr-reviews/4235-rfc5424-sd-id-msgid.md)
+[`~/.oss-cli/reviews/4235-rfc5424-sd-id-msgid.md`](../../~/.oss-cli/reviews/4235-rfc5424-sd-id-msgid.md)

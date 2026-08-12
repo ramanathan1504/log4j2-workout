@@ -268,7 +268,7 @@ cell_skip_reason() {
   # noise every rule above exists to remove. They stay selectable by name for
   # `./bench run` and `./bench repro`; only the cross product skips them.
   if [[ "$config" == */repro-* ]]; then
-    echo "$config is a hand-run reproduction, not a sweep cell (see docs/PR-REVIEW.md)"
+    echo "$config is a hand-run reproduction, not a sweep cell (see Reference/reviewing-a-contributor-pull-request)"
     return
   fi
 

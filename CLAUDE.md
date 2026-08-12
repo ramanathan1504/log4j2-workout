@@ -10,22 +10,26 @@ drafted here and filed by hand; fixes go in the Log4j clone, never here.
 
 ## Orientation
 
-| Need | Read |
-|---|---|
-| A PR or issue number in front of you | `docs/BY-HAND.md` |
-| **Judging** a contributor PR, and following it after | `docs/PR-REVIEW.md` |
-| Reviews already written, and what moved since | `docs/pr-reviews/`, `oss followup` |
-| The local site, the daily report, the launchd agent | `docs/HUB.md` |
-| Every `gh` command | `docs/GH-COMMANDS.md` |
-| Every `./bench` flag, env var, output path | `docs/CLI.md` |
-| The operator's manual, and the collected traps | `docs/HANDOVER.md` |
-| One app's flags, services and quirks | `docs/BENCH-NOTES.md` |
-| What is covered, and the 56 findings | `docs/FEATURE-MATRIX.md` (§17 findings, §19 3.x) |
-| What was filed upstream / what is still open | `docs/ISSUES.md`, `docs/GAPS.md` |
+**The documentation is not in this repository.** Every operator document — how to
+work an issue by hand, how to judge a contributor pull request, the command
+reference, the collected traps, the coverage catalogue and the 56 findings —
+lives in the knowledge base, indexed and searchable, under `Reference/` and
+`Projects/log4j/`. Nothing here duplicates it.
 
-`./bench` is the only entry point. `./bench help` lists the ten commands. It is
-symlinked into `~/.local/bin`, so `bench …` works from any directory — including
-from inside the Log4j clone with an IDE open on it.
+| Need | Where |
+|---|---|
+| Any of the above | the knowledge base — `Reference/operating-this-bench`, `Reference/working-an-issue-or-a-pr-by-hand`, `Reference/reviewing-a-contributor-pull-request`, `Reference/command-reference`, `Reference/log4j-feature-matrix-complete-coverage-catalog` |
+| Reviews already written, and what moved since | `oss followup`, `oss hub` |
+| Facts about a pull request, in any repository | `oss pr <n> --repo <owner/name>` |
+| What this pack contains | `./bench list`, and `packs/log4j/pack.sh` |
+
+The reason they left: a document that must change in the same commit as the code
+belongs beside the code, and one that outlives the code belongs where it can be
+found in a year. These were the second kind, and keeping them here meant they
+were only findable by someone who already knew this repository existed.
+
+`./bench` is the entry point while the engine still lives here. `./bench help`
+lists what it does.
 
 ## Where this repo sits, of the three
 
@@ -68,8 +72,8 @@ which is the only piece that crosses a repo boundary at runtime.
 - **The Log4j 2 properties format does not exist on 3.x.**
 - **Cassandra needs the `cassandra-init` compose service,** not `cassandra`. The
   appender cannot create its own keyspace, so the bare node stores nothing
-  silently. Per-app requirements like this one live in `docs/BENCH-NOTES.md`;
-  keep them there rather than growing this list.
+  silently. Per-app requirements like this one live in the knowledge base
+  (`Reference/per-app-notes`); keep them there rather than growing this list.
 - **`./bench repro <arg>` treats its first argument as the issue number** — there
   is no `--help`. `./bench repro --help` scaffolds and runs `repros/issue---help/`.
 - A matrix `SKIP` is information, with the pruning rule printed. It is neither a
@@ -83,7 +87,7 @@ which is the only piece that crosses a repo boundary at runtime.
   which the "no StatusLogger error" check reads as success. Fixed in
   `scripts/repro.sh` for zstd and xz; the shape recurs wherever a plugin resolves
   a backend at runtime. Verify the artefact (`zstd -t`, `unzip -t`), not the exit
-  code — and see `docs/PR-REVIEW.md` §3.
+  code — and see `Reference/reviewing-a-contributor-pull-request` §3.
 
 ## Numbers: read them from the source, not the prose
 
@@ -143,8 +147,9 @@ two to drift. They had already drifted by fifty merge commits when it went.
 
 ## Upstream discipline
 
-- Draft findings under `docs/issue-drafts/`, to Apache's bug template, and get
-  the text approved before `gh issue create`. File from `--body-file`, never an
+- Draft findings to Apache's bug template and get the text approved before
+  `gh issue create`. Drafts live in the knowledge base (`Reference/issue-drafts`),
+  not here. File from `--body-file`, never an
   inline heredoc you cannot re-read.
 - Always pass `-R apache/logging-log4j2`. Omitting it targets *this* repository,
   which is the easiest way to file a bug in the wrong place.
@@ -153,7 +158,7 @@ two to drift. They had already drifted by fifty merge commits when it went.
   does not reach the mailing-list archive or an email already sent. Verify write
   paths against a repo you own, a fixture, or a mocked POST. Read-only `gh` is
   fine and is what the tooling is built on. This cost a real incident:
-  `docs/UPSTREAM-INCIDENT.md`.
+  `Reference/unauthorised-writes-to-apachelogging-log4j2` in the knowledge base.
 - Fixes go in the Log4j clone on their own branch, with a test in that module's
   own test source set.
 - Verifying a fix has two halves: every version that failed must now pass, **and

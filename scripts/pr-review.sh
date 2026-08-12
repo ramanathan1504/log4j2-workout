@@ -24,7 +24,7 @@
 # without its fix, and whether the tests dirty the source tree.
 #
 # It does NOT judge the code. It produces facts you then read. Judging is
-# docs/PR-REVIEW.md §2, and no script gets there.
+# Reference/reviewing-a-contributor-pull-request in the knowledge base §2, and no script gets there.
 #
 # Everything happens in a throwaway git worktree, so your clone stays on its
 # branch and ~/.m2 is never overwritten by a PR build.
@@ -69,7 +69,7 @@ Options:
   --offline           pass -o to maven (fast; needs a warm ~/.m2)
   --keep              keep the worktree for manual poking
   --jdk N             default 17; Log4j 2.x enforces [17,18)
-  --file              file docs/pr-reviews/<PR>-*.md into the knowledge base
+  --file              file ~/.oss-cli/reviews/<PR>-*.md into the knowledge base
                       (knowledge-creator's pr-review-file.py; $BENCH_KB_DIR)
   --out DIR           default: .bench/reviews/<PR>
   --3x                use the 3.x clone (~/apache/log4j-main)
@@ -567,9 +567,13 @@ cat "$OUT/00-SUMMARY.md"
 # public threads record what was said, not the reasoning that got there.
 if [ "$FILE_IT" -eq 1 ]; then
     say "Filing the write-up into the knowledge base"
-    WRITEUP=$(ls "$ROOT"/docs/pr-reviews/"$PR"-*.md 2>/dev/null | head -1)
+    # Write-ups live beside the ledger `oss followup` reads, not in this
+    # repository. They outlive every checkout that produced them, and a home
+    # directory is where the whole workflow now keeps them.
+    REVIEWS="${OSS_CLI_HOME:-$HOME/.oss-cli}/reviews"
+    WRITEUP=$(ls "$REVIEWS"/"$PR"-*.md 2>/dev/null | head -1)
     if [ -z "$WRITEUP" ]; then
-        warn "no docs/pr-reviews/$PR-*.md yet — nothing to file"
+        warn "no $REVIEWS/$PR-*.md yet — nothing to file"
         warn "write it first; the evidence in $OUT is what you write it from"
     elif [ ! -x "$KB/pr-review-file.py" ]; then
         warn "no pr-review-file.py in $KB (set \$BENCH_KB_DIR)"
@@ -583,9 +587,9 @@ fi
 # ------------------------------------------------ the half this cannot do ---
 say "these facts are necessary, not sufficient — next, by hand:"
 cat >&2 <<NEXT
-    docs/PR-REVIEW.md §2   does the fix match the bug, or overshoot it?
+    Reference/reviewing-a-contributor-pull-request §2   fix vs overshoot?
     ./bench coverage                        does any app put that module on a classpath
     ./bench repro $PR --pr --config <cfg> --scenario <s>
-    docs/pr-reviews/$PR-<slug>.md           write it up, paste-ready block last
+    ~/.oss-cli/reviews/$PR-<slug>.md        write it up, paste-ready block last
 NEXT
 printf '\nAll output: %s\n' "$OUT" >&2
