@@ -21,29 +21,29 @@ zip to attach to the issue.
 
 ## Start here
 
-**`docs/HANDOVER.md`** is the operator's manual — everything needed to use this
+**the knowledge base (`Reference/operating-this-bench`)** is the operator's manual — everything needed to use this
 repository without asking anyone. Read it once end to end, then use it as
 reference. It covers the daily commands, reviewing an issue, producing a
 reproduction, what needs Docker, the git workflow, and a collected list of the
 traps that cost time.
 
-`docs/BY-HAND.md` is the step-by-step playbook for the two jobs this bench exists
+the knowledge base (`Reference/working-an-issue-or-a-pr-by-hand`) is the step-by-step playbook for the two jobs this bench exists
 for, kept separate: reviewing a pull request, and reproducing then fixing an
 issue. Start there when you have a specific PR or issue number in front of you.
-`docs/PR-REVIEW.md` is the other half of the first job: how to judge whether a
+the knowledge base (`Reference/reviewing-a-contributor-pull-request`) is the other half of the first job: how to judge whether a
 contributor's pull request should be merged at all, and how to follow it after
-you comment. `docs/pr-reviews/` archives the reviews written while follow-up lived here, and
+you comment. `oss followup` and the knowledge base (`Projects/log4j/pr-reviews/`) archives the reviews written while follow-up lived here, and
 `oss followup` says what has moved on them since.
 
-`docs/GH-COMMANDS.md` is the `gh` reference that goes with it, so the whole loop
+the knowledge base (`Reference/every-gh-command-this-workflow-needs`) is the `gh` reference that goes with it, so the whole loop
 — read the report, run it, file the finding, watch CI — stays in the terminal.
 
-`docs/FEATURE-MATRIX.md` is the catalogue: what is covered, what is not, and §17,
+the knowledge base (`Reference/log4j-feature-matrix-complete-coverage-catalog`) is the catalogue: what is covered, what is not, and §17,
 the findings — 56 Log4j behaviours, each traced to source rather than inferred.
 
-`docs/ISSUES.md` lists what was raised upstream. `docs/GAPS.md` lists everything
+the knowledge base (`Reference/issues-raised-upstream`) lists what was raised upstream. the knowledge base (`Reference/open-gaps`) lists everything
 open — coverage, drafts, samples, infrastructure — with why and what closing each
-would take. `docs/issue-drafts/` holds findings written up to Apache's bug
+would take. the knowledge base (`Reference/issue-drafts`) holds findings written up to Apache's bug
 template, ready to file by hand. Two are filed already (#4241, #4242); four are drafted and not.
 Nothing here ever touches an upstream project.
 
@@ -131,7 +131,7 @@ standalone reproduction to attach to it.
   `log4j-cassandra` leaks the DataStax `Cluster` on failed startup, so the JVM
   never exits. 2.x only.
 
-`docs/FEATURE-MATRIX.md` §17 holds the full findings table — around 25 Log4j
+the knowledge base (`Reference/log4j-feature-matrix-complete-coverage-catalog`) §17 holds the full findings table — around 25 Log4j
 behaviours, each traced to source rather than inferred.
 
 ---
@@ -140,7 +140,7 @@ behaviours, each traced to source rather than inferred.
 
 ```
 ├── bench                    CLI — the only entry point you need
-├── docs/FEATURE-MATRIX.md   the complete coverage catalog (293 plugins)
+├── the knowledge base (`Reference/log4j-feature-matrix-complete-coverage-catalog`)   the complete coverage catalog (293 plugins)
 ├── configs/                 the config library, shared by every app
 │   ├── xml/  json/  yaml/  properties/   the same configs in all four formats
 │   ├── log4j1/              log4j.properties + log4j.xml for the 1.x bridge
@@ -191,7 +191,7 @@ The extension is inferred from the directory; a bare name (`--config filter-all`
 means the XML one. The mirrors are not mechanical translations — where a format
 genuinely cannot express what the XML does, the file says so and takes the
 nearest honest route. See `configs/properties/README.md` and
-`configs/json/README.md`, and `docs/FEATURE-MATRIX.md` §17 for the full list of
+`configs/json/README.md`, and the knowledge base (`Reference/log4j-feature-matrix-complete-coverage-catalog`) §17 for the full list of
 what building them turned up.
 
 **One config is not in all four formats.** `arbiters` has no properties version,
@@ -362,13 +362,13 @@ whose `InternalLoggerFactory` acquires a Log4j logger *while the driver is
 initialising* — which configures Log4j, which starts the Cassandra appender,
 which connects to a keyspace no in-JVM bootstrap has reached yet. `cassandra-init`
 applies `infra/cql/cassandra-init.cql` once the node is healthy, before anything
-touches the driver. Details in `docs/FEATURE-MATRIX.md` §17.
+touches the driver. Details in the knowledge base (`Reference/log4j-feature-matrix-complete-coverage-catalog`) §17.
 
 ---
 
 ## Coverage
 
-`docs/FEATURE-MATRIX.md` is the authoritative catalog — 293 plugins across 59
+the knowledge base (`Reference/log4j-feature-matrix-complete-coverage-catalog`) is the authoritative catalog — 293 plugins across 59
 modules, extracted from the source clone rather than from documentation, with a
 gap list in §16 tracking what the bench does not yet exercise.
 

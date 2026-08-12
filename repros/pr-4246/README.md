@@ -145,4 +145,4 @@ instead add the missing guard to `CassandraManager.writeInternal` — three line
 one module, no base-class contract change, and #4241 still closes.
 
 Full reasoning and a paste-ready comment:
-[`docs/pr-reviews/4246-database-manager-failed-startup.md`](../../docs/pr-reviews/4246-database-manager-failed-startup.md)
+[`~/.oss-cli/reviews/4246-database-manager-failed-startup.md`](../../~/.oss-cli/reviews/4246-database-manager-failed-startup.md)

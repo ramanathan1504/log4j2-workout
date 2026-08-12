@@ -138,4 +138,4 @@ So the finding is **hardening**, and the thing worth raising on the PR is the
 framing of the changelog entry rather than the change itself.
 
 Full reasoning and a paste-ready comment:
-[`docs/pr-reviews/4229-posix-symlink.md`](../../docs/pr-reviews/4229-posix-symlink.md)
+[`~/.oss-cli/reviews/4229-posix-symlink.md`](../../~/.oss-cli/reviews/4229-posix-symlink.md)
