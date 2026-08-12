@@ -258,3 +258,142 @@ pack_config_args() {
     printf '%s\n' "-Dlogging.config=$resolved"
   fi
 }
+
+
+# Flags an application of THIS pack needs regardless of configuration.
+# One per line: bash 3.2 has no mapfile to return an array.
+pack_jvm_args() {
+  EXTRA_JVM_ARGS=()
+  case "$1" in
+    spring-boot-maven|spring-boot-gradle)
+      # main() is SpringApplication.run on a web application, so without this
+      # the app serves until killed and can never finish a matrix cell. The
+      # self-test drives the bench endpoints over real HTTP and then exits, so
+      # the servlet stack is still exercised rather than skipped. Unset it to
+      # get the interactive server back:
+      #   BENCH_SPRING_SELFTEST=0 ./bench run spring-boot-maven
+      if [[ "${BENCH_SPRING_SELFTEST:-1}" == 1 ]]; then
+        printf '%s\n' "-Dbench.selfTest=true"
+      fi
+      ;;
+    jakarta-web|javax-web)
+      # Tomcat 10.1.34+ and 9.0.98+ refuse to start a DirResourceSet unless it can confirm
+      # the JDK's canonical file name cache is off (the CVE-2024-56337 fix). It
+      # confirms by reflectively writing a static final field in java.io, so it
+      # needs both the property and the add-opens — this is exactly what
+      # Tomcat's own catalina.sh exports. Without them the app dies at startup.
+      printf '%s\n' "--add-opens=java.base/java.io=ALL-UNNAMED" "-Dsun.io.useCanonCaches=false"
+      # Without this the launcher starts Tomcat and serves until interrupted, so
+      # every sweep cell burns BENCH_CELL_TIMEOUT and then FAILs. selfTest()
+      # drives the bench endpoints over real HTTP and exits with a status, which
+      # is what lets these two off the PACK_INTERACTIVE_APPS list.
+      printf '%s\n' "-Dbench.selfTest=true"
+      ;;
+    jpa)
+      # log4j-jpa's ThrowableAttributeConverter reflects into java.lang.Throwable
+      # in a STATIC INITIALISER:
+      #
+      #   THROWABLE_CAUSE = Throwable.class.getDeclaredField("cause");
+      #   THROWABLE_CAUSE.setAccessible(true);
+      #
+      # On JDK 16+ that throws InaccessibleObjectException, which the surrounding
+      # catch does not handle — it catches only NoSuchFieldException — so the
+      # class fails to initialise. The JPA provider then reports
+      # ExceptionInInitializerError from a Class.forName deep inside its own
+      # deployment code, naming neither Log4j, nor the converter, nor the flag
+      # that would fix it. Every write then fails with "manager cannot create
+      # EntityManager or transaction".
+      #
+      # So log4j-jpa is unusable on any current JDK without this.
+      printf '%s\n' "--add-opens=java.base/java.lang=ALL-UNNAMED"
+      ;;
+    jdbc-jndi)
+      # Two flags, both required and both silent when missing.
+      #
+      # java.naming.factory.initial selects the JNDI provider: the in-process,
+      # map-backed one in this module, which speaks no protocol and opens no
+      # socket.
+      #
+      # log4j2.enableJndiJdbc re-enables the JDBC half of the JNDI support Log4j
+      # disabled by default after CVE-2021-44228. Scoped to this app alone, and
+      # safe here precisely because the provider above cannot reach off the
+      # machine. The bench never sets log4j2.enableJndiLookup, which governs the
+      # ${jndi:} lookup that CVE abused — see configs/xml/lookups.xml, where it
+      # renders unresolved.
+      printf '%s\n' "-Djava.naming.factory.initial=org.apache.logging.bench.jndi.BenchInitialContextFactory" "-Dlog4j2.enableJndiJdbc=true"
+      ;;
+    jms)
+      # Same shape as jdbc-jndi: a JNDI provider plus the per-subsystem flag.
+      # The provider is Artemis's own, resolving the connection factory and queue
+      # from jndi.properties rather than over a network — the broker is in-VM, on
+      # the vm://0 transport. enableJndiJms is scoped to this app, and the bench
+      # still never sets enableJndiLookup.
+      # The JNDI environment comes from jndi.properties on this app's classpath,
+      # not from here: InitialContext copies only java.naming.* out of the system
+      # properties, so connectionFactory.* and queue.* entries passed as -D are
+      # silently ignored and Artemis falls back to tcp://localhost:61616.
+      printf '%s\n' "-Dlog4j2.enableJndiJms=true"
+      ;;
+    bridges-in)
+      # log4j-jul only takes effect if the JUL LogManager is replaced before any
+      # java.util.logging class initialises, which means a launch flag — setting
+      # the property from main() is already too late. Without it the bridge is
+      # inert and JUL keeps its own handlers, with nothing logged to say so.
+      printf '%s\n' "-Djava.util.logging.manager=org.apache.logging.log4j.jul.LogManager"
+      ;;
+  esac
+}
+
+
+# ── Coverage: where the source is, and what counts as a module ──────────────
+# `bench coverage` answers "which modules of the project under test does any app
+# actually put on a classpath". Both halves of that are pack knowledge: where the
+# project's source is checked out, and how its modules are named.
+
+pack_source_clone() {
+  case "$1" in
+    3x) echo "${LOG4J_3X_CLONE:-$HOME/apache/log4j-main}" ;;
+    *)  echo "${LOG4J_2X_CLONE:-$HOME/apache/logging-log4j2}" ;;
+  esac
+}
+
+pack_source_clone_hint() { echo "set LOG4J_2X_CLONE / LOG4J_3X_CLONE"; }
+
+# Every module of the project, from its checkout.
+#
+# log4j-plugin-processor is excluded for a different reason from the rest: it is
+# an annotation processor, so it is never a runtime dependency and asking whether
+# it is "on a classpath" is the wrong question. On 2.x it is not even a separate
+# artifact -- it ships inside log4j-core. It is covered by apps/custom-plugins,
+# which checks the descriptor it generates.
+pack_modules() {
+  ( cd "$1" && ls -d log4j-*/ 2>/dev/null | sed 's|/$||' ) \
+    | grep -vE 'fuzz-test|api-test|core-its|java9|-test$|^log4j-parent$|^log4j-plugin-processor$' \
+    | sort
+}
+
+# Which of them a resolved classpath contains. Reads classpaths on stdin.
+pack_modules_on_classpath() {
+  tr ':' '\n' \
+    | grep -o 'org/apache/logging/log4j/[^/]*' \
+    | sed 's|.*/||' | sort -u
+}
+
+
+# The Gradle property this project reads a version from. Maven's is in
+# pack_build_flags; Gradle needs its own spelling.
+pack_gradle_version_flag() { echo "-Plog4jVersion=$1"; }
+
+# Runtime properties every cell of this pack wants, whatever the app or config.
+#
+# Script support: ScriptFilter, ScriptPatternSelector, ScriptCondition and
+# ScriptAppenderSelector all refuse to run without this, reporting only "Script
+# support is not enabled". The bench enables it because exercising those plugins
+# is the point; a real deployment should not, since it lets anyone who can write
+# the configuration run code.
+pack_always_jvm_args() {
+  printf '%s\n' "-Dlog4j2.Script.enableLanguages=groovy,js,javascript"
+}
+
+# The project this pack tests, upstream. Used only to name it in messages.
+pack_upstream_repo() { echo "${BENCH_UPSTREAM_REPO:-apache/logging-log4j2}"; }
