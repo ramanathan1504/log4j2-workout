@@ -19,8 +19,8 @@ is ever pushed to an Apache project.
 ## The commands you need
 
 ```bash
+oss issue <n> --repo apache/logging-log4j2     # read an upstream issue
 ./bench list                                   # apps, configs, versions, scenarios
-./bench issue <n>                              # read an upstream issue
 ./bench pr    <n> [--diff] [--checkout]        # read a PR, and put it on your classpath
 ./bench run  <app> --config <cfg> [scenario]   # one app, one config, one version
 ./bench matrix --apps <a> --configs <c> \
@@ -28,11 +28,13 @@ is ever pushed to an Apache project.
 ./bench repro <number> [--pr] ...              # standalone zip to attach upstream
 ```
 
-`issue` and `pr` are thin wrappers over `gh`
-([`../scripts/gh-issue.sh`](../scripts/gh-issue.sh),
-[`../scripts/gh-pr.sh`](../scripts/gh-pr.sh)). They default to
-`apache/logging-log4j2` and are read-only, except `./bench pr --checkout`, which
-switches the **Log4j clone** to the PR branch and leaves this repository alone.
+Reading an issue is one API call, so it lives in the core (`oss issue`) and works
+against any repository. What stays here is what needs something to actually run.
+
+`pr` is a thin wrapper over `gh` ([`../scripts/gh-pr.sh`](../scripts/gh-pr.sh)).
+It defaults to `apache/logging-log4j2` and is read-only, except
+`./bench pr --checkout`, which switches the **Log4j clone** to the PR branch and
+leaves this repository alone.
 
 Two rules that save the most time:
 
@@ -176,8 +178,7 @@ PR's build until you do.
 ### B1. Read the report, then reproduce on the version named
 
 ```bash
-./bench issue 4143                 # the report, with the version and config in it
-./bench issue 4143 --comments      # plus whatever the discussion already ruled out
+oss issue 4143 --repo apache/logging-log4j2   # the report, with the version and config in it
 ```
 
 Pick the app and config nearest the reporter's setup, then run exactly the

@@ -7,13 +7,17 @@ Two wrappers cover the commands you type most; the rest is raw `gh`.
 
 | Wrapper | Replaces |
 |---|---|
-| `./bench issue <n>` | `gh issue view` with the fields that matter, and a nudge to the bench commands |
+| `oss issue <n>` | `gh issue view` with the fields that matter. In the core, not here — see below |
 | `./bench pr <n>` | `gh pr view` + `diff --name-only` + `checks` + `reviews`, and `--checkout --install` to make the PR selectable by `./bench` |
 | `./bench followup` | nothing — `gh` has no notion of *what changed since you reviewed*. See [§5](#5-following-a-pr-after-you-reviewed-it) |
 
-Source: [`../scripts/gh-issue.sh`](../scripts/gh-issue.sh),
-[`../scripts/gh-pr.sh`](../scripts/gh-pr.sh). Both are read-only unless you pass
+Source: [`../scripts/gh-pr.sh`](../scripts/gh-pr.sh). Read-only unless you pass
 `--checkout`, which touches the **Log4j clone** and never this repository.
+
+**Reading an issue moved to `oss`.** It needs one API call and nothing else, so
+it belongs in the core rather than behind a bench you must attach first — and it
+works against any repository, not only Log4j. `./bench issue` prints where it
+went rather than failing silently.
 
 Throughout, `-R apache/logging-log4j2` is the upstream repo. Omit `-R` inside
 this clone and `gh` targets this repository instead — which is the single
@@ -34,8 +38,7 @@ gh repo set-default                # stop gh guessing when a clone has many remo
 ## 1. Upstream issues
 
 ```bash
-./bench issue 4143                          # the report, formatted
-./bench issue 4143 --comments               # plus the discussion
+oss issue 4143 --repo apache/logging-log4j2          # the report, formatted
 gh issue view 4143 -R apache/logging-log4j2 --web    # only if you want the browser
 ```
 

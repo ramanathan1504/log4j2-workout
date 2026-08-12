@@ -94,7 +94,7 @@ and the last that passes, emit a standalone reproduction, fix it upstream, then
 prove both halves — what failed now passes, and what passed still does
 |===
 
-Both stay in the terminal from beginning to end. `./bench issue` and
+Both stay in the terminal from beginning to end. `oss issue` and
 `./bench pr` read GitHub, `./bench run` and `./bench matrix` run it, and
 `./bench repro` produces the thing you attach.
 

@@ -302,28 +302,19 @@ than silently falling back to the default configuration and reproducing nothing.
 
 NOTE: Generation writes only to `repros/`. The bench itself is never mutated, so there is nothing to revert afterwards.
 
-== issue
+== issue — moved to the core
 
 [source,bash]
 ----
-./bench issue <number> [--comments] [--repo OWNER/NAME]
+oss issue <number> --repo apache/logging-log4j2
 ----
 
-Reads an upstream issue through `gh`, so the report and the run stay in one
-terminal. Read-only.
+Reading an issue needs one API call and nothing else, so it belongs in `oss`
+rather than behind a runner you must attach first — and there it works against
+any repository, not only Log4j.
 
-[cols="1,1,3"]
-|===
-| Flag | Default | Effect
-
-| _positional 1_ | — | Issue number. Required
-| `--comments` | off | Append the discussion
-| `--repo` | `apache/logging-log4j2` | Any repository
-|===
-
-Given a pull request number it says so and names `./bench pr` rather than
-printing a bare 404 — the REST API treats both as issues, `gh issue view` does
-not.
+`./bench issue` prints that line and exits `2`. A command that quietly stopped
+existing is worse than one that says where it went.
 
 == pr
 

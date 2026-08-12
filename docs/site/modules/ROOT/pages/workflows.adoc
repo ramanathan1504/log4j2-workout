@@ -157,7 +157,7 @@ workflow — whether a change should be merged at all — is `docs/PR-REVIEW.md`
 
 [source,bash]
 ----
-./bench issue 4143 --comments
+oss issue 4143 --repo apache/logging-log4j2
 ./bench run core-java --config xml/layout-jsontemplate --log4j 2.24.1
 ----
 

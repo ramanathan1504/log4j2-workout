@@ -15,7 +15,7 @@ would ship — never Maven's own classpath.
 ./bench matrix --scenario exceptions            # that scenario, every Log4j version
 ./bench coverage                                # what is reached, what is not
 ./bench repro 4143 --config xml/layout-jsontemplate
-./bench issue 4143                              # read an upstream issue
+oss issue 4143 --repo apache/logging-log4j2      # read an upstream issue
 ./bench pr 4240 --checkout --install            # read a PR, and run it here
 ./bench clean                                   # discard the classpath cache
 ----
