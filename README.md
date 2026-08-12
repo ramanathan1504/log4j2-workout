@@ -1,20 +1,35 @@
-# Log4j Bench
+# Log4j Bench — a pack for `oss`
 
-A complete, real-application bench for Apache Log4j — every appender, layout,
-filter, lookup, message type and configuration format, runnable across the 1.x
-bridge, every 2.x line, and 3.x.
+A playground for maintainer work on Apache Log4j: nineteen real applications
+wired to every appender, layout, filter, lookup, message type and configuration
+format, runnable across the 1.x bridge, every 2.x line, and 3.x.
+
+**This repository holds no engine and no tooling.** It is a *pack* — a
+description of a playground, plus the material to run in it. The engine that
+walks it lives in [`oss`](https://github.com/ramanathan1504/oss-cli):
+
+```bash
+brew install ramanathan1504/oss-cli/oss
+git clone https://github.com/ramanathan1504/log4j2-workout && cd log4j2-workout
+oss run list --apps
+oss run matrix --scenario exceptions --version 2.26.1
+```
+
+`pack.sh` is the whole contract between the two. Copy it to point the same
+engine at your own project — `runner/packs/example/pack.sh` in `oss` is a
+thirty-line version to start from.
 
 Built for maintainer work: when an issue or PR arrives, run it here against a
 real application on every affected version, then emit a standalone reproduction
 zip to attach to the issue.
 
 ```bash
-./bench list                                          # what exists
-./bench run core-java --config xml/layout-pattern-full # run scenarios
-./bench matrix --scenario exceptions                   # same test, every version
-./bench matrix --apps core-java,db --javas 17,21       # slice any axis
-./bench coverage                                       # what is reached, what is not
-./bench repro 4143 --scenario exceptions --config xml/layout-jsontemplate
+oss run list                                          # what exists
+oss run run core-java --config xml/layout-pattern-full # run scenarios
+oss run matrix --scenario exceptions                   # same test, every version
+oss run matrix --apps core-java,db --javas 17,21       # slice any axis
+oss run coverage                                       # what is reached, what is not
+oss run repro 4143 --scenario exceptions --config xml/layout-jsontemplate
 ```
 
 ---
@@ -66,7 +81,7 @@ Nothing here ever touches an upstream project.
 git clone git@github.com:ramanathan1504/log4j2-workout.git
 cd log4j2-workout
 git config core.hooksPath .githooks    # required: see Contributing
-./bench list                           # verify it runs
+oss run list                           # verify it runs
 ```
 
 The `core.hooksPath` line is per-clone — git will not set it for you. Skipping it
@@ -76,7 +91,7 @@ protected branch anyway, just after a round trip instead of instantly.
 **Verify a real run**
 
 ```bash
-./bench run core-java --config xml/baseline-console
+oss run run core-java --config xml/baseline-console
 ```
 
 Log4j catches appender exceptions, reports them through `StatusLogger`, and lets
@@ -87,7 +102,7 @@ assuming the configuration is wrong:
 
 ```bash
 BENCH_JVM_ARGS='-Dlog4j2.debug=true -Dlog4j2.StatusLogger.level=TRACE' \
-  ./bench run nosql --config xml/appender-nosql
+  oss run run nosql --config xml/appender-nosql
 ```
 
 ---
@@ -101,7 +116,7 @@ standalone reproduction to attach to it.
 
 | | |
 |---|---|
-| Module reach (2.x) | 41 of 41 shippable modules on some app's classpath (`./bench coverage` recomputes it) |
+| Module reach (2.x) | 41 of 41 shippable modules on some app's classpath (`oss run coverage` recomputes it) |
 | Module reach (3.x) | 21 of 22 shippable modules on a classpath. The exception is `log4j-plugin-processor`: `@Plugin` moved package between the lines, so plugin sources cannot compile against both and `apps/custom-plugins` is 2.x-only. Catalogued in `FEATURE-MATRIX` §19 |
 | Config formats | every config in XML, JSON, YAML and properties, plus both Log4j 1.x formats |
 | Axes | 19 app targets · 73 configs · JDK 8/17/21/22 · 2.24.1 → 3.0.0-SNAPSHOT. **8 of the 19 apps run on 3.x** — eleven are 2.x-only (`APPS_2X_ONLY` in `bench`), either because their Log4j module has no 3.x release (`log4j-1.2-api`, `log4j-jakarta-web`, `log4j-spring-boot`, `log4j-jpa`, the JUL/JCL/SLF4J bridges, SMTP, JMS) or because the sources cannot compile against both lines (`custom-plugins`) |
@@ -172,7 +187,7 @@ behaviours, each traced to source rather than inferred.
 
 **Three apps are 2.x-only** — `log4j1-bridge`, `jakarta-web` and
 `spring-boot-gradle` — because `log4j-1.2-api`, `log4j-jakarta-web` and
-`log4j-spring-boot` have no 3.x release. `./bench matrix` reports them as SKIP
+`log4j-spring-boot` have no 3.x release. `oss run matrix` reports them as SKIP
 on 3.x rather than FAIL, and the Maven build drops them from the reactor.
 
 **Configs are a shared library, not per-module.** Any app can load any config via
@@ -183,8 +198,8 @@ Every config exists in all four Log4j 2 formats under the same name, so the
 format is just a directory and switching between them is a one-word change:
 
 ```bash
-./bench run core-java --config xml/filter-all
-./bench run core-java --config properties/filter-all
+oss run run core-java --config xml/filter-all
+oss run run core-java --config properties/filter-all
 ```
 
 The extension is inferred from the directory; a bare name (`--config filter-all`)
@@ -209,7 +224,7 @@ to the default configuration without complaint.
 them, later files overriding earlier ones:
 
 ```bash
-./bench run core-java --config xml/baseline-console,xml/custom-levels
+oss run run core-java --config xml/baseline-console,xml/custom-levels
 ```
 
 Each element resolves independently, so the short names still work. The merged
@@ -217,7 +232,7 @@ configuration takes its name from the last file, which is the quickest way to
 tell a merge happened at all.
 
 The 1.x formats live in `configs/log4j1/` and need the bridge's factory, which
-is off by default. `./bench` recognises the directory and passes
+is off by default. `oss run` recognises the directory and passes
 `-Dlog4j1.compatibility=true` plus `-Dlog4j.configuration` (the 1.x property
 name, which takes a URL) automatically.
 
@@ -225,7 +240,7 @@ name, which takes a URL) automatically.
 
 ## The version axis
 
-`./bench` resolves a real classpath per version and forks a JVM — it never runs
+`oss run` resolves a real classpath per version and forks a JVM — it never runs
 inside Maven's own classpath, so what executes is exactly what a repro zip ships.
 
 | Selector | Log4j |
@@ -241,7 +256,7 @@ Four facts about 3.x that the bench encodes, because they surprise people:
 0. **3.x reads a different system property for the config location.** It is
    `log4j.configuration.location`; `log4j.configurationFile` is not read at all.
    Nothing fails when you pass the 2.x name — Log4j quietly uses
-   `DefaultConfiguration` — so the run looks fine and tests nothing. `./bench`
+   `DefaultConfiguration` — so the run looks fine and tests nothing. `oss run`
    picks the right property per version, and the banner prints the one actually
    set alongside the configuration Log4j really loaded.
 
@@ -253,7 +268,7 @@ Four facts about 3.x that the bench encodes, because they surprise people:
 3. **Modules that do not exist on 3.x at all**: `log4j-1.2-api`, `log4j-jcl`,
    `log4j-web`, `log4j-cassandra`, `log4j-jpa`, `log4j-spring-boot`.
 
-`./bench` handles all three by passing `-Plog4j-3x -Dlog4j3=true` for 3.x versions.
+`oss run` handles all three by passing `-Plog4j-3x -Dlog4j3=true` for 3.x versions.
 
 To (re)build the local snapshots:
 
@@ -271,9 +286,9 @@ single value except the Log4j one, because the full cross product is thousands
 of forked JVMs:
 
 ```bash
-./bench matrix                                   # every Log4j version, one app/config/JDK
-./bench matrix --apps core-java,db --javas 17,21 # widen the axes you care about
-./bench matrix --all                             # every valid cell — hours
+oss run matrix                                   # every Log4j version, one app/config/JDK
+oss run matrix --apps core-java,db --javas 17,21 # widen the axes you care about
+oss run matrix --all                             # every valid cell — hours
 ```
 
 **Most of the cross product is invalid, and that is reported rather than run.**
@@ -286,7 +301,7 @@ The JDK axis is discovered from `/usr/libexec/java_home`, so it reflects what is
 installed. Only `java8-baseline` is compiled at release 8 — every other module
 targets 17 and is skipped on older JDKs rather than failing to load.
 
-`./bench coverage` answers the other question: which Log4j modules are on some
+`oss run coverage` answers the other question: which Log4j modules are on some
 app's classpath at all, and which axis cells have actually been run. It reads
 the module list from your source clone, so it stays honest as the clone moves.
 
@@ -295,7 +310,7 @@ the module list from your source clone, so it stays honest as the clone moves.
 ## Generating a reproduction
 
 ```bash
-./bench repro 4143 \
+oss run repro 4143 \
   --scenario exceptions \
   --config xml/layout-jsontemplate \
   --log4j 2.24.1 --log4j 2.25.4 --log4j 2.26.1 --log4j 2.27.0-SNAPSHOT
@@ -376,7 +391,7 @@ gap list in §16 tracking what the bench does not yet exercise.
 
 ## What the matrix will not run, and why
 
-`./bench matrix` prunes its cross product before running anything. A cell that
+`oss run matrix` prunes its cross product before running anything. A cell that
 cannot pass is reported as `SKIP` with the reason, never as a failure — a
 failing cell that could never have passed is noise, and worse, it buries the
 failures that matter. One 698-cell sweep produced 98 failures, none of them
@@ -400,10 +415,10 @@ infrastructure creates that coupling.
 ### Sweep knobs
 
 ```bash
-./bench matrix --all --scenario messages     # one scenario per cell, not all seven
-./bench matrix --all --reuse-builds          # reuse the cached classpath per (app, version)
-BENCH_CELL_TIMEOUT=600 ./bench matrix --all  # per-cell wall clock, default 300s
-BENCH_SPRING_SELFTEST=0 ./bench run spring-boot-maven   # interactive server, not the self-test
+oss run matrix --all --scenario messages     # one scenario per cell, not all seven
+oss run matrix --all --reuse-builds          # reuse the cached classpath per (app, version)
+BENCH_CELL_TIMEOUT=600 oss run matrix --all  # per-cell wall clock, default 300s
+BENCH_SPRING_SELFTEST=0 oss run run spring-boot-maven   # interactive server, not the self-test
 ```
 
 **`--scenario` is the one that matters for a full sweep.** Without it every cell

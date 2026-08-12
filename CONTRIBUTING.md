@@ -50,10 +50,10 @@ The engine is `bench`; what it tests is `packs/`. To point the same machinery at
 a different project, copy `packs/example/` rather than editing the engine:
 
 ```bash
-BENCH_PACK=example ./bench list
+BENCH_PACK=example oss run list
 ```
 
-Run `./bench help` after touching any script header — `usage()` reads that block,
+Run `oss run help` after touching any script header — `usage()` reads that block,
 so a malformed one prints the script.
 
 ## Licence
