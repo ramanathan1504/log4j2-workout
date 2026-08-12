@@ -29,17 +29,21 @@ from inside the Log4j clone with an IDE open on it.
 
 ## Where this repo sits, of the three
 
-**oss-cli knows → workout runs → knowledge-creator remembers.**
+**`oss` knows → this runs → the archive remembers.**
+
+In `oss`'s own words: this repository is a **runner** extension, and what it runs
+against is a **pack**. `packs/log4j/` is the Log4j one; `packs/example/` is there
+to be copied. The engine does not know what it is testing.
 
 | Repo | Owns | Reach for it when |
 |---|---|---|
-| [`oss-cli`](https://github.com/ramanathan1504/oss-cli) | facts about any repo, from the GitHub API, cached by head SHA. No clone, any project, any language. | you want PR facts, conventions or a verdict without building anything |
+| [`oss`](https://github.com/ramanathan1504/oss-cli) | facts about any repo, from the GitHub API, cached by head SHA. No clone, any project, any language. | you want PR facts, conventions or a verdict without building anything |
 | **this one** | execution — real apps, real JVMs, the version × config × app matrix | the question needs something to actually run |
 | `knowledge-creator` | the archive: harvests threads and notes into DEVONthink, topic-first, indexed | you want it findable in a year |
 
 One test decides where new work belongs: *does it need to execute code against a
 real app?* If yes it is here; if it only needs to be retrievable later it is
-`knowledge-creator`; if it is neither, it is `oss-cli`.
+`knowledge-creator`; if it is neither, it is `oss`.
 
 That question went unasked once and cost a rebuild: `./bench redgreen` was
 written from scratch while `knowledge-creator/log4j-pr-review.sh` had done the

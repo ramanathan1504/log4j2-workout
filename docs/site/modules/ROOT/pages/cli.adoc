@@ -537,7 +537,7 @@ Two independent things must both be true:
 [source,bash]
 ----
 ./bench hub --approve-upstream apache/logging-log4j2   # permits posts, this run only
-oss-cli bench --approve-upstream apache/logging-log4j2 hub --pr 4234
+oss run --approve-upstream apache/logging-log4j2 hub --pr 4234
 ----
 
 WARNING: The launchd agent does **not** pass `--approve-upstream`, so the always-on hub at login *cannot post at all*. Posting requires starting a hub by hand, deliberately, with the repository named. That is the intended asymmetry: the thing that runs unattended is the thing that must not be able to write.
