@@ -804,7 +804,6 @@ java_major_of() {
 }
 
 cmd_repro() { exec "$ROOT/scripts/repro.sh" "$@"; }
-cmd_issue() { exec "$ROOT/scripts/gh-issue.sh" "$@"; }
 cmd_pr()    { exec "$ROOT/scripts/gh-pr.sh" "$@"; }
 cmd_review() { exec "$ROOT/scripts/pr-review.sh" "$@"; }
 cmd_hub()    { exec python3 "$ROOT/scripts/hub.py" "$@"; }

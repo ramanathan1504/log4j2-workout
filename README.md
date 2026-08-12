@@ -109,7 +109,7 @@ standalone reproduction to attach to it.
 | Layouts | every layout Log4j ships except `SerializedLayout`, which is deprecated and refuses to build without `log4j2.enableSerialization` |
 | Appenders needing infrastructure | JDBC, JPA, SMTP, JMS, JNDI, Kafka, Syslog, Socket, HTTP, JeroMQ, MongoDB, CouchDB, Cassandra — all verified by outcome against real services |
 | Reproduction zips | generated, extracted outside the repo and run standalone |
-| CI | ~200 cells in 13 minutes on every pull request into `development` |
+| CI | ~200 cells in 13 minutes on every pull request into `main` |
 
 **Known open**
 
@@ -422,7 +422,7 @@ slow progress.
 ### Continuous integration
 
 `.github/workflows/bench.yml` runs a slice of the matrix on every pull request
-into `development`: all four Log4j 2 configuration formats plus both 1.x
+into `main`: all four Log4j 2 configuration formats plus both 1.x
 formats, JDK 8/17/21, Log4j 2.24.1 and 2.26.1, across the thirteen apps that
 need no external infrastructure. About 200 cells in 13 minutes.
 
@@ -431,8 +431,8 @@ that rarely change; this catches the things that do.
 
 Two details worth knowing:
 
-* **It does not run on `development` → `main` syncs.** Nothing reaches `main`
-  without passing here first, so a second run would re-prove the same commits.
+* **It runs once per change.** `main` is the only long-lived branch, so a pull
+  request is the single gate and nothing merges without passing here.
   `workflow_dispatch` still runs it on demand.
 * **It skips paths that cannot change the bench** — `**.md`, `docs/**`, `.githooks/**`, `.gitignore`, `.gitattributes`, `infra/output/**`.** If it is ever made a
   *required* status check, a skipped run never reports and the merge blocks
@@ -447,35 +447,40 @@ Those stay verified locally against real services.
 
 ## Contributing
 
-`main` and `development` both carry GitHub branch protection: a pull request is
-required, `enforce_admins` is on, force pushes and branch deletion are disabled,
-and linear history is required. A direct push is refused by the server with
-`GH006` even under `--no-verify`.
+`main` carries GitHub branch protection: a pull request is required,
+`enforce_admins` is on, force pushes and branch deletion are disabled, and linear
+history is required. A direct push is refused by the server with `GH006` even
+under `--no-verify`.
 
 Changes flow one way:
 
 ```
-feature branch  ->  PR  ->  development  ->  PR  ->  main
+fork or feature branch  ->  PR  ->  main
 ```
 
 ```bash
-git switch development && git pull
+git switch main && git pull
 git switch -c my-change
 # ... work, commit ...
 git push -u origin my-change
-gh pr create --base development
+gh pr create --base main
 ```
 
-`.githooks/pre-push` refuses a direct push to either protected branch locally,
-so the mistake costs a second rather than a round trip. It is a convenience, not
-the control — bypassing it only moves the rejection to the server.
+If you are not a maintainer here, fork first — `gh repo fork --clone`.
 
-**Merge commits are rejected.** Linear history is required, so use squash or
-rebase:
+There was a `development` branch in front of `main` until this repository went
+public. It existed so main received only already-verified commits; a
+fork-and-pull-request model does that already, and the second branch only added a
+merge to perform and somewhere for the two to drift.
+
+`.githooks/pre-push` refuses a direct push to `main` locally, so the mistake
+costs a second rather than a round trip. It is a convenience, not the control —
+bypassing it only moves the rejection to the server.
+
+**Merge commits are rejected.** Linear history is required:
 
 ```bash
-gh pr merge --squash --delete-branch   # feature -> development
-gh pr merge --rebase                   # development -> main, keeps the commits
+gh pr merge --squash --delete-branch   # feature -> main
 ```
 
 `required_approving_review_count` is 0 on purpose: at 1 a solo maintainer cannot

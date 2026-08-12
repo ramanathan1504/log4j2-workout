@@ -117,24 +117,27 @@ baseline measured after the overwrite measures the pull request twice.
 
 ## Git workflow
 
-`main` and `development` both carry branch protection. A direct push is refused
-with `GH006`, even under `--no-verify`.
+`main` is the only long-lived branch, and carries branch protection. A direct
+push is refused with `GH006`, even under `--no-verify`.
 
 ```
-feature branch --squash--> development --merge--> main
+fork or feature branch --squash--> main
 ```
+
+There used to be a `development` branch in front of `main`, merged across in a
+second step. It was removed once the repository went public and every change
+began arriving as a pull request: the pull request is the gate, and a second
+long-lived branch behind it only added a merge to perform and somewhere for the
+two to drift. They had already drifted by fifty merge commits when it went.
 
 - `git config core.hooksPath .githooks` — once per clone; git will not do it.
-- feature → `development`: **squash**, keeps that branch linear.
-- `development` → `main`: **plain merge**. `--rebase` duplicated every commit
-  under new SHAs once and the branches diverged; that is why linear history is
-  off for `main`.
+- feature → `main`: **squash**, which keeps it linear.
 - `git branch --merged` under-reports here — squash merges mean branch commits
   never become ancestors. Ask `gh pr list --state merged` instead.
-- CI runs ~200 cells in ~13 minutes on every PR into `development`. It skips
-  `**.md`, `docs/**`, `.githooks/**`, `.gitignore`, `.gitattributes`,
-  `infra/output/**`, `log4j-samples/**` — a docs-only PR reports **no run at
-  all**, which is the filter working, not a stuck check.
+- CI runs ~200 cells in ~13 minutes on every PR into `main`. It skips `**.md`,
+  `docs/**`, `.githooks/**`, `.gitignore`, `.gitattributes`, `infra/output/**`,
+  `log4j-samples/**` — a docs-only PR reports **no run at all**, which is the
+  filter working, not a stuck check.
 - Because each PR costs that run, **batch related work into one branch** rather
   than opening a PR per fix.
 

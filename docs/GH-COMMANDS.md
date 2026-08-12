@@ -7,13 +7,17 @@ Two wrappers cover the commands you type most; the rest is raw `gh`.
 
 | Wrapper | Replaces |
 |---|---|
-| `./bench issue <n>` | `gh issue view` with the fields that matter, and a nudge to the bench commands |
+| `oss issue <n>` | `gh issue view` with the fields that matter. In the core, not here — see below |
 | `./bench pr <n>` | `gh pr view` + `diff --name-only` + `checks` + `reviews`, and `--checkout --install` to make the PR selectable by `./bench` |
 | `./bench followup` | nothing — `gh` has no notion of *what changed since you reviewed*. See [§5](#5-following-a-pr-after-you-reviewed-it) |
 
-Source: [`../scripts/gh-issue.sh`](../scripts/gh-issue.sh),
-[`../scripts/gh-pr.sh`](../scripts/gh-pr.sh). Both are read-only unless you pass
+Source: [`../scripts/gh-pr.sh`](../scripts/gh-pr.sh). Read-only unless you pass
 `--checkout`, which touches the **Log4j clone** and never this repository.
+
+**Reading an issue moved to `oss`.** It needs one API call and nothing else, so
+it belongs in the core rather than behind a bench you must attach first — and it
+works against any repository, not only Log4j. `./bench issue` prints where it
+went rather than failing silently.
 
 Throughout, `-R apache/logging-log4j2` is the upstream repo. Omit `-R` inside
 this clone and `gh` targets this repository instead — which is the single
@@ -34,8 +38,7 @@ gh repo set-default                # stop gh guessing when a clone has many remo
 ## 1. Upstream issues
 
 ```bash
-./bench issue 4143                          # the report, formatted
-./bench issue 4143 --comments               # plus the discussion
+oss issue 4143 --repo apache/logging-log4j2          # the report, formatted
 gh issue view 4143 -R apache/logging-log4j2 --web    # only if you want the browser
 ```
 
@@ -152,35 +155,31 @@ no matrix behind it is worth less than the matrix with no verdict.
 
 ## 3. This repository
 
-`development` and `main` both refuse direct pushes — `GH006`, even under
-`--no-verify`. Everything goes through a pull request.
+`main` refuses direct pushes — `GH006`, even under `--no-verify`. Everything
+goes through a pull request, including yours.
 
 ```bash
-git switch development && git pull --ff-only
+git switch main && git pull --ff-only
 git switch -c my-change
 # work
 git push -u origin my-change
-gh pr create --base development --title "..." --body-file /tmp/body.md
+gh pr create --base main --title "..." --body-file /tmp/body.md
 ```
 
 ```bash
 gh pr status                                  # what is open, and where it stands
 gh pr view --web                              # the current branch's PR
 gh pr checks                                  # CI on the current branch
-gh pr merge <n> --squash --delete-branch      # feature → development
+gh pr merge <n> --squash --delete-branch      # feature → main
 ```
 
-Syncing `main`:
+If you are not a maintainer here, fork first — the flow is otherwise identical,
+and `gh repo fork --clone` does it in one command.
 
-```bash
-gh pr create --base main --head development --title "Sync development into main"
-gh pr merge <n> --merge                       # --merge, never --squash or --rebase
-```
-
-**The merge strategy is not a preference.** Squash into `development` keeps its
-history linear; a plain merge into `main` keeps the two branches from diverging
-under new SHAs. `--rebase` here duplicated every commit once already, which is
-why linear history is off for `main`.
+`main` is the only long-lived branch. There was a `development` branch in front
+of it until the repository went public; the second branch existed to keep CI off
+main, and a fork-and-pull-request model already does that. Squash on the way in,
+which keeps the history linear.
 
 `git branch --merged` under-reports in this repository — squash merges mean the
 branch commits never become ancestors. Ask GitHub instead:
@@ -194,7 +193,7 @@ gh pr list --state merged --limit 20 --json number,title,mergedAt
 ## 4. CI
 
 `.github/workflows/bench.yml` runs ~200 cells in ~13 minutes on every PR into
-`development`. It skips `**.md`, `docs/**`, `.githooks/**`, `.gitignore`,
+`main`. It skips `**.md`, `docs/**`, `.githooks/**`, `.gitignore`,
 `.gitattributes`, `infra/output/**` and `log4j-samples/**` — a docs-only PR
 reports no run at all, which is the filter working, not a stuck check.
 

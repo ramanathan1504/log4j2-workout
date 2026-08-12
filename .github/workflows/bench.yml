@@ -14,11 +14,15 @@ name: bench
 
 on:
   pull_request:
-    # development only. main receives nothing except a sync from development,
-    # and that content has already passed this workflow on its way in — running
-    # it again is thirteen minutes spent re-proving the same commits. A change
-    # cannot reach main without having been verified here first.
-    branches: [development]
+    # main, because main is now the only long-lived branch here.
+    #
+    # There used to be a development branch in front of it, so that main received
+    # nothing but an already-verified sync and this did not run twice for the same
+    # commits. That made sense when work was pushed straight to a branch. It stops
+    # making sense once every change arrives as a pull request from a fork: the
+    # pull request is the gate, and a second branch behind it only adds a merge to
+    # perform and a place for the two to drift.
+    branches: [main]
     # A documentation-only change cannot alter what the bench does. Skipping
     # those keeps the signal meaningful rather than habitual.
     #
