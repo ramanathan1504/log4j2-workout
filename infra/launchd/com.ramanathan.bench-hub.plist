@@ -19,7 +19,13 @@
     <array>
         <string>/bin/bash</string>
         <string>-c</string>
-        <string>exec __ROOT__/bench hub --no-open</string>
+        <!-- `oss run --pack`, not `__ROOT__/bench`. This repository became a pure
+             pack: the engine moved into oss and the bench script went with it.
+             The old line kept resolving to a file that no longer exists, so
+             launchd relaunched it every 60 seconds, each attempt appending
+             "cannot execute: No such file or directory" to a log nobody reads —
+             and the hub site on :8787 had simply not been running since. -->
+        <string>exec oss run --pack __ROOT__ hub --no-open</string>
     </array>
     <key>RunAtLoad</key>         <true/>
     <!-- Restart if it dies. Throttled so a persistent failure (port taken,

@@ -13,13 +13,13 @@
 """
 hub.py — one local site over all three repos.
 
-    bench hub                 serve on http://localhost:8787, and open it
-    bench hub --pr 4245       ...straight into the review composer for one PR
-    bench hub --port 9000
-    bench hub --no-open       serve only, no browser
-    bench hub --once          write index.html and exit, no server
-    bench hub --sync all      pull everything the page can pull, then exit
-    bench hub --sync triage   one job only — fetch, todo, triage or all
+    oss run hub                 serve on http://localhost:8787, and open it
+    oss run hub --pr 4245       ...straight into the review composer for one PR
+    oss run hub --port 9000
+    oss run hub --no-open       serve only, no browser
+    oss run hub --once          write index.html and exit, no server
+    oss run hub --sync all      pull everything the page can pull, then exit
+    oss run hub --sync triage   one job only — fetch, todo, triage or all
 
 The page is regenerated on every request, from the working tree as it is right
 now. There is no build step, no cache and no watcher to fall out of sync: if you
@@ -32,7 +32,7 @@ subset renderer rather than a dependency.
 It reads the three working trees; it never fetches, pulls or commits in them.
 Two views are the exception, because they answer questions the working tree
 cannot: the To-do board calls the GitHub API, and Backlog triage shells out to
-knowledge-creator's triage.sh, which writes its report there. Both are cached,
+`oss backlog`, which writes its report there. Both are cached,
 both say how old they are, and neither runs on the request path.
 
 One view writes: **Send a review** posts to GitHub, through `gh`, as you. It is
@@ -46,6 +46,7 @@ import html
 import json
 import os
 import re
+import shutil
 import subprocess
 import sys
 import threading
@@ -58,7 +59,12 @@ from urllib.parse import parse_qs, quote, urlparse
 from urllib.request import urlopen
 
 HOME = Path.home()
-WORKOUT = Path(__file__).resolve().parent.parent
+# The pack root, which is where this file now sits. It used to be scripts/hub.py,
+# so `.parent.parent` was right; the pack-split commit moved it up one level and
+# left this line alone, and WORKOUT has pointed at ~/apache -- the parent of every
+# clone -- ever since. Nothing announced it: the template lookup, the .bench cache
+# and the todo board all just resolved somewhere that does not exist.
+WORKOUT = Path(__file__).resolve().parent
 OSSCLI = Path(os.environ.get("BENCH_OSSCLI_DIR") or HOME / "own repo" / "oss-cli")
 KB = Path(os.environ.get("BENCH_KB_DIR") or HOME / "own repo" / "knowledge-creator")
 
@@ -296,6 +302,20 @@ def gh_json(*args, timeout=60):
 
 
 def ledger_map():
+    """Pull request number -> what you recorded about it, and where.
+
+    Column 0 is the REPOSITORY, not the pull request. The ledger gained that
+    column when it went multi-project -- "PR 4234" means nothing once you follow
+    two projects -- and this reader was never updated. Every key became the
+    string "apache/logging-log4j2", and the to-do board then died on
+    int("apache/logging-log4j2") before it could draw a single row.
+
+    Invisible until now, because the launchd agent pointed at a script that no
+    longer existed, so the page this feeds never started.
+
+    The older seven-column shape is still read: a ledger written before the
+    change is still a ledger, and it was all against the one repository.
+    """
     out = {}
     f = REVIEW_DIR / "ledger.tsv"
     if f.exists():
@@ -303,9 +323,16 @@ def ledger_map():
             if not line.strip() or line.startswith("#"):
                 continue
             c = line.split("\t")
-            if len(c) >= 7:
-                out[c[0]] = {"verdict": c[1], "when": c[2], "sha": c[3],
-                             "author": c[4], "posted": c[5], "note": c[6]}
+            if len(c) >= 8:
+                repo, row = c[0], c[1:]
+            elif len(c) >= 7:
+                repo, row = UPSTREAM, c
+            else:
+                continue
+            if not row[0].strip().isdigit():
+                continue  # a header or a malformed line must not become a target
+            out[row[0]] = {"repo": repo, "verdict": row[1], "when": row[2], "sha": row[3],
+                           "author": row[4], "posted": row[5], "note": row[6]}
     return out
 
 
@@ -327,22 +354,28 @@ def todo_fetch():
     led = ledger_map()
 
     targets = {(UPSTREAM, str(p["number"])) for p in involved}
-    targets |= {(UPSTREAM, n) for n in led}
+    # Each row carries its own repository now, so a ledger spanning two projects
+    # no longer files every one of them under the Log4j upstream.
+    targets |= {(v.get("repo") or UPSTREAM, n) for n, v in led.items()}
     targets |= {(p["repository"]["nameWithOwner"], str(p["number"])) for p in authored}
     # Your own repos are not follow-up: nobody is waiting on you there, you just
     # merge them. This board is for work in someone else's project.
     targets = {(r, n) for r, n in targets if not r.lower().startswith(f"{me.lower()}/")}
 
     rows = []
-    for repo, n in sorted(targets, key=lambda t: (t[0], -int(t[1]))):
+    # Sorted defensively: one non-numeric target used to abort the whole board
+    # with a ValueError rather than skip the row that caused it.
+    for repo, n in sorted(targets, key=lambda t: (t[0], -(int(t[1]) if t[1].isdigit() else 0))):
         d = gh_json("pr", "view", n, "--repo", repo, "--json",
                     "number,title,author,state,isDraft,updatedAt,headRefOid,"
                     "reviews,comments,mergeable,reviewDecision,statusCheckRollup",
                     timeout=45)
         if not d:
             continue
-        # The ledger only knows about the repo it was written for.
-        l = led.get(n) if repo == UPSTREAM else None
+        # Match the row's own repository rather than assuming the upstream one.
+        l = led.get(n)
+        if l and (l.get("repo") or UPSTREAM) != repo:
+            l = None
         mine = [x for x in (d.get("reviews") or []) if (x.get("author") or {}).get("login") == me]
         my_last = mine[-1] if mine else None
         events = [(c.get("createdAt", ""), (c.get("author") or {}).get("login", ""))
@@ -487,7 +520,7 @@ EVENT_NAMES = {e[0] for e in EVENTS}
 def draft_body(pr):
     """The paste-ready block from this PR's write-up, or nothing.
 
-    Same rule as `bench followup --comment`, and for the same reason: a review
+    Same rule as `oss run followup --comment`, and for the same reason: a review
     file is mostly notes to yourself, and only the block under
     `── paste-ready comment ──` is addressed to the author. A file may carry one
     block per PR it covers, so prefer the one naming this number.
@@ -769,7 +802,7 @@ def check_anchors(repo, pr, comments):
 
 def ledger_mark_posted(pr, sha):
     """Sending makes two ledger columns true at the same moment: the review is
-    posted, and it was posted against this head. `bench followup --sync` writes
+    posted, and it was posted against this head. `oss run followup --sync` writes
     the second; there is no reason to make you run it by hand after a Send."""
     f = REVIEW_DIR / "ledger.tsv"
     if not f.exists():
@@ -1304,7 +1337,7 @@ window.addEventListener('beforeunload',e=>{
   if(CM.comments.length&&!CM.sent){e.preventDefault();e.returnValue=''}
 });
 
-// ?pr=4245 — one link straight into the composer, so `bench hub --pr 4245`, a
+// ?pr=4245 — one link straight into the composer, so `oss run hub --pr 4245`, a
 // bookmark and a paste into a chat all land on the diff rather than the board.
 const qs=new URLSearchParams(location.search);
 if(qs.get('pr'))openPR((qs.get('repo')||'').trim()||document.getElementById('c-repo').value.trim(),
@@ -1313,7 +1346,7 @@ if(qs.get('pr'))openPR((qs.get('repo')||'').trim()||document.getElementById('c-r
 
 
 def newest_triage():
-    """knowledge-creator's triage.sh already answers 'what is happening in the
+    """`oss backlog` already answers 'what is happening in the
     backlog'. Surface its newest report rather than writing a second one."""
     reports = sorted(KB.glob("triage-*.html"), key=lambda p: p.stat().st_mtime, reverse=True)
     return reports[0] if reports else None
@@ -1332,11 +1365,17 @@ def human_age(seconds):
 
 
 # ------------------------------------------------------------ triage sweep ---
-# triage.sh is a read-only GitHub sweep, but it is an expensive one — ~80 PRs and
-# ~160 issues, a few hundred API calls — and it writes its report into
-# knowledge-creator. So it never runs on the request path: the button and the
-# background thread both start it here, and the page polls for the result.
-TRIAGE_SH = KB / "triage.sh"
+# A read-only GitHub sweep, but an expensive one — ~80 PRs and ~160 issues, a few
+# hundred API calls — writing its report into knowledge-creator. So it never runs
+# on the request path: the button and the background thread both start it here,
+# and the page polls for the result.
+#
+# It was knowledge-creator/triage.sh. That script is now `oss backlog`, and the
+# old path was still being looked for on every sweep — failing, once per run,
+# into a log nobody reads. Same flags, same OWNER/REPO positional, same
+# triage-<date>-<repo>.html written into the working directory, which is why
+# cwd stays KB and newest_triage() still finds it.
+TRIAGE_CMD = ["oss", "backlog"]
 TRIAGE_MAX_AGE_H = float(os.environ.get("BENCH_TRIAGE_MAX_AGE_H", "24"))
 
 
@@ -1346,9 +1385,9 @@ def triage_age():
 
 
 def triage_sweep():
-    if not TRIAGE_SH.exists():
-        raise FileNotFoundError(f"no triage.sh at {TRIAGE_SH}")
-    r = subprocess.run([str(TRIAGE_SH), UPSTREAM, "--no-ai"], cwd=str(KB),
+    if not shutil.which(TRIAGE_CMD[0]):
+        raise FileNotFoundError(f"no '{TRIAGE_CMD[0]}' on PATH — the sweep is `oss backlog`")
+    r = subprocess.run([*TRIAGE_CMD, UPSTREAM, "--no-ai"], cwd=str(KB),
                        capture_output=True, text=True, timeout=1800)
     if r.returncode != 0:
         # The last non-empty line is the failure; the rest is progress.
@@ -1359,7 +1398,7 @@ def triage_sweep():
 
 
 # The report is a standalone page from another repo, with its own light-only
-# palette. Rather than restyle it — it is regenerated by triage.sh and any edit
+# palette. Rather than restyle it — it is regenerated by `oss backlog` and any edit
 # there would be overwritten — map its palette onto the hub's dark tokens on the
 # way out, and let the iframe answer prefers-color-scheme like the hub does.
 TRIAGE_DARK = """
@@ -1622,7 +1661,7 @@ def _job_claim(name):
 
 
 def _job_lock(name):
-    """`bench hub` runs from launchd all day, so a terminal `--sync` is a second
+    """`oss run hub` runs from launchd all day, so a terminal `--sync` is a second
     process, not a second thread — and two triage.sh runs would write the same
     report at once. flock is held by the OS and released when the process dies,
     which a pidfile would not survive."""
@@ -1641,7 +1680,7 @@ def _job_exec(name):
     # "all" holds no lock of its own; each job it runs takes its own.
     lock = _job_lock(name) if name != "all" else True
     if lock is None:
-        msg, ok = "already running in another bench hub — left it to finish", True
+        msg, ok = "already running in another oss run hub — left it to finish", True
     else:
         try:
             msg, ok = str(JOBS[name][1]()), True
@@ -1689,7 +1728,7 @@ def todo_html(todo, age):
         <span class="sub" data-msg="todo"></span></div>
         <p>No cache yet — this view needs GitHub, so it is fetched rather than read
         from the working tree. Press <em>Sync now</em>, or:</p>
-        <pre><code>bench hub --refresh</code></pre>
+        <pre><code>oss run hub --refresh</code></pre>
         <p class="sub">Once written, the page renders from the cache instantly and
         refreshes itself in the background while the server runs.</p>"""
 
@@ -1755,10 +1794,10 @@ def todo_html(todo, age):
                'review</strong> (the head SHA moved past the one you reviewed at). '
                'GitHub knows what you <em>said</em>; the ledger knows what you '
                '<em>decided</em>. Keep it current with '
-               '<code>bench followup --sync &lt;n&gt;</code>.</p>'
-               '<pre><code>bench followup --changed    # the same question, in the terminal\n'
-               'bench review &lt;n&gt;              # the mechanical facts\n'
-               'bench hub --refresh          # re-fetch this view</code></pre>')
+               '<code>oss run followup --sync &lt;n&gt;</code>.</p>'
+               '<pre><code>oss run followup --changed    # the same question, in the terminal\n'
+               'oss run review &lt;n&gt;              # the mechanical facts\n'
+               'oss run hub --refresh          # re-fetch this view</code></pre>')
     return "".join(out)
 
 
@@ -1810,7 +1849,7 @@ def compose_html(todo):
     <code>gh</code>, as you, and posts nothing until you press <em>Send</em> and confirm
     what it names. The summary is prefilled from the paste-ready block of the write-up
     under <code>~/.oss-cli/reviews/</code>, if there is one — the same block
-    <code>bench followup --comment &lt;n&gt;</code> prints. <em>Preview</em> renders with this
+    <code>oss run followup --comment &lt;n&gt;</code> prints. <em>Preview</em> renders with this
     site's own markdown, which is close to GitHub's and not identical: it is here to catch a
     broken list or an unclosed code fence, not to be the last word on spacing.</p>
 
@@ -1864,7 +1903,7 @@ def report_html(rep, days):
         <p>No report yet. This one is derived from the three clones and your own
         GitHub repos — nothing upstream — and it is written once a day by the
         launchd agent. Press <em>Build today</em>, or:</p>
-        <pre><code>bench hub --sync report</code></pre>"""
+        <pre><code>oss run hub --sync report</code></pre>"""
 
     day = rep.get("day", "")
     is_today = day == today_str()
@@ -1946,14 +1985,17 @@ def report_html(rep, days):
 
 def build(day=None):
     states = {name: repo_state(p) for name, p, _, _ in REPOS}
-    cmds = {c: installed(c) for c in ("bench",)}
+    # `oss`, not `bench`. The same stale name as the launchd plist: this page
+    # reported the command that drives it as missing, because the command it
+    # named stopped existing when the engine moved into oss.
+    cmds = {c: installed(c) for c in ("oss",)}
     led, evid, files = reviews()
 
     todo, age = todo_load()
     triage = newest_triage()
 
     n_you = len([r for r in todo["rows"] if r["bucket"] == "you"]) if todo else 0
-    nav = ['<h1>bench hub</h1><div class="sub">Apache Log4j, on real applications</div>',
+    nav = ['<h1>oss run hub</h1><div class="sub">Apache Log4j, on real applications</div>',
            '<div class="grp">start</div>',
            f'<a href="#todo" data-t="todo">To do{f" <b>({n_you})</b>" if n_you else ""}</a>',
            '<a href="#compose" data-t="compose">Send a review</a>',
@@ -2025,7 +2067,7 @@ def build(day=None):
     <button class="btn" data-job="reload">Re-read from disk</button></div>
     <p class="sub">“posted” is whether the paste-ready comment went upstream. The write-up
     column is the file under <code>~/.oss-cli/reviews/</code>; evidence is a
-    <code>bench review &lt;n&gt;</code> run still on disk.</p>
+    <code>oss run review &lt;n&gt;</code> run still on disk.</p>
     <div class="tw"><table><thead><tr><th>PR</th><th>state</th><th>reviewed</th><th>author</th>
     <th>posted</th><th>write-up</th><th>evidence</th><th>note</th></tr></thead>
     <tbody>{rows or '<tr><td colspan=8>ledger empty</td></tr>'}</tbody></table></div></section>""")
@@ -2080,7 +2122,7 @@ def build(day=None):
     stamp = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%SZ")
     return f"""<!doctype html><html><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>bench hub</title><style>{CSS}</style></head><body>
+<title>oss run hub</title><style>{CSS}</style></head><body>
 <div class="wrap"><nav>{''.join(nav)}</nav><main>{''.join(secs)}
 <div class="foot">generated {stamp} · the working tree is read on every request ·
 sync pulls what only GitHub knows</div></main></div>
@@ -2114,12 +2156,12 @@ The part no tool does. `Reference/reviewing-a-contributor-pull-request` §2, in 
   the thing being changed, not only the one that motivated it.
 - Does it change something a working user config depends on?
 
-## 3. Run it — `bench review`
+## 3. Run it — `oss run review`
 
 ```bash
-bench review 4218                 # eleven steps, one directory
-bench review 4218 --no-build      # steps 1-5 only, seconds
-bench review 4301 --3x --full     # 3.x clone, full reactor
+oss run review 4218                 # eleven steps, one directory
+oss run review 4218 --no-build      # steps 1-5 only, seconds
+oss run review 4301 --3x --full     # 3.x clone, full reactor
 ```
 
 Everything happens in a throwaway git worktree, so your clone stays on its branch
@@ -2140,11 +2182,11 @@ splits failures into classes the PR touches and classes it does not. Untouched
 ones are *probably* pre-existing — and "probably" is not a review finding, so run
 the base before writing it down.
 
-## 4. Reproduce it — `bench repro`
+## 4. Reproduce it — `oss run repro`
 
 ```bash
-bench run core-java --config xml/<cfg> --log4j 2.26.1
-bench repro 4218 --pr --config xml/<cfg> --scenario <s> --log4j 2.25.5 --log4j 2.26.1
+oss run run core-java --config xml/<cfg> --log4j 2.26.1
+oss run repro 4218 --pr --config xml/<cfg> --scenario <s> --log4j 2.25.5 --log4j 2.26.1
 ```
 
 Baseline against **releases first**. `--install` overwrites `2.27.0-SNAPSHOT`, so
@@ -2160,14 +2202,14 @@ first, post second. Separate blocking from non-blocking so the author knows what
 gates the merge.
 
 ```bash
-bench followup --comment 4218        # read it
-bench followup --comment 4218 | gh pr comment 4218 -R apache/logging-log4j2 --body-file -
+oss run followup --comment 4218        # read it
+oss run followup --comment 4218 | gh pr comment 4218 -R apache/logging-log4j2 --body-file -
 ```
 
 ## 6. Keep it — `--file`
 
 ```bash
-bench review 4218 --file
+oss run review 4218 --file
 ```
 
 Hands the write-up to `knowledge-creator/pr-review-file.py`, which files it under
@@ -2218,7 +2260,7 @@ def install_agent(remove=False):
     print(f"installed {AGENT_PLIST}")
     print(f"  serving http://localhost:8787/ at login, restarts if it dies")
     print(f"  logs    {WORKOUT}/.bench/hub/agent.{{out,err}}.log")
-    print(f"  remove  bench hub --uninstall")
+    print(f"  remove  oss run hub --uninstall")
 
 
 class Handler(BaseHTTPRequestHandler):
@@ -2393,7 +2435,7 @@ def main():
     if args.pr:
         url += f"?repo={quote(args.repo)}&pr={quote(str(args.pr).lstrip('#'))}"
 
-    # The launchd agent holds this port all day, so the second `bench hub` of the
+    # The launchd agent holds this port all day, so the second `oss run hub` of the
     # day used to die on "cannot bind" — which is exactly wrong, because the page
     # it wanted is already being served. If something on the port answers as a
     # hub, hand it the browser and get out of the way.
@@ -2439,7 +2481,7 @@ def main():
             time.sleep(300)
     threading.Thread(target=refresher, daemon=True).start()
 
-    print(f"bench hub on {url}   (ctrl-c to stop)", file=sys.stderr)
+    print(f"oss run hub on {url}   (ctrl-c to stop)", file=sys.stderr)
     if not args.no_open:
         if not webbrowser.open(url):
             print(f"could not open a browser — go to {url}", file=sys.stderr)
