@@ -317,39 +317,96 @@ def gh_json(*args, timeout=60):
 #
 # It runs `oss`, not this file's own logic, so the answer is the same answer the
 # terminal gives. If the two ever disagreed, the page would be the one lying.
+# Each entry: the argv, what kind of argument it takes, the question it answers
+# (which becomes the button's hover text -- this page explains itself rather than
+# sending anyone to a manual), and how long to allow.
+#
+#   arg: None    takes nothing
+#        "text"  one free-text element, e.g. a pull request title
+#        "num"   a pull request number, digits only
+#
+# Nothing here writes. That is the entry requirement, not a coincidence: the
+# review composer is the one thing on this page that can post, it already asks
+# before it does, and it stays the only one.
 ASKABLE = {
-    # have I seen this before -- the whole reason this bridge exists
-    "search": ["oss", "search"],
-    # what moved on the things I already reviewed
-    "followup": ["oss", "followup", "--changed"],
+    "search": {
+        "argv": ["oss", "search"], "arg": "text", "timeout": 120,
+        "asks": "Have I worked this out before? Searches your own notes and synced "
+                "issues by meaning, using the model that runs inside oss — no network.",
+        "empty": "nothing recorded yet",
+    },
+    "duplicates": {
+        "argv": ["oss", "duplicates"], "arg": None, "timeout": 300,
+        "asks": "Is this the same as something already open? Compares every open "
+                "issue against every other by meaning, not by words.",
+        "empty": "no duplicates found",
+    },
+    "followup": {
+        "argv": ["oss", "followup", "--changed"], "arg": None, "timeout": 120,
+        "asks": "What moved since I reviewed it? Reads the ledger, which knows what "
+                "you decided — GitHub only knows what you posted.",
+        "empty": "nothing has moved",
+    },
+    "followup-one": {
+        "argv": ["oss", "followup"], "arg": "num", "timeout": 120,
+        "asks": "This one pull request in full: what you recorded, and what has "
+                "happened to it since.",
+        "empty": "nothing recorded for that one",
+    },
+    "hidden-critical": {
+        "argv": ["oss", "hidden-critical"], "arg": None, "timeout": 300,
+        "asks": "What is serious but not labelled so? Reads the bodies rather than "
+                "trusting the labels.",
+        "empty": "nothing hidden found",
+    },
+    "doctor": {
+        "argv": ["oss", "doctor"], "arg": None, "timeout": 120,
+        "asks": "Is every prerequisite in place? Exits non-zero when an optional one "
+                "is missing, so a red result here is a report, not a failure.",
+        "empty": "doctor said nothing",
+    },
 }
-ASK_LIMIT = 8000
+ASK_LIMIT = 20000
 
 
 def ask(name, text):
     """Run one allowlisted read-only `oss` command and return its output as text."""
-    argv = ASKABLE.get(name)
-    if argv is None:
+    spec = ASKABLE.get(name)
+    if spec is None:
         return {"error": f"not askable: {name}"}
+    argv = list(spec["argv"])
     text = (text or "").strip()
-    if argv[-1] == "search":
+    if spec["arg"] == "text":
         if not text:
             return {"error": "nothing to search for"}
         # One element. Not a shell, so a title full of quotes and backticks is
         # just a title.
-        argv = [*argv, text[:200]]
+        argv.append(text[:200])
+    elif spec["arg"] == "num":
+        # Digits only. Not because a stray character would reach a shell -- it
+        # cannot -- but because anything else is a caller bug, and running the
+        # command on it would answer about the wrong thing.
+        if not text.lstrip("#").isdigit():
+            return {"error": f"not a pull request number: {text[:40]}"}
+        argv.append(text.lstrip("#"))
     try:
-        r = subprocess.run(argv, capture_output=True, text=True, timeout=90)
+        # stdin closed, deliberately. Some commands wait on a terminal when they
+        # have one; this server has none to give, and a command blocked on input
+        # nobody can type would hold the thread until the timeout.
+        r = subprocess.run(argv, capture_output=True, text=True,
+                           stdin=subprocess.DEVNULL, timeout=spec["timeout"])
     except FileNotFoundError:
         return {"error": "oss is not on PATH for this server"}
     except subprocess.TimeoutExpired:
-        return {"error": "timed out after 90s"}
+        return {"error": f"timed out after {spec['timeout']}s — it is faster in a terminal"}
     out = (r.stdout or "") + (("\n" + r.stderr) if r.returncode != 0 and r.stderr else "")
-    out = out.strip()
-    # A command that answers nothing is not an error, and saying "no output"
-    # is a worse answer than saying what it means.
+    # The banner is noise on a page that already says where it is.
+    out = "\n".join(ln for ln in out.splitlines()
+                    if not ln.startswith("Initializing local SQLite")).strip()
+    # A command that answers nothing is not an error, and "no output" is a worse
+    # answer than saying what nothing means for that question.
     if not out:
-        out = "nothing recorded yet" if argv[1] == "search" else "nothing has moved"
+        out = spec["empty"]
     return {"cmd": " ".join(argv), "out": out[:ASK_LIMIT]}
 
 
@@ -954,6 +1011,15 @@ CSS = """
 .ans>td,.ans>div{background:var(--gut);border-left:3px solid var(--acc);padding:8px 12px}
 .ans pre{margin:0;background:transparent;padding:0;white-space:pre-wrap;font-size:12.5px}
 .ans .sub{font-size:12px;margin-bottom:6px}
+.ans .sub code{background:transparent;padding:0;color:var(--acc)}
+/* Buttons that ASK look different from buttons that DO. Everything with a solid
+   border on this page changes something -- syncs, fetches, sends. These only
+   read, so they are outlined instead, and the dotted underline is the standing
+   promise that hovering explains it. There is no manual for this page. */
+.btn.ask{border-style:dashed;color:var(--mut)}
+.btn.ask:hover:not(:disabled){color:var(--acc);border-color:var(--acc);border-style:solid}
+.btn.ask[title]{text-decoration:underline dotted var(--line);text-underline-offset:3px}
+td .btn.ask{margin-top:4px}
 *{box-sizing:border-box}
 body{margin:0;background:var(--bg);color:var(--fg);
 font:15px/1.65 ui-sans-serif,-apple-system,"Segoe UI",sans-serif;}
@@ -1826,6 +1892,22 @@ def button(job, label):
     return f'<button class="btn" data-job="{job}">{html.escape(label)}</button>'
 
 
+def ask_button(name, label, q=None):
+    """A button that runs one allowlisted `oss` command and answers in place.
+
+    The hover text comes from ASKABLE, so the explanation of what a button does
+    lives beside the argv it runs. Written in two places they drift, and the copy
+    that drifts is always the one the reader is looking at.
+    """
+    spec = ASKABLE.get(name)
+    if spec is None:                      # a typo here should be loud, not silent
+        return f'<span class="sub bad">no such ask: {html.escape(name)}</span>'
+    qa = f' data-q="{html.escape(str(q))}"' if q is not None else ""
+    return (f'<button class="btn ask" data-ask="{name}"{qa} '
+            f'title="{html.escape(spec["asks"])} — runs: {html.escape(" ".join(spec["argv"]))}">'
+            f'{html.escape(label)}</button>')
+
+
 BUCKETS = [
     ("you", "Your move", "nothing happens until you do something"),
     ("them", "Their move", "waiting on someone else — safe to ignore today"),
@@ -1883,11 +1965,13 @@ def todo_html(todo, age):
             go = ("" if r["state"] != "OPEN" else
                   f'<button class="btn" data-open="{html.escape(r["repo"])}#{r["pr"]}">'
                   f"Review →</button>")
-            # `oss search`, on the row, about this title. Deciding whether a PR is
-            # worth your morning usually starts with "have I already worked this
-            # out" -- and the answer is in your own notes, not on GitHub.
-            go += (f'<button class="btn" data-ask="search" '
-                   f'data-q="{html.escape(r["title"][:120])}">Seen this?</button>')
+            # The two questions asked about a row, on the row. Deciding whether a
+            # pull request is worth your morning starts with "have I already
+            # worked this out" -- and that answer is in your own notes, not on
+            # GitHub. The second only appears where there is a record to read.
+            go += ask_button("search", "Seen this?", r["title"][:120])
+            if r["verdict"] not in ("—", ""):
+                go += ask_button("followup-one", "Since I reviewed", r["pr"])
             body += (
                 f'<tr><td class="sub">{html.escape(r["repo"])}</td>'
                 f'<td><a href="https://github.com/{html.escape(r["repo"])}/pull/{r["pr"]}">'
@@ -1911,9 +1995,10 @@ def todo_html(todo, age):
                'GitHub knows what you <em>said</em>; the ledger knows what you '
                '<em>decided</em>. Keep it current with '
                '<code>oss run followup --sync &lt;n&gt;</code>.</p>'
-               '<p><button class="btn" data-ask="followup">What moved since I '
-               'reviewed it</button> <span class="sub">runs '
-               '<code>oss followup --changed</code> here, and answers below.</span></p>'
+               '<p>' + ask_button("followup", "What moved since I reviewed it")
+               + ask_button("hidden-critical", "Serious but unlabelled")
+               + ' <span class="sub">answered here, from the same commands the '
+                 'terminal runs. Hover any button for what it asks.</span></p>'
                '<pre><code>oss run followup --changed    # the same question, in the terminal\n'
                'oss run review &lt;n&gt;              # the mechanical facts\n'
                'oss run hub --refresh          # re-fetch this view</code></pre>')
@@ -2161,6 +2246,9 @@ def build(day=None):
     <h3>Installed commands</h3>
     <div class="tw"><table><thead><tr><th>command</th><th>state</th><th>path</th></tr></thead>
     <tbody>{inst}</tbody></table></div>
+    <p>{ask_button("doctor", "Check every prerequisite")}
+       {ask_button("duplicates", "Find duplicate issues")}
+       <span class="sub">the same commands, run here. Hover for what each asks.</span></p>
     <p class="sub">This page re-reads all three working trees on every request — no build
     step and no cache, so a reload is the refresh. It never pulls, merges or writes to a
     worktree. “behind” is measured against the last fetch, which is what
