@@ -301,6 +301,58 @@ def gh_json(*args, timeout=60):
         return None
 
 
+# ---------------------------------------------------------------- oss ask ---
+# One bridge to the CLI, deliberately narrow.
+#
+# The question "have I worked this out before?" belongs on the row you are
+# deciding about, not on a page of its own. A separate Search section would be a
+# second place to go and a second thing to remember, and you would still have to
+# retype the title you were already looking at.
+#
+# What makes this safe is that it is not a shell. ASKABLE is a fixed map from a
+# name the page may use to an argv template, every command is read-only, and the
+# only thing the caller supplies is the text -- passed as one argv element, never
+# through a shell, so quoting and metacharacters have nothing to act on. A name
+# that is not in the map is a 404 before anything is executed.
+#
+# It runs `oss`, not this file's own logic, so the answer is the same answer the
+# terminal gives. If the two ever disagreed, the page would be the one lying.
+ASKABLE = {
+    # have I seen this before -- the whole reason this bridge exists
+    "search": ["oss", "search"],
+    # what moved on the things I already reviewed
+    "followup": ["oss", "followup", "--changed"],
+}
+ASK_LIMIT = 8000
+
+
+def ask(name, text):
+    """Run one allowlisted read-only `oss` command and return its output as text."""
+    argv = ASKABLE.get(name)
+    if argv is None:
+        return {"error": f"not askable: {name}"}
+    text = (text or "").strip()
+    if argv[-1] == "search":
+        if not text:
+            return {"error": "nothing to search for"}
+        # One element. Not a shell, so a title full of quotes and backticks is
+        # just a title.
+        argv = [*argv, text[:200]]
+    try:
+        r = subprocess.run(argv, capture_output=True, text=True, timeout=90)
+    except FileNotFoundError:
+        return {"error": "oss is not on PATH for this server"}
+    except subprocess.TimeoutExpired:
+        return {"error": "timed out after 90s"}
+    out = (r.stdout or "") + (("\n" + r.stderr) if r.returncode != 0 and r.stderr else "")
+    out = out.strip()
+    # A command that answers nothing is not an error, and saying "no output"
+    # is a worse answer than saying what it means.
+    if not out:
+        out = "nothing recorded yet" if argv[1] == "search" else "nothing has moved"
+    return {"cmd": " ".join(argv), "out": out[:ASK_LIMIT]}
+
+
 def ledger_map():
     """Pull request number -> what you recorded about it, and where.
 
@@ -877,16 +929,31 @@ def send_review(req):
 
 # -------------------------------------------------------------------- page ---
 CSS = """
-:root{--bg:#fbfaf8;--fg:#1c1b19;--mut:#6b675f;--line:#e2ded6;--card:#fff;
---acc:#8a4b2a;--ok:#2f6a3f;--warn:#8a6a1a;--bad:#9b2c2c;--code:#f3f0ea;
---add:#e8f6ea;--del:#fbeaea;--gut:#f5f2ec;}
+/* Teal and brass, the same values as site/index.html and `oss serve`. This page
+   was the last surface still on the old cream-and-rust palette, which made the
+   thing you reach for every morning look like a different product from the tool
+   that starts it.
+
+   The first seven tokens are copied from `oss serve` unchanged. The last four
+   are this page's own -- a diff has a gutter, an added line and a removed one,
+   and no other surface renders a diff -- so they are mixed from the same family
+   rather than invented: gutter is the code ground lifted a step, add leans on
+   --ok, del on --bad. */
+:root{--bg:#EDF2F3;--fg:#08161D;--mut:#536A74;--line:#CBDADD;--card:#F8FBFB;
+--acc:#8A6A0F;--ok:#1B6259;--bad:#8C3A22;--code:#E2EBEC;
+--warn:#A2571B;--add:#DDEFE9;--del:#F6DFD8;--gut:#E7EEEF;}
 @media (prefers-color-scheme:dark){:root:not([data-theme=light]){
---bg:#14130f;--fg:#eae7e0;--mut:#9d978c;--line:#2c2a25;--card:#1b1a16;
---acc:#d99a6c;--ok:#7fb98c;--warn:#d9b96c;--bad:#e08a8a;--code:#232019;
---add:#152a1b;--del:#2e1719;--gut:#1e1c17;}}
-:root[data-theme=dark]{--bg:#14130f;--fg:#eae7e0;--mut:#9d978c;--line:#2c2a25;
---card:#1b1a16;--acc:#d99a6c;--ok:#7fb98c;--warn:#d9b96c;--bad:#e08a8a;--code:#232019;
---add:#152a1b;--del:#2e1719;--gut:#1e1c17;}
+--bg:#07141A;--fg:#E6EFF0;--mut:#7B949C;--line:#1A3540;--card:#0D202A;
+--acc:#D8B23A;--ok:#5FBFB0;--bad:#E08066;--code:#040E13;
+--warn:#E0A24E;--add:#0C2A26;--del:#2A1512;--gut:#0A1B23;}}
+:root[data-theme=dark]{--bg:#07141A;--fg:#E6EFF0;--mut:#7B949C;--line:#1A3540;
+--card:#0D202A;--acc:#D8B23A;--ok:#5FBFB0;--bad:#E08066;--code:#040E13;
+--warn:#E0A24E;--add:#0C2A26;--del:#2A1512;--gut:#0A1B23;}
+/* The answer the CLI gave, under the row it was asked about. Left border rather
+   than a box: it is a continuation of that row, not a new thing on the page. */
+.ans>td,.ans>div{background:var(--gut);border-left:3px solid var(--acc);padding:8px 12px}
+.ans pre{margin:0;background:transparent;padding:0;white-space:pre-wrap;font-size:12.5px}
+.ans .sub{font-size:12px;margin-bottom:6px}
 *{box-sizing:border-box}
 body{margin:0;background:var(--bg);color:var(--fg);
 font:15px/1.65 ui-sans-serif,-apple-system,"Segoe UI",sans-serif;}
@@ -993,7 +1060,11 @@ function show(id){
   location.hash=id; window.scrollTo(0,0);
 }
 links.forEach(a=>a.onclick=e=>{e.preventDefault();show(a.dataset.t)});
-show(location.hash.slice(1)||'home');
+// To do, not home. This opens every morning to answer one question -- what is
+// waiting on me -- and it used to open on a status page instead, while the nav
+// entry beside it said (26). The server already renders To do unhidden; only
+// this line was hiding it again a frame later.
+show(location.hash.slice(1)||'todo');
 
 // ---- sync buttons. Every one of them is the same: start a named job on the
 // server, poll it, then reload — the page is rendered from disk, so the reload
@@ -1317,7 +1388,47 @@ cmp.addEventListener('click',e=>{
 document.getElementById('cmp').addEventListener('click',e=>{
   if(e.target.id==='c-reload'&&CM.pr)openPR(CM.repo,CM.pr,true);
 });
+// Ask the CLI about the row you are already looking at, and answer under it.
+// Inline rather than anywhere else on purpose: the question is about THIS pull
+// request, and a separate panel would mean losing your place in the list to read
+// the answer, then finding the row again.
+async function askInline(btn){
+  // Works in a table row and outside one. In a row the answer has to be a <tr>
+  // spanning every column or the browser drops it; anywhere else a <div> is
+  // enough. Same function either way, so there is one place this behaves.
+  const tr=btn.closest('tr');
+  const anchor=tr||btn.closest('p,div')||btn;
+  let out=anchor.nextElementSibling;
+  if(out&&out.classList.contains('ans')){out.remove();btn.textContent=btn.dataset.label;return}
+  btn.dataset.label=btn.dataset.label||btn.textContent;
+  btn.textContent='…';btn.disabled=true;
+  if(tr){
+    out=document.createElement('tr');out.className='ans';
+    out.innerHTML=`<td colspan="${tr.children.length}"><pre class="sub">asking…</pre></td>`;
+  }else{
+    out=document.createElement('div');out.className='ans';
+    out.innerHTML='<div><pre class="sub">asking…</pre></div>';
+  }
+  anchor.after(out);
+  try{
+    const p=new URLSearchParams({name:btn.dataset.ask,q:btn.dataset.q||''});
+    const d=await(await fetch('/ask.json?'+p)).json();
+    const pre=document.createElement('pre');
+    pre.textContent=d.error?('error  '+d.error):d.out;
+    const cmd=document.createElement('div');
+    cmd.className='sub';cmd.textContent=d.cmd?('$ '+d.cmd):'';
+    const td=out.firstElementChild;td.textContent='';
+    if(d.cmd)td.appendChild(cmd);
+    td.appendChild(pre);
+  }catch(err){
+    out.firstElementChild.innerHTML='<pre class="sub">could not reach the server</pre>';
+  }
+  out.scrollIntoView({block:'nearest'});
+  btn.disabled=false;btn.textContent='Hide';
+}
 document.addEventListener('click',e=>{
+  const a=e.target.closest('[data-ask]');
+  if(a){e.preventDefault();askInline(a);return}
   const o=e.target.closest('[data-open]');
   if(o){e.preventDefault();const[r,n]=o.dataset.open.split('#');openPR(r,n,false)}
   if(e.target.id==='go')send();
@@ -1403,37 +1514,37 @@ def triage_sweep():
 # way out, and let the iframe answer prefers-color-scheme like the hub does.
 TRIAGE_DARK = """
 :root{color-scheme:dark}
-body{background:#14130f;color:#eae7e0}
-a{color:#d99a6c}
-h3{color:#eae7e0}
-h2{border-bottom-color:#2c2a25}
-.hint,.stat-l,.ai-note,footer{color:#9d978c}
-#sidebar{background:#1b1a16;color:#c9c3b8}
-.sb-repo a{color:#d99a6c}
-.sb-meta,.sb-sec,.sb-n{color:#9d978c}
-.sb-hr{border-top-color:#2c2a25}
-.nav-list a{color:#c9c3b8}
-.nav-list a:hover{background:#232019;color:#f2efe8}
-.sb-n{background:#232019}
-table,.ai-table{background:#1b1a16;border-color:#2c2a25}
-th{background:#232019;color:#c9c3b8;border-bottom-color:#2c2a25}
-td{border-top-color:#2c2a25}
-tr:hover td,.ai-table tr:hover td{background:#232019}
-.stat,.cluster,.ai{background:#1b1a16;border-color:#2c2a25}
-.cluster{border-left-color:#d99a6c}
-.ai{background:#1b1a16;border-left-color:#a78bfa}
+body{background:#07141A;color:#E6EFF0}
+a{color:#D8B23A}
+h3{color:#E6EFF0}
+h2{border-bottom-color:#1A3540}
+.hint,.stat-l,.ai-note,footer{color:#7B949C}
+#sidebar{background:#0D202A;color:#C2D4D8}
+.sb-repo a{color:#D8B23A}
+.sb-meta,.sb-sec,.sb-n{color:#7B949C}
+.sb-hr{border-top-color:#1A3540}
+.nav-list a{color:#C2D4D8}
+.nav-list a:hover{background:#040E13;color:#F2F8F8}
+.sb-n{background:#040E13}
+table,.ai-table{background:#0D202A;border-color:#1A3540}
+th{background:#040E13;color:#C2D4D8;border-bottom-color:#1A3540}
+td{border-top-color:#1A3540}
+tr:hover td,.ai-table tr:hover td{background:#040E13}
+.stat,.cluster,.ai{background:#0D202A;border-color:#1A3540}
+.cluster{border-left-color:#D8B23A}
+.ai{background:#0D202A;border-left-color:#a78bfa}
 .ai-table th{background:#2a2233;color:#c4b5fd;border-bottom-color:#3b2f47}
-.ai-table code{background:#232019;border-color:#2c2a25;color:#eae7e0}
-.rr{color:#c9c3b8;border-top-color:#2c2a25}
-.rl-bar{background:#2c2a25}
-.warn{background:#2a2416;border-color:#5c4a1a;color:#d9b96c}
-footer{border-top-color:#2c2a25}
+.ai-table code{background:#040E13;border-color:#1A3540;color:#E6EFF0}
+.rr{color:#C2D4D8;border-top-color:#1A3540}
+.rl-bar{background:#1A3540}
+.warn{background:#2A2110;border-color:#5C4A1A;color:#E0A24E}
+footer{border-top-color:#1A3540}
 .b{border-width:1px;border-style:solid}
-.g{background:#16281c;color:#7fb98c;border-color:#2f4a37}
-.r{background:#2b1717;color:#e08a8a;border-color:#5a2b2b}
-.y{background:#2a2416;color:#d9b96c;border-color:#5c4a1a}
+.g{background:#0C2A26;color:#5FBFB0;border-color:#1B4A44}
+.r{background:#2A1512;color:#E08066;border-color:#5A3225}
+.y{background:#2A2110;color:#E0A24E;border-color:#5C4A1A}
 .u{background:#151f2e;color:#8ab4e8;border-color:#2a3f5c}
-.s{background:#232019;color:#9d978c;border-color:#2c2a25}
+.s{background:#040E13;color:#7B949C;border-color:#1A3540}
 .p{background:#241c33;color:#c4b5fd;border-color:#3b2f47}
 """
 
@@ -1772,6 +1883,11 @@ def todo_html(todo, age):
             go = ("" if r["state"] != "OPEN" else
                   f'<button class="btn" data-open="{html.escape(r["repo"])}#{r["pr"]}">'
                   f"Review →</button>")
+            # `oss search`, on the row, about this title. Deciding whether a PR is
+            # worth your morning usually starts with "have I already worked this
+            # out" -- and the answer is in your own notes, not on GitHub.
+            go += (f'<button class="btn" data-ask="search" '
+                   f'data-q="{html.escape(r["title"][:120])}">Seen this?</button>')
             body += (
                 f'<tr><td class="sub">{html.escape(r["repo"])}</td>'
                 f'<td><a href="https://github.com/{html.escape(r["repo"])}/pull/{r["pr"]}">'
@@ -1795,6 +1911,9 @@ def todo_html(todo, age):
                'GitHub knows what you <em>said</em>; the ledger knows what you '
                '<em>decided</em>. Keep it current with '
                '<code>oss run followup --sync &lt;n&gt;</code>.</p>'
+               '<p><button class="btn" data-ask="followup">What moved since I '
+               'reviewed it</button> <span class="sub">runs '
+               '<code>oss followup --changed</code> here, and answers below.</span></p>'
                '<pre><code>oss run followup --changed    # the same question, in the terminal\n'
                'oss run review &lt;n&gt;              # the mechanical facts\n'
                'oss run hub --refresh          # re-fetch this view</code></pre>')
@@ -2333,6 +2452,10 @@ class Handler(BaseHTTPRequestHandler):
                                             force=bool(q.get("reload")))).encode()
             except Exception as e:
                 body = json.dumps({"error": str(e) or e.__class__.__name__}).encode()
+            ctype = "application/json"
+        elif self.path.startswith("/ask.json"):
+            body = json.dumps(ask(q.get("name", [""])[0],
+                                  q.get("q", [""])[0])).encode()
             ctype = "application/json"
         elif self.path.startswith("/refresh"):
             # Explicit, synchronous, and it says how long it took. The background
