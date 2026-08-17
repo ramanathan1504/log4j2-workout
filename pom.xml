@@ -39,19 +39,19 @@
 
     <!-- Log4j 1.x native (baseline comparison against the 1.2-api bridge) -->
     <log4j1.version>1.2.17</log4j1.version>
-    <reload4j.version>1.2.25</reload4j.version>
+    <reload4j.version>1.2.26</reload4j.version>
 
     <!-- Ecosystem -->
     <slf4j.version>2.0.17</slf4j.version>
     <disruptor.version>4.0.0</disruptor.version>
     <spring-boot.version>3.4.3</spring-boot.version>
     <ecs-layout.version>1.8.0</ecs-layout.version>
-    <jackson.version>2.18.2</jackson.version>
-    <commons-compress.version>1.27.1</commons-compress.version>
+    <jackson.version>2.22.1</jackson.version>
+    <commons-compress.version>1.28.0</commons-compress.version>
     <kafka.version>3.9.0</kafka.version>
     <mysql.version>8.3.0</mysql.version>
-    <postgresql.version>42.7.5</postgresql.version>
-    <h2.version>2.3.232</h2.version>
+    <postgresql.version>42.7.13</postgresql.version>
+    <h2.version>2.4.240</h2.version>
     <junit.version>5.11.4</junit.version>
 
     <!-- Capability flags, flipped by version profiles. Modules use these to
@@ -208,7 +208,7 @@
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-compiler-plugin</artifactId>
-          <version>3.13.0</version>
+          <version>3.15.0</version>
           <configuration>
             <!-- Retain parameter names. Spring MVC needs them to bind
                  @PathVariable/@RequestParam without an explicit name. -->
@@ -218,12 +218,12 @@
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-surefire-plugin</artifactId>
-          <version>3.5.2</version>
+          <version>3.5.6</version>
         </plugin>
         <plugin>
           <groupId>org.codehaus.mojo</groupId>
           <artifactId>exec-maven-plugin</artifactId>
-          <version>3.5.0</version>
+          <version>3.6.3</version>
         </plugin>
         <plugin>
           <groupId>org.springframework.boot</groupId>
