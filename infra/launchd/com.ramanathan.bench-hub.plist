@@ -12,7 +12,7 @@
 <plist version="1.0">
 <dict>
     <key>Label</key>            <string>com.ramanathan.bench-hub</string>
-    <!-- The site over all three repos, always at http://localhost:8787/.
+    <!-- The site over all three repos, always at http://localhost:1504/.
          --no-open because launchd starts this at login: a browser tab opening
          by itself every time you log in is not a feature. -->
     <key>ProgramArguments</key>
@@ -24,7 +24,7 @@
              The old line kept resolving to a file that no longer exists, so
              launchd relaunched it every 60 seconds, each attempt appending
              "cannot execute: No such file or directory" to a log nobody reads —
-             and the hub site on :8787 had simply not been running since. -->
+             and the hub site had simply not been running since. -->
         <string>exec oss run --pack __ROOT__ hub --no-open</string>
     </array>
     <key>RunAtLoad</key>         <true/>
