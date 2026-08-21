@@ -186,7 +186,7 @@ The habit that has caught the most here is checking the claim, not the intent:
 | Path | Contains |
 |---|---|
 | `logs/<config>/` | what the appenders produced — where a finding is confirmed |
-| `.bench/` | cached classpaths, sweep logs, the cell ledger — disposable, `oss run clean`. Two exceptions it keeps: `hub/` (the daily reports) and `reviews/` (evidence); `clean --all` takes those |
+| `.bench/` | cached classpaths, sweep logs, the cell ledger — disposable, `oss run clean`. One exception it keeps: `reviews/` (evidence); `clean --all` takes that too |
 | `repros/<kind>-<n>/` | the zip, the verification matrix, the per-version logs |
 | `docs/evidence/` | captured logs referenced by findings |
 
