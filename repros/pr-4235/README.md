@@ -89,7 +89,7 @@ cd ~/apache/logging-log4j2
 git stash push -m "pre-4235" log4j-perf-test/src/main/java/org/apache/logging/log4j/perf/jmh/AsyncTraceContextBenchmark.java
 
 cd ~/apache/log4j2-workout
-./bench pr 4235 --checkout --install          # publishes the PR as 2.27.0-SNAPSHOT
+oss run pr 4235 --checkout --install          # publishes the PR as 2.27.0-SNAPSHOT
 
 cd repros/pr-4235/log4j-pr-4235-repro
 ./run.sh 2.27.0-SNAPSHOT

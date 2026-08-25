@@ -43,7 +43,7 @@ Raw timings: `output/2.26.1-init-timings.log`.
 cd ~/apache/log4j2-workout
 rm -rf logs/repro-cron-directwrite
 BENCH_JVM_ARGS='-Dlog4j2.debug=true -Dlog4j2.StatusLogger.level=TRACE' \
-  ./bench run core-java --config xml/repro-cron-directwrite --log4j 2.26.1 messages 2>&1 \
+  oss run run core-java --config xml/repro-cron-directwrite --version 2.26.1 messages 2>&1 \
   | grep -E "Initializing triggering policy|LastRollForFile"
 ```
 
@@ -90,10 +90,10 @@ cd ~/apache/logging-log4j2
 git stash push -m "pre-4226" log4j-perf-test/src/main/java/org/apache/logging/log4j/perf/jmh/AsyncTraceContextBenchmark.java
 
 cd ~/apache/log4j2-workout
-./bench pr 4226 --checkout --install
+oss run pr 4226 --checkout --install
 
 rm -rf logs/repro-cron-directwrite
-time ./bench run core-java --config xml/repro-cron-directwrite messages
+time oss run run core-java --config xml/repro-cron-directwrite messages
 ```
 
 **Expect:** wall time drops to roughly the `baseline-console` figure (~2 s), and

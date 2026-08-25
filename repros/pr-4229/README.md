@@ -63,7 +63,7 @@ Confirm it prints `-rw-------`. That is the value the run must not change.
 ### 2. Baseline, against a release. First.
 
 ```bash
-./bench run core-java --config xml/rollover-advanced --log4j 2.26.1 rollover
+oss run run core-java --config xml/rollover-advanced --version 2.26.1 rollover
 ./repros/pr-4229/setup.sh check
 ```
 
@@ -78,7 +78,7 @@ through `StatusLogger`:
 
 ```bash
 BENCH_JVM_ARGS='-Dlog4j2.debug=true -Dlog4j2.StatusLogger.level=TRACE' \
-  ./bench run core-java --config xml/rollover-advanced --log4j 2.26.1 rollover
+  oss run run core-java --config xml/rollover-advanced --version 2.26.1 rollover
 ```
 
 ### 3. Install the PR
@@ -91,7 +91,7 @@ cd ~/apache/logging-log4j2
 git stash push -m "pre-4229" log4j-perf-test/src/main/java/org/apache/logging/log4j/perf/jmh/AsyncTraceContextBenchmark.java
 
 cd ~/apache/log4j2-workout
-./bench pr 4229 --checkout --install
+oss run pr 4229 --checkout --install
 ```
 
 ### 4. After
@@ -99,7 +99,7 @@ cd ~/apache/log4j2-workout
 ```bash
 ./repros/pr-4229/setup.sh clean
 ./repros/pr-4229/setup.sh plant
-./bench run core-java --config xml/rollover-advanced rollover
+oss run run core-java --config xml/rollover-advanced rollover
 ./repros/pr-4229/setup.sh check
 ```
 

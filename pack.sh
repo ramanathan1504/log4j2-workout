@@ -7,7 +7,7 @@
 # is, and it is the only file you replace to point the same engine at something
 # else:
 #
-#   BENCH_PACK=mine ./bench list        # loads packs/mine/pack.sh instead
+#   BENCH_PACK=mine oss run list        # loads packs/mine/pack.sh instead
 #
 # A pack declares five things and nothing more. Everything it sets is read by
 # the engine and never written back, so a pack cannot change how the engine
@@ -271,7 +271,7 @@ pack_jvm_args() {
       # self-test drives the bench endpoints over real HTTP and then exits, so
       # the servlet stack is still exercised rather than skipped. Unset it to
       # get the interactive server back:
-      #   BENCH_SPRING_SELFTEST=0 ./bench run spring-boot-maven
+      #   BENCH_SPRING_SELFTEST=0 oss run run spring-boot-maven
       if [[ "${BENCH_SPRING_SELFTEST:-1}" == 1 ]]; then
         printf '%s\n' "-Dbench.selfTest=true"
       fi

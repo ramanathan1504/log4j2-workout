@@ -1,6 +1,6 @@
 # Runs the bench on every pull request.
 #
-# Deliberately not `./bench matrix --all`: that is tens of thousands of forked
+# Deliberately not `oss run matrix --all`: that is tens of thousands of forked
 # JVMs and many hours. This runs the axes that actually catch regressions — all
 # four Log4j 2 configuration formats, both 1.x formats, three JDKs and two
 # released Log4j lines — across the apps that need no external infrastructure.
