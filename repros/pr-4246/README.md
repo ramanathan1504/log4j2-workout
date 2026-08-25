@@ -13,12 +13,12 @@ Needs **no database service**. Everything below runs against the `jpa` app.
 
 ## Why JPA, and not Cassandra or NoSQL
 
-| Manager | `startupInternal` can fail? | `writeInternal` guards `!isRunning()`? |
-|---|---|---|
-| `CassandraManager` | ✅ `cluster.connect()` | ❌ **none — this is the NPE in #4241** |
-| `JpaDatabaseManager` | ✅ `Persistence.createEntityManagerFactory` | ✅ throws `AppenderLoggingException` |
-| `NoSqlDatabaseManager` | ❌ empty method | ✅ throws `AppenderLoggingException` |
-| `JdbcDatabaseManager` | ❌ empty method | n/a |
+| Manager                | `startupInternal` can fail?                | `writeInternal` guards `!isRunning()`? |
+|------------------------|--------------------------------------------|----------------------------------------|
+| `CassandraManager`     | ✅ `cluster.connect()`                      | ❌ **none — this is the NPE in #4241**  |
+| `JpaDatabaseManager`   | ✅ `Persistence.createEntityManagerFactory` | ✅ throws `AppenderLoggingException`    |
+| `NoSqlDatabaseManager` | ❌ empty method                             | ✅ throws `AppenderLoggingException`    |
+| `JdbcDatabaseManager`  | ❌ empty method                             | n/a                                    |
 
 Cassandra shows **A** but needs a live node (and the `cassandra-init` compose
 service, not `cassandra` — the bare node stores nothing silently).
@@ -55,7 +55,7 @@ the PR twice.
 
 ```bash
 cd ~/apache/log4j2-workout
-./bench run jpa --config xml/repro-jpa-failed-startup --log4j 2.26.1 messages
+oss run run jpa --config xml/repro-jpa-failed-startup --version 2.26.1 messages
 ```
 
 **Expect:** the run fails loudly. `AppenderLoggingException: Cannot write logging
@@ -67,13 +67,13 @@ level before assuming anything:
 
 ```bash
 BENCH_JVM_ARGS='-Dlog4j2.debug=true -Dlog4j2.StatusLogger.level=TRACE' \
-  ./bench run jpa --config xml/repro-jpa-failed-startup --log4j 2.26.1 messages
+  oss run run jpa --config xml/repro-jpa-failed-startup --version 2.26.1 messages
 ```
 
 Keep the output:
 
 ```bash
-./bench run jpa --config xml/repro-jpa-failed-startup --log4j 2.26.1 messages \
+oss run run jpa --config xml/repro-jpa-failed-startup --version 2.26.1 messages \
   > repros/pr-4246/output/2.26.1-baseline.log 2>&1
 ```
 
@@ -87,13 +87,13 @@ cd ~/apache/logging-log4j2
 git stash push -m "pre-4246" log4j-perf-test/src/main/java/org/apache/logging/log4j/perf/jmh/AsyncTraceContextBenchmark.java
 
 cd ~/apache/log4j2-workout
-./bench pr 4246 --checkout --install        # publishes the PR as 2.27.0-SNAPSHOT
+oss run pr 4246 --checkout --install        # publishes the PR as 2.27.0-SNAPSHOT
 ```
 
 ### B3. After
 
 ```bash
-./bench run jpa --config xml/repro-jpa-failed-startup messages \
+oss run run jpa --config xml/repro-jpa-failed-startup messages \
   > repros/pr-4246/output/pr-4246-after.log 2>&1
 ```
 
@@ -113,7 +113,7 @@ git switch 2.x && git stash pop
 mvn install -DskipTests      # put the real 2.27.0-SNAPSHOT back
 ```
 
-That last step is easy to skip and expensive to forget — every later `./bench`
+That last step is easy to skip and expensive to forget — every later `oss run`
 run defaulting to `2.27.0-SNAPSHOT` silently tests PR #4246 until you do.
 
 ---
@@ -125,7 +125,7 @@ gets, and compare Cassandra's behaviour:
 
 ```bash
 docker compose -f infra/compose.yaml up -d cassandra-init      # NOT `cassandra`
-./bench run nosql --config xml/appender-nosql --log4j 2.26.1
+oss run run nosql --config xml/appender-nosql --version 2.26.1
 ```
 
 Then kill the node mid-run so `cluster.connect()` fails on reconfiguration.
