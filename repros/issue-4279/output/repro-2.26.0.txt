@@ -1,0 +1,36 @@
+case                   conv  result
+stable-cause           EX    PASS
+unstable-cause         EX    THROWN java.lang.NullPointerException: Cannot read field "stackTrace" because "metadata" is null  at org.apache.logging.log4j.core.pattern.ThrowableStackTraceRenderer.renderStackTraceElements(ThrowableStackTraceRenderer.java:151)
+wrapped-unstable       EX    THROWN java.lang.NullPointerException: Cannot read field "stackTrace" because "metadata" is null  at org.apache.logging.log4j.core.pattern.ThrowableStackTraceRenderer.renderStackTraceElements(ThrowableStackTraceRenderer.java:151)
+late-cause             EX    THROWN java.lang.NullPointerException: Cannot read field "stackTrace" because "metadata" is null  at org.apache.logging.log4j.core.pattern.ThrowableStackTraceRenderer.renderStackTraceElements(ThrowableStackTraceRenderer.java:151)
+unstable-stacktrace    EX    PASS
+stable-cause           EXQ   PASS
+unstable-cause         EXQ   FAIL   java.lang.NullPointerException: Cannot read field "stackTrace" because "metadata" is null  at org.apache.logging.log4j.core.pattern.ThrowableStackTraceRenderer.renderStackTraceElements(ThrowableStackTraceRenderer.java:151)
+wrapped-unstable       EXQ   FAIL   java.lang.NullPointerException: Cannot read field "stackTrace" because "metadata" is null  at org.apache.logging.log4j.core.pattern.ThrowableStackTraceRenderer.renderStackTraceElements(ThrowableStackTraceRenderer.java:151)
+late-cause             EXQ   FAIL   java.lang.NullPointerException: Cannot read field "stackTrace" because "metadata" is null  at org.apache.logging.log4j.core.pattern.ThrowableStackTraceRenderer.renderStackTraceElements(ThrowableStackTraceRenderer.java:151)
+unstable-stacktrace    EXQ   PASS
+stable-cause           XEX   PASS
+unstable-cause         XEX   THROWN java.lang.NullPointerException: Cannot read field "stackTrace" because "metadata" is null  at org.apache.logging.log4j.core.pattern.ThrowableStackTraceRenderer.renderStackTraceElements(ThrowableStackTraceRenderer.java:151)
+wrapped-unstable       XEX   THROWN java.lang.NullPointerException: Cannot read field "stackTrace" because "metadata" is null  at org.apache.logging.log4j.core.pattern.ThrowableStackTraceRenderer.renderStackTraceElements(ThrowableStackTraceRenderer.java:151)
+late-cause             XEX   THROWN java.lang.NullPointerException: Cannot read field "stackTrace" because "metadata" is null  at org.apache.logging.log4j.core.pattern.ThrowableStackTraceRenderer.renderStackTraceElements(ThrowableStackTraceRenderer.java:151)
+unstable-stacktrace    XEX   PASS
+stable-cause           REX   PASS
+unstable-cause         REX   THROWN java.lang.NullPointerException: Cannot read field "stackTrace" because "metadata" is null  at org.apache.logging.log4j.core.pattern.ThrowableStackTraceRenderer.renderStackTraceElements(ThrowableStackTraceRenderer.java:151)
+wrapped-unstable       REX   THROWN java.lang.NullPointerException: Cannot read field "stackTrace" because "metadata" is null  at org.apache.logging.log4j.core.pattern.ThrowableStackTraceRenderer.renderStackTraceElements(ThrowableStackTraceRenderer.java:151)
+late-cause             REX   THROWN java.lang.NullPointerException: Cannot read field "stackTrace" because "metadata" is null  at org.apache.logging.log4j.core.pattern.ThrowableStackTraceRenderer.renderStackTraceElements(ThrowableStackTraceRenderer.java:151)
+unstable-stacktrace    REX   PASS
+stable-cause           JSON  PASS
+unstable-cause         JSON  PASS
+wrapped-unstable       JSON  PASS
+late-cause             JSON  PASS
+unstable-stacktrace    JSON  PASS
+unstable-cause-chain   EX    THROWN java.lang.StackOverflowError  at java.base/java.lang.StackTraceElement.of(StackTraceElement.java:563)
+unstable-cause-chain   EXQ   FAIL   java.lang.StackOverflowError  at java.base/java.lang.StackTraceElement.of(StackTraceElement.java:563)
+unstable-cause-chain   XEX   THROWN java.lang.OutOfMemoryError: Java heap space  at java.base/java.lang.StackTraceElement.of(StackTraceElement.java:559)
+unstable-cause-chain   REX   THROWN java.lang.OutOfMemoryError: Java heap space  at java.base/java.lang.StackTraceElement.of(StackTraceElement.java:559)
+unstable-cause-chain   JSON  THROWN java.lang.StackOverflowError  at java.base/java.util.IdentityHashMap.hash(IdentityHashMap.java:306)
+rendered EX    12 lines, 2 mentioning the cause
+rendered EXQ   12 lines, 2 mentioning the cause
+rendered XEX   12 lines, 2 mentioning the cause
+rendered REX   12 lines, 2 mentioning the cause
+rendered JSON  5 lines, 4 mentioning the cause

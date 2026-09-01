@@ -1,0 +1,30 @@
+=== 3.0.0-SNAPSHOT (core) / 2.24.3 (api) ===
+case                   conv  result
+stable-cause           EX    PASS
+unstable-cause         EX    THROWN java.lang.NullPointerException: Cannot read field "stackLength" because "metadata" is null  at org.apache.logging.log4j.core.pattern.ThrowableStackTraceRenderer.renderStackTraceElements(ThrowableStackTraceRenderer.java:168)
+wrapped-unstable       EX    THROWN java.lang.NullPointerException: Cannot read field "stackLength" because "metadata" is null  at org.apache.logging.log4j.core.pattern.ThrowableStackTraceRenderer.renderStackTraceElements(ThrowableStackTraceRenderer.java:168)
+late-cause             EX    THROWN java.lang.NullPointerException: Cannot read field "stackLength" because "metadata" is null  at org.apache.logging.log4j.core.pattern.ThrowableStackTraceRenderer.renderStackTraceElements(ThrowableStackTraceRenderer.java:168)
+unstable-stacktrace    EX    PASS
+stable-cause           EXQ   PASS
+unstable-cause         EXQ   FAIL   java.lang.NullPointerException: Cannot read field "stackLength" because "metadata" is null  at org.apache.logging.log4j.core.pattern.ThrowableStackTraceRenderer.renderStackTraceElements(ThrowableStackTraceRenderer.java:168)
+wrapped-unstable       EXQ   FAIL   java.lang.NullPointerException: Cannot read field "stackLength" because "metadata" is null  at org.apache.logging.log4j.core.pattern.ThrowableStackTraceRenderer.renderStackTraceElements(ThrowableStackTraceRenderer.java:168)
+late-cause             EXQ   FAIL   java.lang.NullPointerException: Cannot read field "stackLength" because "metadata" is null  at org.apache.logging.log4j.core.pattern.ThrowableStackTraceRenderer.renderStackTraceElements(ThrowableStackTraceRenderer.java:168)
+unstable-stacktrace    EXQ   PASS
+stable-cause           XEX   PASS
+unstable-cause         XEX   THROWN java.lang.NullPointerException: Cannot read field "stackLength" because "metadata" is null  at org.apache.logging.log4j.core.pattern.ThrowableStackTraceRenderer.renderStackTraceElements(ThrowableStackTraceRenderer.java:168)
+wrapped-unstable       XEX   THROWN java.lang.NullPointerException: Cannot read field "stackLength" because "metadata" is null  at org.apache.logging.log4j.core.pattern.ThrowableStackTraceRenderer.renderStackTraceElements(ThrowableStackTraceRenderer.java:168)
+late-cause             XEX   THROWN java.lang.NullPointerException: Cannot read field "stackLength" because "metadata" is null  at org.apache.logging.log4j.core.pattern.ThrowableStackTraceRenderer.renderStackTraceElements(ThrowableStackTraceRenderer.java:168)
+unstable-stacktrace    XEX   PASS
+stable-cause           REX   PASS
+unstable-cause         REX   THROWN java.lang.NullPointerException: Cannot read field "stackLength" because "metadata" is null  at org.apache.logging.log4j.core.pattern.ThrowableStackTraceRenderer.renderStackTraceElements(ThrowableStackTraceRenderer.java:168)
+wrapped-unstable       REX   THROWN java.lang.NullPointerException: Cannot read field "stackLength" because "metadata" is null  at org.apache.logging.log4j.core.pattern.ThrowableStackTraceRenderer.renderStackTraceElements(ThrowableStackTraceRenderer.java:168)
+late-cause             REX   THROWN java.lang.NullPointerException: Cannot read field "stackLength" because "metadata" is null  at org.apache.logging.log4j.core.pattern.ThrowableStackTraceRenderer.renderStackTraceElements(ThrowableStackTraceRenderer.java:168)
+unstable-stacktrace    REX   PASS
+unstable-cause-chain   EX    THROWN java.lang.StackOverflowError  at java.base/java.lang.StackTraceElement.of(StackTraceElement.java:563)
+unstable-cause-chain   EXQ   FAIL   java.lang.StackOverflowError  at java.base/java.lang.StackTraceElement.of(StackTraceElement.java:563)
+unstable-cause-chain   XEX   THROWN java.lang.OutOfMemoryError: Java heap space  at java.base/java.util.HashMap.newNode(HashMap.java:1909)
+unstable-cause-chain   REX   THROWN java.lang.StackOverflowError  at java.base/java.lang.StackTraceElement.of(StackTraceElement.java:563)
+rendered EX    12 lines, 2 mentioning the cause
+rendered EXQ   12 lines, 2 mentioning the cause
+rendered XEX   12 lines, 2 mentioning the cause
+rendered REX   12 lines, 2 mentioning the cause

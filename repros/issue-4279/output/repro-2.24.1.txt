@@ -1,0 +1,36 @@
+case                   conv  result
+stable-cause           EX    PASS
+unstable-cause         EX    PASS
+wrapped-unstable       EX    PASS
+late-cause             EX    PASS
+unstable-stacktrace    EX    PASS
+stable-cause           EXQ   PASS
+unstable-cause         EXQ   PASS
+wrapped-unstable       EXQ   PASS
+late-cause             EXQ   PASS
+unstable-stacktrace    EXQ   PASS
+stable-cause           XEX   PASS
+unstable-cause         XEX   PASS
+wrapped-unstable       XEX   PASS
+late-cause             XEX   PASS
+unstable-stacktrace    XEX   PASS
+stable-cause           REX   PASS
+unstable-cause         REX   PASS
+wrapped-unstable       REX   PASS
+late-cause             REX   PASS
+unstable-stacktrace    REX   PASS
+stable-cause           JSON  PASS
+unstable-cause         JSON  PASS
+wrapped-unstable       JSON  PASS
+late-cause             JSON  PASS
+unstable-stacktrace    JSON  PASS
+unstable-cause-chain   EX    THROWN java.lang.StackOverflowError  at java.base/java.util.IdentityHashMap.hash(IdentityHashMap.java:306)
+unstable-cause-chain   EXQ   FAIL   java.lang.StackOverflowError  at java.base/java.util.IdentityHashMap.hash(IdentityHashMap.java:306)
+unstable-cause-chain   XEX   THROWN java.lang.StackOverflowError  at java.base/java.lang.StackTraceElement.of(StackTraceElement.java:563)
+unstable-cause-chain   REX   THROWN java.lang.OutOfMemoryError: Java heap space  at org.apache.logging.log4j.core.impl.ThrowableProxy.<init>(ThrowableProxy.java:149)
+unstable-cause-chain   JSON  THROWN java.lang.StackOverflowError  at org.apache.logging.log4j.layout.template.json.util.TruncatingBufferedWriter.write(TruncatingBufferedWriter.java:112)
+rendered EX    92 lines, 16 mentioning the cause
+rendered EXQ   92 lines, 16 mentioning the cause
+rendered XEX   90 lines, 12 mentioning the cause
+rendered REX   90 lines, 11 mentioning the cause
+rendered JSON  5 lines, 4 mentioning the cause

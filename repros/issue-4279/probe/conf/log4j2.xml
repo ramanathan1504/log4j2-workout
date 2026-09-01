@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Configuration status="WARN">
+  <Appenders>
+    <File name="EX" fileName="target/out-ex.log" append="false" ignoreExceptions="false">
+      <PatternLayout pattern="%m%n%ex"/>
+    </File>
+    <File name="EXQ" fileName="target/out-exq.log" append="false">
+      <PatternLayout pattern="%m%n%ex"/>
+    </File>
+    <File name="XEX" fileName="target/out-xex.log" append="false" ignoreExceptions="false">
+      <PatternLayout pattern="%m%n%xEx"/>
+    </File>
+    <File name="REX" fileName="target/out-rex.log" append="false" ignoreExceptions="false">
+      <PatternLayout pattern="%m%n%rEx"/>
+    </File>
+  </Appenders>
+  <Loggers>
+    <Logger name="EX" level="INFO" additivity="false"><AppenderRef ref="EX"/></Logger>
+    <Logger name="EXQ" level="INFO" additivity="false"><AppenderRef ref="EXQ"/></Logger>
+    <Logger name="XEX" level="INFO" additivity="false"><AppenderRef ref="XEX"/></Logger>
+    <Logger name="REX" level="INFO" additivity="false"><AppenderRef ref="REX"/></Logger>
+    <Root level="INFO"/>
+  </Loggers>
+</Configuration>
