@@ -1,0 +1,3 @@
+=== full async (log4j.async.logger.AsyncLoggerContextSelector), 3.0.0-SNAPSHOT, UNCACHED ===
+logged [first-job tid=28 prio=3] actual name=first-job priority=3
+logged [second-job tid=28 prio=8] actual name=second-job priority=8

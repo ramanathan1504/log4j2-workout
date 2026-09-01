@@ -1,0 +1,6 @@
+=== full async (AsyncLoggerContextSelector), 2.26.1, UNCACHED ===
+logged [first-job tid=22 prio=3] actual name=first-job priority=3
+logged [first-job tid=22 prio=3] actual name=second-job priority=8
+=== mixed async (AsyncRoot), 2.26.1, UNCACHED ===
+logged [first-job tid=22 prio=3] actual name=first-job priority=3
+logged [second-job tid=22 prio=8] actual name=second-job priority=8
