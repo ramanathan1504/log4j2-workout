@@ -1,0 +1,212 @@
+2026-09-07T15:24:17.480607Z main DEBUG Loaded provider:
+Provider 'org.apache.logging.log4j.core.impl.Log4jProvider'
+	priority = 10
+	loggerContextFactory = org.apache.logging.log4j.core.impl.Log4jContextFactory
+2026-09-07T15:24:17.483189Z main INFO Using provider:
+Provider 'org.apache.logging.log4j.core.impl.Log4jProvider'
+	priority = 10
+	loggerContextFactory = org.apache.logging.log4j.core.impl.Log4jContextFactory
+2026-09-07T15:24:17.487063Z main DEBUG Using ShutdownCallbackRegistry class org.apache.logging.log4j.core.util.DefaultShutdownCallbackRegistry
+2026-09-07T15:24:17.533547Z main DEBUG Took 0.030992 seconds to load 228 plugins from jdk.internal.loader.ClassLoaders$AppClassLoader@b1a58a3
+2026-09-07T15:24:17.533720Z main DEBUG PluginManager 'Lookup' found 15 plugins
+2026-09-07T15:24:17.540144Z main DEBUG AsyncLogger.ThreadNameStrategy=UNCACHED (user specified null, default is UNCACHED)
+2026-09-07T15:24:17.540540Z main TRACE Using default SystemClock for timestamps.
+2026-09-07T15:24:17.540759Z main DEBUG org.apache.logging.log4j.core.util.SystemClock supports precise timestamps.
+2026-09-07T15:24:17.543588Z main DEBUG PluginManager 'Lookup' found 15 plugins
+2026-09-07T15:24:17.544867Z main DEBUG Starting OutputStreamManager SYSTEM_OUT.false.false-1
+2026-09-07T15:24:17.545280Z main DEBUG Starting LoggerContext[name=b1a58a3, org.apache.logging.log4j.core.LoggerContext@49139829]...
+2026-09-07T15:24:17.545448Z main DEBUG Reconfiguration started for context[name=b1a58a3] at URI null (org.apache.logging.log4j.core.LoggerContext@49139829) with optional ClassLoader: null
+2026-09-07T15:24:17.546088Z main DEBUG PluginManager 'Lookup' found 15 plugins
+2026-09-07T15:24:17.546371Z main DEBUG PluginManager 'ConfigurationFactory' found 4 plugins
+2026-09-07T15:24:17.553029Z main DEBUG PluginManager 'Lookup' found 15 plugins
+2026-09-07T15:24:17.553275Z main DEBUG PluginManager 'Lookup' found 15 plugins
+2026-09-07T15:24:17.553538Z main DEBUG Missing dependencies for Yaml support, ConfigurationFactory org.apache.logging.log4j.core.config.yaml.YamlConfigurationFactory is inactive
+2026-09-07T15:24:17.553641Z main DEBUG PluginManager 'Lookup' found 15 plugins
+2026-09-07T15:24:17.553835Z main DEBUG Missing dependencies for Json support, ConfigurationFactory org.apache.logging.log4j.core.config.json.JsonConfigurationFactory is inactive
+2026-09-07T15:24:17.553921Z main DEBUG PluginManager 'Lookup' found 15 plugins
+2026-09-07T15:24:17.555086Z main DEBUG Using configurationFactory org.apache.logging.log4j.core.config.ConfigurationFactory$Factory@75d4a5c2
+2026-09-07T15:24:17.555233Z main TRACE Trying to find [log4j2-testb1a58a3.properties] using context class loader jdk.internal.loader.ClassLoaders$AppClassLoader@b1a58a3.
+2026-09-07T15:24:17.555374Z main TRACE Trying to find [log4j2-testb1a58a3.properties] using jdk.internal.loader.ClassLoaders$AppClassLoader@b1a58a3 class loader.
+2026-09-07T15:24:17.555444Z main TRACE Trying to find [log4j2-testb1a58a3.properties] using jdk.internal.loader.ClassLoaders$AppClassLoader@b1a58a3 class loader.
+2026-09-07T15:24:17.555494Z main TRACE Trying to find [log4j2-testb1a58a3.properties] using ClassLoader.getSystemResource().
+2026-09-07T15:24:17.555549Z main TRACE Trying to find [log4j2-testb1a58a3.yml] using context class loader jdk.internal.loader.ClassLoaders$AppClassLoader@b1a58a3.
+2026-09-07T15:24:17.555662Z main TRACE Trying to find [log4j2-testb1a58a3.yml] using jdk.internal.loader.ClassLoaders$AppClassLoader@b1a58a3 class loader.
+2026-09-07T15:24:17.555739Z main TRACE Trying to find [log4j2-testb1a58a3.yml] using jdk.internal.loader.ClassLoaders$AppClassLoader@b1a58a3 class loader.
+2026-09-07T15:24:17.555798Z main TRACE Trying to find [log4j2-testb1a58a3.yml] using ClassLoader.getSystemResource().
+2026-09-07T15:24:17.555851Z main TRACE Trying to find [log4j2-testb1a58a3.yaml] using context class loader jdk.internal.loader.ClassLoaders$AppClassLoader@b1a58a3.
+2026-09-07T15:24:17.555957Z main TRACE Trying to find [log4j2-testb1a58a3.yaml] using jdk.internal.loader.ClassLoaders$AppClassLoader@b1a58a3 class loader.
+2026-09-07T15:24:17.556027Z main TRACE Trying to find [log4j2-testb1a58a3.yaml] using jdk.internal.loader.ClassLoaders$AppClassLoader@b1a58a3 class loader.
+2026-09-07T15:24:17.556075Z main TRACE Trying to find [log4j2-testb1a58a3.yaml] using ClassLoader.getSystemResource().
+2026-09-07T15:24:17.556127Z main TRACE Trying to find [log4j2-testb1a58a3.json] using context class loader jdk.internal.loader.ClassLoaders$AppClassLoader@b1a58a3.
+2026-09-07T15:24:17.556229Z main TRACE Trying to find [log4j2-testb1a58a3.json] using jdk.internal.loader.ClassLoaders$AppClassLoader@b1a58a3 class loader.
+2026-09-07T15:24:17.556290Z main TRACE Trying to find [log4j2-testb1a58a3.json] using jdk.internal.loader.ClassLoaders$AppClassLoader@b1a58a3 class loader.
+2026-09-07T15:24:17.556340Z main TRACE Trying to find [log4j2-testb1a58a3.json] using ClassLoader.getSystemResource().
+2026-09-07T15:24:17.556393Z main TRACE Trying to find [log4j2-testb1a58a3.jsn] using context class loader jdk.internal.loader.ClassLoaders$AppClassLoader@b1a58a3.
+2026-09-07T15:24:17.556476Z main TRACE Trying to find [log4j2-testb1a58a3.jsn] using jdk.internal.loader.ClassLoaders$AppClassLoader@b1a58a3 class loader.
+2026-09-07T15:24:17.556570Z main TRACE Trying to find [log4j2-testb1a58a3.jsn] using jdk.internal.loader.ClassLoaders$AppClassLoader@b1a58a3 class loader.
+2026-09-07T15:24:17.556628Z main TRACE Trying to find [log4j2-testb1a58a3.jsn] using ClassLoader.getSystemResource().
+2026-09-07T15:24:17.556683Z main TRACE Trying to find [log4j2-testb1a58a3.xml] using context class loader jdk.internal.loader.ClassLoaders$AppClassLoader@b1a58a3.
+2026-09-07T15:24:17.556774Z main TRACE Trying to find [log4j2-testb1a58a3.xml] using jdk.internal.loader.ClassLoaders$AppClassLoader@b1a58a3 class loader.
+2026-09-07T15:24:17.556830Z main TRACE Trying to find [log4j2-testb1a58a3.xml] using jdk.internal.loader.ClassLoaders$AppClassLoader@b1a58a3 class loader.
+2026-09-07T15:24:17.556878Z main TRACE Trying to find [log4j2-testb1a58a3.xml] using ClassLoader.getSystemResource().
+2026-09-07T15:24:17.556934Z main TRACE Trying to find [log4j2-test.properties] using context class loader jdk.internal.loader.ClassLoaders$AppClassLoader@b1a58a3.
+2026-09-07T15:24:17.557022Z main TRACE Trying to find [log4j2-test.properties] using jdk.internal.loader.ClassLoaders$AppClassLoader@b1a58a3 class loader.
+2026-09-07T15:24:17.557073Z main TRACE Trying to find [log4j2-test.properties] using jdk.internal.loader.ClassLoaders$AppClassLoader@b1a58a3 class loader.
+2026-09-07T15:24:17.557123Z main TRACE Trying to find [log4j2-test.properties] using ClassLoader.getSystemResource().
+2026-09-07T15:24:17.557178Z main TRACE Trying to find [log4j2-test.yml] using context class loader jdk.internal.loader.ClassLoaders$AppClassLoader@b1a58a3.
+2026-09-07T15:24:17.557272Z main TRACE Trying to find [log4j2-test.yml] using jdk.internal.loader.ClassLoaders$AppClassLoader@b1a58a3 class loader.
+2026-09-07T15:24:17.557323Z main TRACE Trying to find [log4j2-test.yml] using jdk.internal.loader.ClassLoaders$AppClassLoader@b1a58a3 class loader.
+2026-09-07T15:24:17.557369Z main TRACE Trying to find [log4j2-test.yml] using ClassLoader.getSystemResource().
+2026-09-07T15:24:17.557418Z main TRACE Trying to find [log4j2-test.yaml] using context class loader jdk.internal.loader.ClassLoaders$AppClassLoader@b1a58a3.
+2026-09-07T15:24:17.557498Z main TRACE Trying to find [log4j2-test.yaml] using jdk.internal.loader.ClassLoaders$AppClassLoader@b1a58a3 class loader.
+2026-09-07T15:24:17.557550Z main TRACE Trying to find [log4j2-test.yaml] using jdk.internal.loader.ClassLoaders$AppClassLoader@b1a58a3 class loader.
+2026-09-07T15:24:17.557596Z main TRACE Trying to find [log4j2-test.yaml] using ClassLoader.getSystemResource().
+2026-09-07T15:24:17.557646Z main TRACE Trying to find [log4j2-test.json] using context class loader jdk.internal.loader.ClassLoaders$AppClassLoader@b1a58a3.
+2026-09-07T15:24:17.557735Z main TRACE Trying to find [log4j2-test.json] using jdk.internal.loader.ClassLoaders$AppClassLoader@b1a58a3 class loader.
+2026-09-07T15:24:17.557782Z main TRACE Trying to find [log4j2-test.json] using jdk.internal.loader.ClassLoaders$AppClassLoader@b1a58a3 class loader.
+2026-09-07T15:24:17.557837Z main TRACE Trying to find [log4j2-test.json] using ClassLoader.getSystemResource().
+2026-09-07T15:24:17.557887Z main TRACE Trying to find [log4j2-test.jsn] using context class loader jdk.internal.loader.ClassLoaders$AppClassLoader@b1a58a3.
+2026-09-07T15:24:17.557976Z main TRACE Trying to find [log4j2-test.jsn] using jdk.internal.loader.ClassLoaders$AppClassLoader@b1a58a3 class loader.
+2026-09-07T15:24:17.558027Z main TRACE Trying to find [log4j2-test.jsn] using jdk.internal.loader.ClassLoaders$AppClassLoader@b1a58a3 class loader.
+2026-09-07T15:24:17.558078Z main TRACE Trying to find [log4j2-test.jsn] using ClassLoader.getSystemResource().
+2026-09-07T15:24:17.558127Z main TRACE Trying to find [log4j2-test.xml] using context class loader jdk.internal.loader.ClassLoaders$AppClassLoader@b1a58a3.
+2026-09-07T15:24:17.558215Z main TRACE Trying to find [log4j2-test.xml] using jdk.internal.loader.ClassLoaders$AppClassLoader@b1a58a3 class loader.
+2026-09-07T15:24:17.558264Z main TRACE Trying to find [log4j2-test.xml] using jdk.internal.loader.ClassLoaders$AppClassLoader@b1a58a3 class loader.
+2026-09-07T15:24:17.558308Z main TRACE Trying to find [log4j2-test.xml] using ClassLoader.getSystemResource().
+2026-09-07T15:24:17.558363Z main TRACE Trying to find [log4j2b1a58a3.properties] using context class loader jdk.internal.loader.ClassLoaders$AppClassLoader@b1a58a3.
+2026-09-07T15:24:17.558446Z main TRACE Trying to find [log4j2b1a58a3.properties] using jdk.internal.loader.ClassLoaders$AppClassLoader@b1a58a3 class loader.
+2026-09-07T15:24:17.558499Z main TRACE Trying to find [log4j2b1a58a3.properties] using jdk.internal.loader.ClassLoaders$AppClassLoader@b1a58a3 class loader.
+2026-09-07T15:24:17.558544Z main TRACE Trying to find [log4j2b1a58a3.properties] using ClassLoader.getSystemResource().
+2026-09-07T15:24:17.558597Z main TRACE Trying to find [log4j2b1a58a3.yml] using context class loader jdk.internal.loader.ClassLoaders$AppClassLoader@b1a58a3.
+2026-09-07T15:24:17.558712Z main TRACE Trying to find [log4j2b1a58a3.yml] using jdk.internal.loader.ClassLoaders$AppClassLoader@b1a58a3 class loader.
+2026-09-07T15:24:17.558765Z main TRACE Trying to find [log4j2b1a58a3.yml] using jdk.internal.loader.ClassLoaders$AppClassLoader@b1a58a3 class loader.
+2026-09-07T15:24:17.558815Z main TRACE Trying to find [log4j2b1a58a3.yml] using ClassLoader.getSystemResource().
+2026-09-07T15:24:17.558867Z main TRACE Trying to find [log4j2b1a58a3.yaml] using context class loader jdk.internal.loader.ClassLoaders$AppClassLoader@b1a58a3.
+2026-09-07T15:24:17.558948Z main TRACE Trying to find [log4j2b1a58a3.yaml] using jdk.internal.loader.ClassLoaders$AppClassLoader@b1a58a3 class loader.
+2026-09-07T15:24:17.558998Z main TRACE Trying to find [log4j2b1a58a3.yaml] using jdk.internal.loader.ClassLoaders$AppClassLoader@b1a58a3 class loader.
+2026-09-07T15:24:17.559042Z main TRACE Trying to find [log4j2b1a58a3.yaml] using ClassLoader.getSystemResource().
+2026-09-07T15:24:17.559091Z main TRACE Trying to find [log4j2b1a58a3.json] using context class loader jdk.internal.loader.ClassLoaders$AppClassLoader@b1a58a3.
+2026-09-07T15:24:17.559175Z main TRACE Trying to find [log4j2b1a58a3.json] using jdk.internal.loader.ClassLoaders$AppClassLoader@b1a58a3 class loader.
+2026-09-07T15:24:17.559223Z main TRACE Trying to find [log4j2b1a58a3.json] using jdk.internal.loader.ClassLoaders$AppClassLoader@b1a58a3 class loader.
+2026-09-07T15:24:17.559269Z main TRACE Trying to find [log4j2b1a58a3.json] using ClassLoader.getSystemResource().
+2026-09-07T15:24:17.559326Z main TRACE Trying to find [log4j2b1a58a3.jsn] using context class loader jdk.internal.loader.ClassLoaders$AppClassLoader@b1a58a3.
+2026-09-07T15:24:17.559412Z main TRACE Trying to find [log4j2b1a58a3.jsn] using jdk.internal.loader.ClassLoaders$AppClassLoader@b1a58a3 class loader.
+2026-09-07T15:24:17.559460Z main TRACE Trying to find [log4j2b1a58a3.jsn] using jdk.internal.loader.ClassLoaders$AppClassLoader@b1a58a3 class loader.
+2026-09-07T15:24:17.559514Z main TRACE Trying to find [log4j2b1a58a3.jsn] using ClassLoader.getSystemResource().
+2026-09-07T15:24:17.559561Z main TRACE Trying to find [log4j2b1a58a3.xml] using context class loader jdk.internal.loader.ClassLoaders$AppClassLoader@b1a58a3.
+2026-09-07T15:24:17.559643Z main TRACE Trying to find [log4j2b1a58a3.xml] using jdk.internal.loader.ClassLoaders$AppClassLoader@b1a58a3 class loader.
+2026-09-07T15:24:17.559691Z main TRACE Trying to find [log4j2b1a58a3.xml] using jdk.internal.loader.ClassLoaders$AppClassLoader@b1a58a3 class loader.
+2026-09-07T15:24:17.559736Z main TRACE Trying to find [log4j2b1a58a3.xml] using ClassLoader.getSystemResource().
+2026-09-07T15:24:17.559807Z main TRACE Trying to find [log4j2.properties] using context class loader jdk.internal.loader.ClassLoaders$AppClassLoader@b1a58a3.
+2026-09-07T15:24:17.559948Z main TRACE Trying to find [log4j2.properties] using jdk.internal.loader.ClassLoaders$AppClassLoader@b1a58a3 class loader.
+2026-09-07T15:24:17.560020Z main TRACE Trying to find [log4j2.properties] using jdk.internal.loader.ClassLoaders$AppClassLoader@b1a58a3 class loader.
+2026-09-07T15:24:17.560069Z main TRACE Trying to find [log4j2.properties] using ClassLoader.getSystemResource().
+2026-09-07T15:24:17.560120Z main TRACE Trying to find [log4j2.yml] using context class loader jdk.internal.loader.ClassLoaders$AppClassLoader@b1a58a3.
+2026-09-07T15:24:17.560202Z main TRACE Trying to find [log4j2.yml] using jdk.internal.loader.ClassLoaders$AppClassLoader@b1a58a3 class loader.
+2026-09-07T15:24:17.560255Z main TRACE Trying to find [log4j2.yml] using jdk.internal.loader.ClassLoaders$AppClassLoader@b1a58a3 class loader.
+2026-09-07T15:24:17.560300Z main TRACE Trying to find [log4j2.yml] using ClassLoader.getSystemResource().
+2026-09-07T15:24:17.560349Z main TRACE Trying to find [log4j2.yaml] using context class loader jdk.internal.loader.ClassLoaders$AppClassLoader@b1a58a3.
+2026-09-07T15:24:17.560430Z main TRACE Trying to find [log4j2.yaml] using jdk.internal.loader.ClassLoaders$AppClassLoader@b1a58a3 class loader.
+2026-09-07T15:24:17.560485Z main TRACE Trying to find [log4j2.yaml] using jdk.internal.loader.ClassLoaders$AppClassLoader@b1a58a3 class loader.
+2026-09-07T15:24:17.560531Z main TRACE Trying to find [log4j2.yaml] using ClassLoader.getSystemResource().
+2026-09-07T15:24:17.560580Z main TRACE Trying to find [log4j2.json] using context class loader jdk.internal.loader.ClassLoaders$AppClassLoader@b1a58a3.
+2026-09-07T15:24:17.560661Z main TRACE Trying to find [log4j2.json] using jdk.internal.loader.ClassLoaders$AppClassLoader@b1a58a3 class loader.
+2026-09-07T15:24:17.560710Z main TRACE Trying to find [log4j2.json] using jdk.internal.loader.ClassLoaders$AppClassLoader@b1a58a3 class loader.
+2026-09-07T15:24:17.560756Z main TRACE Trying to find [log4j2.json] using ClassLoader.getSystemResource().
+2026-09-07T15:24:17.560804Z main TRACE Trying to find [log4j2.jsn] using context class loader jdk.internal.loader.ClassLoaders$AppClassLoader@b1a58a3.
+2026-09-07T15:24:17.560883Z main TRACE Trying to find [log4j2.jsn] using jdk.internal.loader.ClassLoaders$AppClassLoader@b1a58a3 class loader.
+2026-09-07T15:24:17.560928Z main TRACE Trying to find [log4j2.jsn] using jdk.internal.loader.ClassLoaders$AppClassLoader@b1a58a3 class loader.
+2026-09-07T15:24:17.560971Z main TRACE Trying to find [log4j2.jsn] using ClassLoader.getSystemResource().
+2026-09-07T15:24:17.561020Z main TRACE Trying to find [log4j2.xml] using context class loader jdk.internal.loader.ClassLoaders$AppClassLoader@b1a58a3.
+2026-09-07T15:24:17.561109Z main DEBUG Found [log4j2.xml] at file:/Users/ramanathan/apache/log4j2-workout/repros/issue-4262/log4j-issue-4262-repro/target/classes/log4j2.xml using context class loader.
+2026-09-07T15:24:17.565917Z main DEBUG PluginManager 'Lookup' found 15 plugins
+2026-09-07T15:24:17.566607Z main DEBUG Closing BufferedInputStream java.io.BufferedInputStream@6025e1b6
+2026-09-07T15:24:17.604266Z main DEBUG Apache Log4j Core 2.26 initializing configuration XmlConfiguration[location=/Users/ramanathan/apache/log4j2-workout/repros/issue-4262/log4j-issue-4262-repro/target/classes/log4j2.xml, lastModified=2026-09-07T15:23:19.452Z]
+2026-09-07T15:24:17.604529Z main DEBUG PluginManager 'Core' found 134 plugins
+2026-09-07T15:24:17.604594Z main DEBUG PluginManager 'Level' found 0 plugins
+2026-09-07T15:24:17.606186Z main DEBUG PluginManager 'Lookup' found 15 plugins
+2026-09-07T15:24:17.606735Z main DEBUG Building Plugin[name=layout, class=org.apache.logging.log4j.core.layout.PatternLayout].
+2026-09-07T15:24:17.611283Z main TRACE TypeConverterRegistry initializing.
+2026-09-07T15:24:17.611358Z main DEBUG PluginManager 'TypeConverter' found 26 plugins
+2026-09-07T15:24:17.617491Z main DEBUG PatternLayout$Builder(pattern="%m%n", PatternSelector=null, Configuration(/Users/ramanathan/apache/log4j2-workout/repros/issue-4262/log4j-issue-4262-repro/target/classes/log4j2.xml), Replace=null, charset="null", alwaysWriteExceptions="null", disableAnsi="null", noConsoleNoAnsi="null", header="null", footer="null")
+2026-09-07T15:24:17.618059Z main DEBUG PluginManager 'Converter' found 45 plugins
+2026-09-07T15:24:17.623453Z main DEBUG Building Plugin[name=appender, class=org.apache.logging.log4j.core.appender.ConsoleAppender].
+2026-09-07T15:24:17.626839Z main DEBUG ConsoleAppender$Builder(target="SYSTEM_OUT", follow="null", direct="null", bufferedIo="true", bufferSize="256", immediateFlush="false", ignoreExceptions="null", PatternLayout(%m%n), name="CONSOLE", Configuration(/Users/ramanathan/apache/log4j2-workout/repros/issue-4262/log4j-issue-4262-repro/target/classes/log4j2.xml), Filter=null, ={})
+2026-09-07T15:24:17.627464Z main DEBUG Starting OutputStreamManager SYSTEM_OUT.false.false
+2026-09-07T15:24:17.627528Z main DEBUG Building Plugin[name=layout, class=org.apache.logging.log4j.core.layout.PatternLayout].
+2026-09-07T15:24:17.627685Z main DEBUG PatternLayout$Builder(pattern="%m%n", PatternSelector=null, Configuration(/Users/ramanathan/apache/log4j2-workout/repros/issue-4262/log4j-issue-4262-repro/target/classes/log4j2.xml), Replace=null, charset="null", alwaysWriteExceptions="null", disableAnsi="null", noConsoleNoAnsi="null", header="null", footer="null")
+2026-09-07T15:24:17.627775Z main DEBUG Building Plugin[name=appender, class=org.apache.logging.log4j.core.appender.FileAppender].
+2026-09-07T15:24:17.628876Z main DEBUG FileAppender$Builder(fileName="target/repro-4262/control.log", append="false", locking="null", advertise="null", advertiseUri="null", createOnDemand="null", filePermissions="null", fileOwner="null", fileGroup="null", bufferedIo="true", bufferSize="256", immediateFlush="false", ignoreExceptions="null", PatternLayout(%m%n), name="FILE", Configuration(/Users/ramanathan/apache/log4j2-workout/repros/issue-4262/log4j-issue-4262-repro/target/classes/log4j2.xml), Filter=null, ={})
+2026-09-07T15:24:17.630213Z main DEBUG Starting FileManager target/repro-4262/control.log
+2026-09-07T15:24:17.630319Z main DEBUG Building Plugin[name=Appenders, class=org.apache.logging.log4j.core.config.AppendersPlugin].
+2026-09-07T15:24:17.630826Z main DEBUG createAppenders(={CONSOLE, FILE})
+2026-09-07T15:24:17.630919Z main DEBUG Building Plugin[name=AppenderRef, class=org.apache.logging.log4j.core.config.AppenderRef].
+2026-09-07T15:24:17.632191Z main DEBUG createAppenderRef(ref="CONSOLE", level="null", Filter=null)
+2026-09-07T15:24:17.632710Z main DEBUG Building Plugin[name=Logger, class=org.apache.logging.log4j.core.config.LoggerConfig].
+2026-09-07T15:24:17.633713Z main DEBUG LoggerConfig$Builder(additivity="false", level="INFO", levelAndRefs="null", name="console", includeLocation="null", ={CONSOLE}, ={}, Configuration(/Users/ramanathan/apache/log4j2-workout/repros/issue-4262/log4j-issue-4262-repro/target/classes/log4j2.xml), Filter=null)
+2026-09-07T15:24:17.634328Z main DEBUG Building Plugin[name=AppenderRef, class=org.apache.logging.log4j.core.config.AppenderRef].
+2026-09-07T15:24:17.634486Z main DEBUG createAppenderRef(ref="FILE", level="null", Filter=null)
+2026-09-07T15:24:17.634535Z main DEBUG Building Plugin[name=Logger, class=org.apache.logging.log4j.core.config.LoggerConfig].
+2026-09-07T15:24:17.634717Z main DEBUG LoggerConfig$Builder(additivity="false", level="INFO", levelAndRefs="null", name="file", includeLocation="null", ={FILE}, ={}, Configuration(/Users/ramanathan/apache/log4j2-workout/repros/issue-4262/log4j-issue-4262-repro/target/classes/log4j2.xml), Filter=null)
+2026-09-07T15:24:17.634800Z main DEBUG Building Plugin[name=Root, class=org.apache.logging.log4j.core.config.LoggerConfig$RootLogger].
+2026-09-07T15:24:17.635997Z main DEBUG LoggerConfig$RootLogger$Builder(additivity="null", level="OFF", levelAndRefs="null", includeLocation="null", ={}, ={}, Configuration(/Users/ramanathan/apache/log4j2-workout/repros/issue-4262/log4j-issue-4262-repro/target/classes/log4j2.xml), Filter=null)
+2026-09-07T15:24:17.636088Z main DEBUG Building Plugin[name=Loggers, class=org.apache.logging.log4j.core.config.LoggersPlugin].
+2026-09-07T15:24:17.636576Z main DEBUG createLoggers(={console, file, root})
+2026-09-07T15:24:17.636772Z main DEBUG Configuration XmlConfiguration[location=/Users/ramanathan/apache/log4j2-workout/repros/issue-4262/log4j-issue-4262-repro/target/classes/log4j2.xml, lastModified=2026-09-07T15:23:19.452Z] initialized
+2026-09-07T15:24:17.636830Z main INFO Starting configuration XmlConfiguration[location=/Users/ramanathan/apache/log4j2-workout/repros/issue-4262/log4j-issue-4262-repro/target/classes/log4j2.xml, lastModified=2026-09-07T15:23:19.452Z]...
+2026-09-07T15:24:17.636888Z main INFO Configuration XmlConfiguration[location=/Users/ramanathan/apache/log4j2-workout/repros/issue-4262/log4j-issue-4262-repro/target/classes/log4j2.xml, lastModified=2026-09-07T15:23:19.452Z] started.
+2026-09-07T15:24:17.637663Z main INFO Stopping configuration org.apache.logging.log4j.core.config.DefaultConfiguration@515aebb0...
+2026-09-07T15:24:17.637721Z main TRACE DefaultConfiguration notified 1 ReliabilityStrategies that config will be stopped.
+2026-09-07T15:24:17.637760Z main TRACE DefaultConfiguration stopping root LoggerConfig.
+2026-09-07T15:24:17.637815Z main TRACE DefaultConfiguration notifying ReliabilityStrategies that appenders will be stopped.
+2026-09-07T15:24:17.637867Z main TRACE DefaultConfiguration stopping remaining Appenders.
+2026-09-07T15:24:17.637910Z main DEBUG Shutting down OutputStreamManager SYSTEM_OUT.false.false-1
+2026-09-07T15:24:17.637961Z main DEBUG OutputStream closed
+2026-09-07T15:24:17.638Z main DEBUG Shut down OutputStreamManager SYSTEM_OUT.false.false-1, all resources released: true
+2026-09-07T15:24:17.638042Z main DEBUG Appender DefaultConsole-1 stopped with status true
+2026-09-07T15:24:17.638077Z main TRACE DefaultConfiguration stopped 1 remaining Appenders.
+2026-09-07T15:24:17.638108Z main TRACE DefaultConfiguration cleaning Appenders from 1 LoggerConfigs.
+2026-09-07T15:24:17.638164Z main INFO Configuration org.apache.logging.log4j.core.config.DefaultConfiguration@515aebb0 stopped.
+2026-09-07T15:24:17.638877Z main TRACE Using default SystemClock for timestamps.
+2026-09-07T15:24:17.638930Z main DEBUG org.apache.logging.log4j.core.util.SystemClock supports precise timestamps.
+2026-09-07T15:24:17.639019Z main TRACE Using DummyNanoClock for nanosecond timestamps.
+2026-09-07T15:24:17.639083Z main DEBUG Reconfiguration complete for context[name=b1a58a3] at URI /Users/ramanathan/apache/log4j2-workout/repros/issue-4262/log4j-issue-4262-repro/target/classes/log4j2.xml (org.apache.logging.log4j.core.LoggerContext@49139829) with optional ClassLoader: null
+2026-09-07T15:24:17.639138Z main DEBUG Shutdown hook enabled. Registering a new one.
+2026-09-07T15:24:17.639434Z main DEBUG LoggerContext[name=b1a58a3, org.apache.logging.log4j.core.LoggerContext@49139829] started OK.
+
+Log4j 2.26.1  --  issue #4262
+config: <Console immediateFlush="false" bufferedIo="true" bufferSize="256">
+
+  check                                          expected     actual       
+  [A] Console appender field immediateFlush      false        true         FAIL
+  [B] bytes on System.out after one event        0            14           FAIL
+  [C] Console manager buffer capacity            256          8192         FAIL
+  [D] control: File appender field immediateFlush false        false        PASS
+  [E] control: bytes in file after one event     0            0            PASS
+  [F] control: File manager buffer capacity      256          256          PASS
+2026-09-07T15:24:17.645401Z main DEBUG Stopping LoggerContext[name=b1a58a3, org.apache.logging.log4j.core.LoggerContext@49139829]...
+2026-09-07T15:24:17.645949Z main INFO Stopping configuration XmlConfiguration[location=/Users/ramanathan/apache/log4j2-workout/repros/issue-4262/log4j-issue-4262-repro/target/classes/log4j2.xml, lastModified=2026-09-07T15:23:19.452Z]...
+2026-09-07T15:24:17.645999Z main TRACE XmlConfiguration notified 4 ReliabilityStrategies that config will be stopped.
+2026-09-07T15:24:17.646031Z main TRACE XmlConfiguration stopping 3 LoggerConfigs.
+2026-09-07T15:24:17.646060Z main TRACE XmlConfiguration stopping root LoggerConfig.
+2026-09-07T15:24:17.646096Z main TRACE XmlConfiguration notifying ReliabilityStrategies that appenders will be stopped.
+2026-09-07T15:24:17.646191Z main TRACE XmlConfiguration stopping remaining Appenders.
+2026-09-07T15:24:17.646227Z main DEBUG Shutting down OutputStreamManager SYSTEM_OUT.false.false
+2026-09-07T15:24:17.646254Z main DEBUG OutputStream closed
+2026-09-07T15:24:17.646280Z main DEBUG Shut down OutputStreamManager SYSTEM_OUT.false.false, all resources released: true
+2026-09-07T15:24:17.646305Z main DEBUG Appender CONSOLE stopped with status true
+2026-09-07T15:24:17.646334Z main DEBUG Shutting down FileManager target/repro-4262/control.log
+2026-09-07T15:24:17.646460Z main DEBUG OutputStream closed
+2026-09-07T15:24:17.646492Z main DEBUG Shut down FileManager target/repro-4262/control.log, all resources released: true
+2026-09-07T15:24:17.646518Z main DEBUG Appender FILE stopped with status true
+2026-09-07T15:24:17.646546Z main TRACE XmlConfiguration stopped 2 remaining Appenders.
+2026-09-07T15:24:17.646569Z main TRACE XmlConfiguration cleaning Appenders from 4 LoggerConfigs.
+2026-09-07T15:24:17.646622Z main INFO Configuration XmlConfiguration[location=/Users/ramanathan/apache/log4j2-workout/repros/issue-4262/log4j-issue-4262-repro/target/classes/log4j2.xml, lastModified=2026-09-07T15:23:19.452Z] stopped.
+2026-09-07T15:24:17.646682Z main DEBUG Stopped LoggerContext[name=b1a58a3, org.apache.logging.log4j.core.LoggerContext@49139829] with status true
+
+  after LogManager.shutdown()
+    System.out received : "console-event\n"
+    target/repro-4262/control.log : 11 bytes
+
+RESULT: 3 of 6 checks failed
+VERDICT: FAIL -- ConsoleAppender ignores the buffering attributes it advertises

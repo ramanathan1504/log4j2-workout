@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Configuration status="warn">
+  <Appenders>
+    <Console name="CONSOLE" target="SYSTEM_OUT" immediateFlush="false" bufferedIo="true" bufferSize="256">
+      <PatternLayout pattern="%m%n"/>
+    </Console>
+    <File name="FILE" fileName="target/repro-4262/control.log" append="false"
+          immediateFlush="false" bufferedIo="true" bufferSize="256">
+      <PatternLayout pattern="%m%n"/>
+    </File>
+  </Appenders>
+  <Loggers>
+    <Logger name="console" level="info" additivity="false">
+      <AppenderRef ref="CONSOLE"/>
+    </Logger>
+    <Logger name="file" level="info" additivity="false">
+      <AppenderRef ref="FILE"/>
+    </Logger>
+    <Root level="off"/>
+  </Loggers>
+</Configuration>

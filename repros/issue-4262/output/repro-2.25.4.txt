@@ -1,0 +1,18 @@
+
+Log4j 2.25.4  --  issue #4262
+config: <Console immediateFlush="false" bufferedIo="true" bufferSize="256">
+
+  check                                          expected     actual       
+  [A] Console appender field immediateFlush      false        true         FAIL
+  [B] bytes on System.out after one event        0            14           FAIL
+  [C] Console manager buffer capacity            256          8192         FAIL
+  [D] control: File appender field immediateFlush false        false        PASS
+  [E] control: bytes in file after one event     0            0            PASS
+  [F] control: File manager buffer capacity      256          256          PASS
+
+  after LogManager.shutdown()
+    System.out received : "console-event\n"
+    target/repro-4262/control.log : 11 bytes
+
+RESULT: 3 of 6 checks failed
+VERDICT: FAIL -- ConsoleAppender ignores the buffering attributes it advertises
