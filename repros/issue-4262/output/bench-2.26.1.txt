@@ -1,0 +1,7 @@
+Log4j 2.26.1, stdout to /dev/null, 50k warmup + 500k events, immediateFlush=false applied reflectively
+
+console        immediateFlush=true   500,000 events     501 ms     996,145 events/s
+console        immediateFlush=false  500,000 events     232 ms   2,154,528 events/s
+console-direct immediateFlush=true   500,000 events     505 ms     988,206 events/s
+console-direct immediateFlush=false  500,000 events     213 ms   2,338,731 events/s
+file-null      immediateFlush=false  500,000 events     204 ms   2,444,568 events/s

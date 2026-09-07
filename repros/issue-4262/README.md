@@ -134,6 +134,21 @@ manager-wide, or removed from the Console table.
 whatever the fix, that path has to keep flushing on every event or a program
 that dies without a clean shutdown loses its last output.
 
+**The attribute is worth having.** With `immediateFlush` forced to `false` reflectively
+(`output/bench-2.26.1.txt`, 500k events, stdout to `/dev/null`, Log4j 2.26.1):
+
+| appender | immediateFlush | events/s |
+|---|---|---:|
+| `Console` | `true` (today) | 996,145 |
+| `Console` | `false` | 2,154,528 |
+| `Console direct="true"` | `true` (today) | 988,206 |
+| `Console direct="true"` | `false` | 2,338,731 |
+| `File` (`/dev/null`) | `false` | 2,444,568 |
+
+The `direct` attribute is documented as bypassing `System.out` buffering and giving "performance
+comparable to a file appender". It cannot: the forced flush caps it at 2.4x slower than the file
+appender it is compared to. Honouring the configured value closes that gap.
+
 **Honouring it would be a visible behaviour change.** Java's `System.out` is a
 `PrintStream` constructed with `autoFlush=true`, so today every event reaches
 the terminal as it is logged. Making the Log4j buffer effective would hold up

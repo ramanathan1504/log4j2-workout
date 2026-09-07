@@ -8,6 +8,12 @@
           immediateFlush="false" bufferedIo="true" bufferSize="256">
       <PatternLayout pattern="%m%n"/>
     </File>
+    <Console name="CONSOLE_DIRECT" target="SYSTEM_OUT" direct="true" immediateFlush="false" bufferSize="8192">
+      <PatternLayout pattern="%m%n"/>
+    </Console>
+    <File name="FILE_NULL" fileName="/dev/null" append="true" immediateFlush="false" bufferSize="8192">
+      <PatternLayout pattern="%m%n"/>
+    </File>
   </Appenders>
   <Loggers>
     <Logger name="console" level="info" additivity="false">
@@ -15,6 +21,12 @@
     </Logger>
     <Logger name="file" level="info" additivity="false">
       <AppenderRef ref="FILE"/>
+    </Logger>
+    <Logger name="console-direct" level="info" additivity="false">
+      <AppenderRef ref="CONSOLE_DIRECT"/>
+    </Logger>
+    <Logger name="file-null" level="info" additivity="false">
+      <AppenderRef ref="FILE_NULL"/>
     </Logger>
     <Root level="off"/>
   </Loggers>
