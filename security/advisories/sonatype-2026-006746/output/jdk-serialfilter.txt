@@ -1,0 +1,8 @@
+== log4j 2.26.1 -Djdk.serialFilter=org.apache.logging.log4j.**;java.**;!*
+filtered-direct  BLOCKED       rejected: InvalidObjectException: Class is not allowed for deserialization: org.apache.logging.probe.Canary
+filtered-nested  BLOCKED       message=SimpleMessage
+plain-ois        BLOCKED       message=SimpleMessage
+== log4j 2.26.2-SNAPSHOT -Djdk.serialFilter=org.apache.logging.log4j.**;java.**;!*
+filtered-direct  BLOCKED       rejected: InvalidObjectException: Class is not allowed for deserialization: org.apache.logging.probe.Canary
+filtered-nested  BLOCKED       rejected: InvalidObjectException: Class is not allowed for deserialization: org.apache.logging.probe.Canary
+plain-ois        BLOCKED       rejected: InvalidClassException: filter status: REJECTED

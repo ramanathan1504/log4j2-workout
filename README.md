@@ -62,6 +62,12 @@ would take. the knowledge base (`Reference/issue-drafts`) holds findings written
 template, ready to file by hand. Two are filed already (#4241, #4242); four are drafted and not.
 Nothing here ever touches an upstream project.
 
+[`security/README.md`](security/README.md) is the flow for a scanner advisory against Log4j
+(Sonatype, Snyk, an SCA report): pin the claim, check the VDR, map it onto the threat model and
+the FAQ, measure it with a canary probe, and record one verdict. Each advisory gets a folder under
+`security/advisories/`; [`sonatype-2026-006746`](security/advisories/sonatype-2026-006746/README.md)
+is the worked sample.
+
 ---
 
 ## Setup

@@ -43,6 +43,7 @@ on:
       # against that repository's parent, in a scratch checkout - so running
       # the bench on a change to them proves nothing.
       - 'log4j-samples/**'
+      - 'security/**'
   workflow_dispatch:
 
 permissions:

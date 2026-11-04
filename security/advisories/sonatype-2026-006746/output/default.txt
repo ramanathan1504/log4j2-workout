@@ -1,0 +1,20 @@
+== log4j 2.24.1 
+filtered-direct  BLOCKED       rejected: InvalidObjectException: Class is not allowed for deserialization: org.apache.logging.probe.Canary
+filtered-nested  INSTANTIATED  message=Canary
+plain-ois        INSTANTIATED  message=Canary
+== log4j 2.25.5 
+filtered-direct  BLOCKED       rejected: InvalidObjectException: Class is not allowed for deserialization: org.apache.logging.probe.Canary
+filtered-nested  INSTANTIATED  message=Canary
+plain-ois        INSTANTIATED  message=Canary
+== log4j 2.26.1 
+filtered-direct  BLOCKED       rejected: InvalidObjectException: Class is not allowed for deserialization: org.apache.logging.probe.Canary
+filtered-nested  INSTANTIATED  message=Canary
+plain-ois        INSTANTIATED  message=Canary
+== log4j 2.26.2-SNAPSHOT 
+filtered-direct  BLOCKED       rejected: InvalidObjectException: Class is not allowed for deserialization: org.apache.logging.probe.Canary
+filtered-nested  BLOCKED       rejected: InvalidObjectException: Class is not allowed for deserialization: org.apache.logging.probe.Canary
+plain-ois        INSTANTIATED  message=Canary
+== log4j 2.27.0-SNAPSHOT 
+filtered-direct  BLOCKED       rejected: InvalidObjectException: Class is not allowed for deserialization: org.apache.logging.probe.Canary
+filtered-nested  BLOCKED       rejected: InvalidObjectException: Class is not allowed for deserialization: org.apache.logging.probe.Canary
+plain-ois        INSTANTIATED  message=Canary
