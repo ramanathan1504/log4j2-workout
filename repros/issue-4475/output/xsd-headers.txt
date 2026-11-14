@@ -1,0 +1,17 @@
+HTTP/2 200 
+server: Apache
+last-modified: Mon, 12 Jan 2026 13:13:21 GMT
+etag: "4a825-64830a3adfe24"
+access-control-allow-origin: *
+content-security-policy: default-src 'self' data: blob: 'unsafe-inline' 'unsafe-eval' https://www.apachecon.com/ https://www.communityovercode.org/ https://*.apache.org/ https://apache.org/ https://*.scarf.sh/  ; script-src 'self' data: blob: 'unsafe-inline' 'unsafe-eval' https://www.apachecon.com/ https://www.communityovercode.org/ https://*.apache.org/ https://apache.org/ https://*.scarf.sh/  ; style-src 'self' data: blob: 'unsafe-inline' 'unsafe-eval' https://www.apachecon.com/ https://www.communityovercode.org/ https://*.apache.org/ https://apache.org/ https://*.scarf.sh/  ; frame-ancestors 'self'; frame-src 'self' data: blob: 'unsafe-inline' 'unsafe-eval' https://www.apachecon.com/ https://www.communityovercode.org/ https://*.apache.org/ https://apache.org/ https://*.scarf.sh/  ; worker-src 'self' data: blob:;
+via: 1.1 varnish, 1.1 varnish
+accept-ranges: bytes
+date: Fri, 13 Nov 2026 18:28:28 GMT
+age: 5528
+x-served-by: cache-hel1410034-HEL, cache-maa10226-MAA
+x-cache: HIT, HIT
+x-cache-hits: 716, 1
+x-timer: S1794594508.113125,VS0,VE2
+strict-transport-security: max-age=31536000; includeSubDomains; preload
+content-length: 305189
+

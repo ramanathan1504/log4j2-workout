@@ -1,0 +1,6 @@
+log4j-core-2.27.0-SNAPSHOT.jar + disruptor-4.0.0.jar: 16 threads logged 800000 lines in 2608 ms, 800000 in the file, 0 missing (0.0%)
+log4j-core-2.27.0-SNAPSHOT.jar + disruptor-4.0.0.jar: 16 threads logged 800000 lines in 2479 ms, 800000 in the file, 0 missing (0.0%)
+log4j-core-2.27.0-SNAPSHOT.jar + disruptor-4.0.0.jar: 16 threads logged 800000 lines in 2488 ms, 800000 in the file, 0 missing (0.0%)
+log4j-core-2.27.0-SNAPSHOT.jar + disruptor-3.4.4.jar: 16 threads logged 800000 lines in 2473 ms, 800000 in the file, 0 missing (0.0%)
+log4j-core-2.27.0-SNAPSHOT.jar + disruptor-3.4.4.jar: 16 threads logged 800000 lines in 2543 ms, 800000 in the file, 0 missing (0.0%)
+log4j-core-2.27.0-SNAPSHOT.jar + disruptor-3.4.4.jar: 16 threads logged 800000 lines in 2576 ms, 800000 in the file, 0 missing (0.0%)

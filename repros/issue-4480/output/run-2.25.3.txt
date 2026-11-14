@@ -1,0 +1,5 @@
+log4j-core 2.25.3
+appender   configured appender.getImmediateFlush manager.isImmediateFlush
+MMF_TRUE   true       false                      true                    
+MMF_FALSE  false      false                      false                   
+RAF_TRUE   true       true                       n/a                     

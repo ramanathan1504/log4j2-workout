@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Configuration status="WARN">
+  <Appenders>
+    <MemoryMappedFile name="MMF_TRUE" fileName="target/mmf-true.log" immediateFlush="true" append="false">
+      <PatternLayout pattern="%m%n"/>
+    </MemoryMappedFile>
+    <MemoryMappedFile name="MMF_FALSE" fileName="target/mmf-false.log" immediateFlush="false" append="false">
+      <PatternLayout pattern="%m%n"/>
+    </MemoryMappedFile>
+    <RandomAccessFile name="RAF_TRUE" fileName="target/raf-true.log" immediateFlush="true" append="false">
+      <PatternLayout pattern="%m%n"/>
+    </RandomAccessFile>
+  </Appenders>
+  <Loggers>
+    <Root level="INFO">
+      <AppenderRef ref="MMF_TRUE"/>
+      <AppenderRef ref="MMF_FALSE"/>
+      <AppenderRef ref="RAF_TRUE"/>
+    </Root>
+  </Loggers>
+</Configuration>

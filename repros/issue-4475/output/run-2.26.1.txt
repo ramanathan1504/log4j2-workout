@@ -1,0 +1,14 @@
+last-modified: Mon, 12 Jan 2026 13:13:21 GMT
+== xmllint log4j2.xml
+src/main/resources/log4j2.xml:12: element Logger: Schemas validity error : Element '{https://logging.apache.org/xml/ns}Logger', attribute 'additivity': The attribute 'additivity' is not allowed.
+src/main/resources/log4j2.xml:15: element Logger: Schemas validity error : Element '{https://logging.apache.org/xml/ns}Logger', attribute 'additivity': The attribute 'additivity' is not allowed.
+src/main/resources/log4j2.xml fails to validate
+== xmllint log4j2-no-additivity.xml
+src/main/resources/log4j2-no-additivity.xml validates
+== xmllint log4j2-root-additivity.xml
+src/main/resources/log4j2-root-additivity.xml validates
+== Log4j 2.26.1 loads log4j2.xml
+INFO  [here] from my.package.here
+INFO  [here] from another.package.here
+RESULT my.package.here additive=false
+RESULT another.package.here additive=false

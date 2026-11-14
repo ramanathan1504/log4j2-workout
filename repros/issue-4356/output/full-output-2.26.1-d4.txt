@@ -1,0 +1,1 @@
+log4j-core-2.26.1.jar + disruptor-4.0.0.jar: 16 threads logged 800000 lines in 196 ms, 42053 in the file, 757947 missing (94.7%)
