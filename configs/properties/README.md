@@ -60,4 +60,4 @@ The whole directory is 2.x-only. Log4j 3 removed
 `JavaPropsConfigurationFactory` instead, a Jackson java-properties reader whose
 keys mirror the JSON/YAML tree rather than this flat dotted syntax. Running any
 file here on 3.x falls back to the default configuration without a word, which
-is why `./bench matrix` skips those cells with a stated reason.
+is why `oss run matrix` skips those cells with a stated reason.

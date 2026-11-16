@@ -32,3 +32,7 @@ infra/output/
 .DS_Store
 Thumbs.db
 __pycache__/
+
+# Log4j 3 does not resolve the 2.x properties format, so an unresolved
+# ${dir} lands as a literal directory. Test debris, never content.
+${dir}/

@@ -1,6 +1,6 @@
 # Runs the bench on every pull request.
 #
-# Deliberately not `./bench matrix --all`: that is tens of thousands of forked
+# Deliberately not `oss run matrix --all`: that is tens of thousands of forked
 # JVMs and many hours. This runs the axes that actually catch regressions — all
 # four Log4j 2 configuration formats, both 1.x formats, three JDKs and two
 # released Log4j lines — across the apps that need no external infrastructure.
@@ -14,11 +14,15 @@ name: bench
 
 on:
   pull_request:
-    # development only. main receives nothing except a sync from development,
-    # and that content has already passed this workflow on its way in — running
-    # it again is thirteen minutes spent re-proving the same commits. A change
-    # cannot reach main without having been verified here first.
-    branches: [development]
+    # main, because main is now the only long-lived branch here.
+    #
+    # There used to be a development branch in front of it, so that main received
+    # nothing but an already-verified sync and this did not run twice for the same
+    # commits. That made sense when work was pushed straight to a branch. It stops
+    # making sense once every change arrives as a pull request from a fork: the
+    # pull request is the gate, and a second branch behind it only adds a merge to
+    # perform and a place for the two to drift.
+    branches: [main]
     # A documentation-only change cannot alter what the bench does. Skipping
     # those keeps the signal meaningful rather than habitual.
     #
@@ -66,10 +70,10 @@ jobs:
         log4j: ['2.24.1', '2.26.1']
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Install JDKs
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v6
         with:
           distribution: temurin
           # 8 for the java8-baseline app, 17 and 21 for everything else.
@@ -87,18 +91,29 @@ jobs:
           echo "JAVA_HOME_17_X64=${JAVA_HOME_17_X64:-unset}"
           echo "JAVA_HOME_21_X64=${JAVA_HOME_21_X64:-unset}"
 
-      - name: Run the bench
+      # The engine lives in the core now, so CI fetches it the same way a person
+      # would install it. Pinned to a ref rather than main: a change to the engine
+      # should be a deliberate update here, not something that lands in this
+      # repository's CI overnight and is blamed on the pack.
+      - name: Get the matrix engine
         run: |
-          ./bench matrix \
+          set -euo pipefail
+          git clone --depth 1 --branch main \
+            https://github.com/ramanathan1504/oss-cli.git /tmp/oss-cli
+          echo "ENGINE=/tmp/oss-cli/runner/engine.sh" >> "$GITHUB_ENV"
+
+      - name: Run the matrix
+        run: |
+          bash "$ENGINE" matrix \
             --apps core-java,java8-baseline,log4j1-bridge,bridges-in,bridges-out,bridges-to-jul,custom-plugins,jpa,smtp,jdbc-jndi,jms,spring-cloud-config,spring-boot-maven \
             --configs xml/baseline-console,json/baseline-console,yaml/baseline-console,properties/baseline-console,log4j1/log4j.xml,log4j1/log4j.properties \
             --javas 8,17,21 \
-            --log4j ${{ matrix.log4j }} \
+            --version ${{ matrix.log4j }} \
             --reuse-builds
 
       - name: Upload the run log
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: bench-${{ matrix.log4j }}
           path: .bench/matrix-*.log

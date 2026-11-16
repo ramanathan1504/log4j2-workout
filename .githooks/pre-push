@@ -2,10 +2,10 @@
 #
 # Refuse a direct push to a protected branch.
 #
-# The real enforcement is server-side: main and development both carry GitHub
-# branch protection requiring a pull request, with enforce_admins on, force
-# pushes and deletions disabled, and linear history required. A direct push is
-# refused with GH006 even under `--no-verify`.
+# The real enforcement is server-side: main carries GitHub branch protection
+# requiring a pull request, with enforce_admins on, force pushes and deletions
+# disabled, and linear history required. A direct push is refused with GH006
+# even under `--no-verify`.
 #
 # This hook is the fast local echo of that rule. It fails in a second with a
 # usable message instead of after a round trip to GitHub, and it keeps the
@@ -19,7 +19,7 @@
 
 set -euo pipefail
 
-PROTECTED='^refs/heads/(main|development)$'
+PROTECTED='^refs/heads/main$'
 blocked=0
 
 while read -r _local_ref _local_sha remote_ref _remote_sha; do
@@ -36,13 +36,13 @@ if [[ $blocked -eq 1 ]]; then
 
   This repository merges through pull requests only:
 
-      feature branch  ->  PR  ->  development  ->  PR  ->  main
+      fork or feature branch  ->  PR  ->  main
 
   Push your work to a branch and open a PR instead:
 
       git switch -c my-change
       git push -u origin my-change
-      gh pr create --base development
+      gh pr create --base main
 
   If you genuinely need to bypass this (and you rarely do), use:
 

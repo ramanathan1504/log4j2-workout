@@ -1,49 +1,61 @@
 # Working in this repository
 
-A real-application bench for Apache Log4j, used for maintainer work: when an
-issue or pull request arrives on `apache/logging-log4j2`, run it here against a
-real application on every affected version, then emit a standalone reproduction
-to attach to it.
+**This repository is a pack.** It is a playground: nineteen real applications
+wired to Apache Log4j, with the configurations and versions to run them across.
+It contains no engine and no tooling — those are in `oss`, which drives this.
+
+```bash
+oss run list --apps                          # from this directory
+oss run --pack ~/apache/log4j2-workout list  # from anywhere
+oss run matrix --scenario exceptions --version 2.26.1
+```
+
+`pack.sh` is the whole contract: the version axis, the application axis, how a
+version reaches the build, how an application is told where its configuration
+is, and which cells are impossible and why. Everything else here is material for
+it to run.
 
 **Nothing in this repository is ever pushed to an Apache project.** Findings are
-drafted here and filed by hand; fixes go in the Log4j clone, never here.
+drafted and filed by hand; fixes go in the Log4j clone, never here.
 
 ## Orientation
 
-| Need | Read |
-|---|---|
-| A PR or issue number in front of you | `docs/BY-HAND.md` |
-| **Judging** a contributor PR, and following it after | `docs/PR-REVIEW.md` |
-| Reviews already written, and what moved since | `docs/pr-reviews/`, `./bench followup` |
-| The local site, the daily report, the launchd agent | `docs/HUB.md` |
-| Every `gh` command | `docs/GH-COMMANDS.md` |
-| Every `./bench` flag, env var, output path | `docs/site/modules/ROOT/pages/cli.adoc` |
-| The operator's manual, and the collected traps | `docs/HANDOVER.md` |
-| One app's flags, services and quirks | `docs/BENCH-NOTES.md` |
-| What is covered, and the 56 findings | `docs/FEATURE-MATRIX.md` (§17 findings, §19 3.x) |
-| What was filed upstream / what is still open | `docs/ISSUES.md`, `docs/GAPS.md` |
+**The documentation is not in this repository.** Every operator document — how to
+work an issue by hand, how to judge a contributor pull request, the command
+reference, the collected traps, the coverage catalogue and the 56 findings —
+lives in the knowledge base, indexed and searchable, under `Reference/` and
+`Projects/log4j/`.
 
-`./bench` is the only entry point. `./bench help` lists the ten commands. It is
-symlinked into `~/.local/bin`, so `bench …` works from any directory — including
-from inside the Log4j clone with an IDE open on it.
+| Need | Where |
+|---|---|
+| How to run any of this | `oss run help`, and `runner/README.md` in `oss` |
+| The operator documents | the knowledge base — `Reference/operating-this-bench`, `Reference/working-an-issue-or-a-pr-by-hand`, `Reference/reviewing-a-contributor-pull-request`, `Reference/command-reference` |
+| Reviews written, and what moved since | `oss followup`, `oss hub` |
+| Facts about a pull request | `oss pr <n> --repo <owner/name>` |
+| What this pack contains | `oss run list`, and `pack.sh` |
 
 ## Where this repo sits, of the three
 
-**oss-cli knows → workout runs → knowledge-creator remembers.**
+**`oss` knows → this runs → the archive remembers.**
+
+In `oss`'s own words: this repository is a **pack** — the description of a
+playground, not a program. The engine that walks it lives in `oss` under
+`runner/`, and does not know what it is testing. `runner/packs/example/pack.sh`
+there is a thirty-line pack to copy.
 
 | Repo | Owns | Reach for it when |
 |---|---|---|
-| [`oss-cli`](https://github.com/ramanathan1504/oss-cli) | facts about any repo, from the GitHub API, cached by head SHA. No clone, any project, any language. | you want PR facts, conventions or a verdict without building anything |
-| **this one** | execution — real apps, real JVMs, the version × config × app matrix | the question needs something to actually run |
+| [`oss`](https://github.com/ramanathan1504/oss-cli) | facts about any repo, from the GitHub API, cached by head SHA. No clone, any project, any language. | you want PR facts, conventions or a verdict without building anything |
+| **this one** | the material — 19 real applications, 73 configurations, 7 versions, and the `pack.sh` that names them | the question needs something to actually run |
 | `knowledge-creator` | the archive: harvests threads and notes into DEVONthink, topic-first, indexed | you want it findable in a year |
 
 One test decides where new work belongs: *does it need to execute code against a
 real app?* If yes it is here; if it only needs to be retrievable later it is
-`knowledge-creator`; if it is neither, it is `oss-cli`.
+`knowledge-creator`; if it is neither, it is `oss`.
 
-That question went unasked once and cost a rebuild: `./bench redgreen` was
+That question went unasked once and cost a rebuild: `oss run redgreen` was
 written from scratch while `knowledge-creator/log4j-pr-review.sh` had done the
-build/spotless half for months. The two are now one command, `./bench review`.
+build/spotless half for months. The two are now one command, `oss run review`.
 `--file` hands the finished write-up to `knowledge-creator/pr-review-file.py`,
 which is the only piece that crosses a repo boundary at runtime.
 
@@ -64,10 +76,10 @@ which is the only piece that crosses a repo boundary at runtime.
 - **The Log4j 2 properties format does not exist on 3.x.**
 - **Cassandra needs the `cassandra-init` compose service,** not `cassandra`. The
   appender cannot create its own keyspace, so the bare node stores nothing
-  silently. Per-app requirements like this one live in `docs/BENCH-NOTES.md`;
-  keep them there rather than growing this list.
-- **`./bench repro <arg>` treats its first argument as the issue number** — there
-  is no `--help`. `./bench repro --help` scaffolds and runs `repros/issue---help/`.
+  silently. Per-app requirements like this one live in the knowledge base
+  (`Reference/per-app-notes`); keep them there rather than growing this list.
+- **`oss run repro <arg>` treats its first argument as the issue number** — there
+  is no `--help`. `oss run repro --help` scaffolds and runs `repros/issue---help/`.
 - A matrix `SKIP` is information, with the pruning rule printed. It is neither a
   pass nor a failure.
 - **`gh pr list --limit N` is newest-`OPEN`,** not "the last N". It drops
@@ -79,7 +91,7 @@ which is the only piece that crosses a repo boundary at runtime.
   which the "no StatusLogger error" check reads as success. Fixed in
   `scripts/repro.sh` for zstd and xz; the shape recurs wherever a plugin resolves
   a backend at runtime. Verify the artefact (`zstd -t`, `unzip -t`), not the exit
-  code — and see `docs/PR-REVIEW.md` §3.
+  code — and see `Reference/reviewing-a-contributor-pull-request` §3.
 
 ## Numbers: read them from the source, not the prose
 
@@ -88,11 +100,11 @@ it:
 
 | Count | Source of truth |
 |---|---|
-| Apps, versions, configs | `./bench list --apps` / `--versions` / `--configs` |
-| Which apps are 2.x-only | `APPS_2X_ONLY` in `packs/log4j/pack.sh` (eleven; so eight of nineteen run on 3.x) |
-| Module reach | `./bench coverage`, which reads the source clone |
+| Apps, versions, configs | `oss run list --apps` / `--versions` / `--configs` |
+| Which apps are 2.x-only | `APPS_2X_ONLY` in `pack.sh` (eleven; so eight of nineteen run on 3.x) |
+| Module reach | `oss run coverage`, which reads the source clone |
 
-`./bench list --configs` prints 74 files, but one (`templates/bench-custom.json`)
+`oss run list --configs` prints 74 files, but one (`templates/bench-custom.json`)
 is a JsonTemplateLayout template, not a configuration — 73 configs, 27 of them in
 XML, which is the superset.
 
@@ -103,41 +115,45 @@ skips them with a reason rather than sweeping them, because one is built to fail
 
 | Clone | Publishes | Used by |
 |---|---|---|
-| `~/apache/logging-log4j2` | `2.27.0-SNAPSHOT` | the default `--log4j`, `./bench coverage` |
+| `~/apache/logging-log4j2` | `2.27.0-SNAPSHOT` | the default `--log4j`, `oss run coverage` |
 | `~/apache/log4j-main` | `3.0.0-SNAPSHOT` | `--log4j 3.0.0-SNAPSHOT`, `coverage --3x` |
 
 `mvn install -DskipTests` in either publishes into `~/.m2`, which is where
-`./bench` resolves those versions. `./bench pr <n> --checkout --install` does it
+`oss run` resolves those versions. `oss run pr <n> --checkout --install` does it
 for a pull request — **take the baseline against a release first**, because a
 baseline measured after the overwrite measures the pull request twice.
 
 ## Git workflow
 
-`main` and `development` both carry branch protection. A direct push is refused
-with `GH006`, even under `--no-verify`.
+`main` is the only long-lived branch, and carries branch protection. A direct
+push is refused with `GH006`, even under `--no-verify`.
 
 ```
-feature branch --squash--> development --merge--> main
+fork or feature branch --squash--> main
 ```
+
+There used to be a `development` branch in front of `main`, merged across in a
+second step. It was removed once the repository went public and every change
+began arriving as a pull request: the pull request is the gate, and a second
+long-lived branch behind it only added a merge to perform and somewhere for the
+two to drift. They had already drifted by fifty merge commits when it went.
 
 - `git config core.hooksPath .githooks` — once per clone; git will not do it.
-- feature → `development`: **squash**, keeps that branch linear.
-- `development` → `main`: **plain merge**. `--rebase` duplicated every commit
-  under new SHAs once and the branches diverged; that is why linear history is
-  off for `main`.
+- feature → `main`: **squash**, which keeps it linear.
 - `git branch --merged` under-reports here — squash merges mean branch commits
   never become ancestors. Ask `gh pr list --state merged` instead.
-- CI runs ~200 cells in ~13 minutes on every PR into `development`. It skips
-  `**.md`, `docs/**`, `.githooks/**`, `.gitignore`, `.gitattributes`,
-  `infra/output/**`, `log4j-samples/**` — a docs-only PR reports **no run at
-  all**, which is the filter working, not a stuck check.
+- CI runs ~200 cells in ~13 minutes on every PR into `main`. It skips `**.md`,
+  `docs/**`, `.githooks/**`, `.gitignore`, `.gitattributes`, `infra/output/**`,
+  `log4j-samples/**` — a docs-only PR reports **no run at all**, which is the
+  filter working, not a stuck check.
 - Because each PR costs that run, **batch related work into one branch** rather
   than opening a PR per fix.
 
 ## Upstream discipline
 
-- Draft findings under `docs/issue-drafts/`, to Apache's bug template, and get
-  the text approved before `gh issue create`. File from `--body-file`, never an
+- Draft findings to Apache's bug template and get the text approved before
+  `gh issue create`. Drafts live in the knowledge base (`Reference/issue-drafts`),
+  not here. File from `--body-file`, never an
   inline heredoc you cannot re-read.
 - Always pass `-R apache/logging-log4j2`. Omitting it targets *this* repository,
   which is the easiest way to file a bug in the wrong place.
@@ -146,7 +162,7 @@ feature branch --squash--> development --merge--> main
   does not reach the mailing-list archive or an email already sent. Verify write
   paths against a repo you own, a fixture, or a mocked POST. Read-only `gh` is
   fine and is what the tooling is built on. This cost a real incident:
-  `docs/UPSTREAM-INCIDENT.md`.
+  `Reference/unauthorised-writes-to-apachelogging-log4j2` in the knowledge base.
 - Fixes go in the Log4j clone on their own branch, with a test in that module's
   own test source set.
 - Verifying a fix has two halves: every version that failed must now pass, **and
@@ -162,7 +178,7 @@ The habit that has caught the most here is checking the claim, not the intent:
   all` is invalid; that was only found by running it.
 - AsciiDoc: render every page and check each `xref` resolves — page *and*
   anchor — before claiming the site is fine.
-- `bench`: `./bench help` after touching the header. `usage()` reads the header
+- `bench`: `oss run help` after touching the header. `usage()` reads the header
   block, so a malformed one prints the script.
 
 ## Outputs
@@ -170,7 +186,7 @@ The habit that has caught the most here is checking the claim, not the intent:
 | Path | Contains |
 |---|---|
 | `logs/<config>/` | what the appenders produced — where a finding is confirmed |
-| `.bench/` | cached classpaths, sweep logs, the cell ledger — disposable, `./bench clean`. Two exceptions it keeps: `hub/` (the daily reports) and `reviews/` (evidence); `clean --all` takes those |
+| `.bench/` | cached classpaths, sweep logs, the cell ledger — disposable, `oss run clean`. One exception it keeps: `reviews/` (evidence); `clean --all` takes that too |
 | `repros/<kind>-<n>/` | the zip, the verification matrix, the per-version logs |
 | `docs/evidence/` | captured logs referenced by findings |
 
