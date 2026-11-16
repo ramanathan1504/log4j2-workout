@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Configuration status="WARN">
+  <Appenders>
+    <File name="CLOCK" fileName="${sys:logdir}/clock.log" append="false">
+      <Rfc5424Layout appName="app" includeNL="true"/>
+    </File>
+    <Console name="SENTINEL"><Rfc5424Layout appName="app"/></Console>
+    <Console name="FRESH"><Rfc5424Layout appName="app"/></Console>
+    <Console name="OTHER_PRE_EPOCH"><Rfc5424Layout appName="app"/></Console>
+    <Console name="WARM"><Rfc5424Layout appName="app"/></Console>
+    <Console name="POS"><Rfc5424Layout appName="app"/></Console>
+    <Console name="YEAR"><Rfc5424Layout appName="app"/></Console>
+  </Appenders>
+  <Loggers>
+    <Logger name="clock" level="INFO" additivity="false">
+      <AppenderRef ref="CLOCK"/>
+    </Logger>
+    <Root level="OFF"/>
+  </Loggers>
+</Configuration>

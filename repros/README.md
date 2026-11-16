@@ -25,15 +25,16 @@ The fixed builds were 2.x HEAD `ea28f5a78b`, main HEAD `2bb673f650`, and each op
 
 ## Problems the runs found
 
-Each one was reproduced again on its own, against the latest release and current `origin/2.x` / `origin/main`, in a `finding-*` folder. Drafts for upstream are in the knowledge base under `Reference/issue-drafts`; none is filed yet.
+Each was reproduced again on its own against the latest release and current `origin/2.x` / `origin/main` in a `finding-*` folder, then put through all twelve steps of the `log4j2-issue-review` skill, including the docs check, which decides whether it is by design. The review files are in the knowledge base under `Projects/log4j/issues/20261116-log4j-finding-*`; the issue texts are under `Reference/draft-*`. Nothing is filed.
 
-| Finding | Problem | Affected | Not affected | Introduced by | Rank |
-|---|---|---|---|---|---|
-| [yaml-jackson3-boolean](finding-yaml-jackson3-boolean/README.md) | With Jackson 3 present, YAML `yes`/`on` read as `false`: `additivity`, `append` (truncates the file), `includeLocation` | 2.x HEAD, main HEAD | 2.26.1, 3.0.0-beta3 | #4410 (2.x), #3701 (main) | P1, before 2.27.0 |
-| [zstd-commons-compress-builder](finding-zstd-commons-compress-builder/README.md) | With commons-compress < 1.28.0, every `.zst` rollover leaves a 0-byte archive beside the uncompressed file; error only at StatusLogger WARN; no lines lost | 2.x HEAD | 2.26.1, 3.x | #4234 | P1, before 2.27.0 |
-| [instant-cache-sentinel](finding-instant-cache-sentinel/README.md) | `%d` and JSON `timestamp` print empty for the instant 1 ms (or 1 s) before the epoch | 2.25.0 to 2.x HEAD, 3.0.0-beta3, main | 2.24.3 for this case (it has an older 0-ms cache defect) | #3121 | P2 |
-| [composite-reconfigure-child-type](finding-composite-reconfigure-child-type/README.md) | Reconfigure rebuilds composite children through the active factory, so custom child classes and what they add are lost | 2.7 to 2.x HEAD, 3.x | — | LOG4J2-494 (2016) | P2 |
-| [plugin-validation-unused-attributes](finding-plugin-validation-unused-attributes/README.md) | A failed `@Required` check reports the element's valid attributes, children and the element itself as invalid | 3.0.0-alpha1 to main HEAD | 2.26.1, 2.x HEAD | LOG4J2-2854 DI rewrite | P3 |
+| Finding | What the run shows | Verdict | Action |
+|---|---|---|---|
+| [zstd-commons-compress-builder](finding-zstd-commons-compress-builder/README.md) | With commons-compress < 1.28.0, every `.zst` rollover on 2.x HEAD leaves a 0-byte archive beside the uncompressed file; nothing logged at the default level; no lines lost | `log4j-bug`, unreleased regression from #4234 | File an issue; fix before 2.27.0 with the `(OutputStream, int)` constructor |
+| [plugin-validation-unused-attributes](finding-plugin-validation-unused-attributes/README.md) | On 3.x a failed `@Required` check reports the element's valid attributes, children and the element itself as invalid | `log4j-bug`, P3 | File an issue |
+| [rfc5424-timestamp-sentinel](finding-rfc5424-timestamp-sentinel/README.md) | `Rfc5424Layout` prints `null` as the timestamp of the first event at -1 ms, on every version since 2011 | `log4j-bug`, P2, not pressing | File an issue, naming #4322 as the sibling |
+| [instant-cache-sentinel](finding-instant-cache-sentinel/README.md) | `%d` and JSON `timestamp` print empty for the instant 1 ms or 1 s before the epoch | `log4j-bug`, already tracked: #4400 deferred it to open PR #4322, which keeps the sentinel | Review comment on #4322, no new issue |
+| [yaml-jackson3-boolean](finding-yaml-jackson3-boolean/README.md) | With Jackson 3 present, YAML `yes`/`on` read as `false` | `docs-gap`: intended in #4410 (YAML 1.2, Jackson 3 preferred), but the changelog and manual never say so | Docs PR before 2.27.0, no bug report |
+| [composite-reconfigure-child-type](finding-composite-reconfigure-child-type/README.md) | A hand-built composite of custom subclasses loses them on reconfigure | `docs-gap`: the documented path, a registered `ConfigurationFactory`, keeps them; the unreleased `postConfigure` Javadoc overstates it | Javadoc and `customconfig.adoc` fix before 2.27.0, no bug report |
 
 Not a defect, or not new:
 
@@ -41,7 +42,6 @@ Not a defect, or not new:
 |---|---|
 | [#4364](pr-4364/README.md) | One credential leak is closed only by #4363; a backport must carry both (#4385 does) |
 | [#4071](pr-4071/README.md) | `maxCompressionDelaySeconds` is rejected on both versions; #4165 `maxRandomDelay` superseded it |
-| [finding-instant-cache-sentinel](finding-instant-cache-sentinel/README.md) sweep | `Rfc5424Layout` prints `null` as the timestamp of the first event at -1 ms (`lastTimestamp = -1`, line 129), on every version back to 2.24.3; not yet drafted |
 
 ## Open pull requests
 

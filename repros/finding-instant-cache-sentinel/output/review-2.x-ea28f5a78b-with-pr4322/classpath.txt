@@ -1,0 +1,3 @@
+/private/tmp/claude-501/-Users-ramanathan-apache-log4j2-workout/7180a8bd-7341-4eed-92c9-cb3b625c5257/scratchpad/pr4322-sentinel/run/jars/log4j-api-2.27.0-SNAPSHOT.jar
+/private/tmp/claude-501/-Users-ramanathan-apache-log4j2-workout/7180a8bd-7341-4eed-92c9-cb3b625c5257/scratchpad/pr4322-sentinel/run/jars/log4j-core-2.27.0-SNAPSHOT.jar
+/private/tmp/claude-501/-Users-ramanathan-apache-log4j2-workout/7180a8bd-7341-4eed-92c9-cb3b625c5257/scratchpad/pr4322-sentinel/run/jars/log4j-layout-template-json-2.27.0-SNAPSHOT.jar

@@ -114,4 +114,23 @@ Affected. `origin/main` `InstantPatternThreadLocalCachedFormatter.java:41` and `
 
 `log4j-bug`. Reproduced on `origin/2.x` and `origin/main`; a timestamp formatted as an empty string contradicts the `%d` contract, and disabling the cache (`log4j2.enableThreadlocals=false`) or using the legacy formatter gives the correct value for the same input.
 
-Fix location: `log4j-core`, `InstantPatternThreadLocalCachedFormatter.createEpochInstantAndBuffer()`, on both branches; a seed no instant can produce, such as `Long.MIN_VALUE`, closes it.
+Fix location: `log4j-core`, `InstantPatternThreadLocalCachedFormatter.createEpochInstantAndBuffer()`, on both branches; no `long` seed is safe (`MutableInstant.initFromEpochSecond` accepts any `long`, so `Long.MIN_VALUE` is reachable too); a separate "buffer is valid" `boolean` closes it.
+
+## Review re-run, 2026-11-16, and open PR #4322
+
+`./run.sh 2.26.1 review-2.26.1`, `./run.sh $J/jars-2x review-2.x-ea28f5a78b` and `./run.sh $J/jars-main review-3.x-main-2bb673f650` reproduce the tables above unchanged.
+
+#4322 (`refs/pr/4322`, head `86ffe81eab`, open) rewrites `InstantPatternThreadLocalCachedFormatter` but keeps the seed as `UNSET_EPOCH_INSTANT = -1L`, documented as "Colliding with it is harmless: it only costs one redundant formatting". It also resets the key to that same `-1` while the buffer is rewritten, so after a failed formatting a later event at `-1` returns the partial buffer.
+
+```bash
+./pr4322.sh $J/jars-2x <scratch dir>
+```
+
+compiles the #4322 version of the class against `jars-2x`, swaps it into a copy of `log4j-core`, runs `PoisonProbe` (a formatter that throws at 7 ms) on both, then `run.sh` on the patched jars. Output: `output/review-2.x-ea28f5a78b-with-pr4322/`.
+
+| Jars | `Repro` | `PoisonProbe`: -1 ms after the failure at 7 ms |
+|---|---|---|
+| 2.x `ea28f5a78b` | 12 FAIL (as above) | `[half--1]` (formatted again, correct) |
+| 2.x `ea28f5a78b` + #4322 | 12 FAIL, identical rows | `[half-]` (partial buffer served) |
+
+#4322 does not fix the finding, and moves its failure-path case onto the sentinel. #4400 left the sentinel out because #4322 rewrites the class, so the place for this is a review comment on #4322.

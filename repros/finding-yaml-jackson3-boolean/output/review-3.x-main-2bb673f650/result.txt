@@ -1,0 +1,24 @@
+version=review-3.x-main-2bb673f650 java=openjdk version "17.0.14" 2025-01-21
+[classpath] jars: log4j-core-3.0.0-SNAPSHOT.jar jackson-dataformat-yaml-3.2.3.jar jackson-core-3.2.3.jar jackson-databind-3.2.3.jar snakeyaml-engine-3.0.1.jar jackson-dataformat-yaml-2.20.0.jar jackson-databind-2.20.0.jar snakeyaml-2.4.jar jackson-core-2.20.0.jar log4j-config-yaml-3.0.0-SNAPSHOT.jar log4j-config-jackson-3.0.0-SNAPSHOT.jar 
+PASS classpath config loaded expected=YamlBooleanRepro observed=YamlBooleanRepro (YamlConfiguration)
+FAIL classpath additivity: yes expected=true (2 copies) observed=false (1 copies)
+FAIL classpath additivity: Yes expected=true (2 copies) observed=false (1 copies)
+FAIL classpath additivity: YES expected=true (2 copies) observed=false (1 copies)
+FAIL classpath additivity: on expected=true (2 copies) observed=false (1 copies)
+FAIL classpath additivity: On expected=true (2 copies) observed=false (1 copies)
+FAIL classpath additivity: ON expected=true (2 copies) observed=false (1 copies)
+PASS classpath additivity: true [control] expected=true (2 copies) observed=true (2 copies)
+PASS classpath additivity: True [control] expected=true (2 copies) observed=true (2 copies)
+PASS classpath additivity: TRUE [control] expected=true (2 copies) observed=true (2 copies)
+PASS classpath additivity: y expected=false (1 copies) observed=false (1 copies)
+PASS classpath additivity: Y expected=false (1 copies) observed=false (1 copies)
+PASS classpath additivity: no expected=false (1 copies) observed=false (1 copies)
+PASS classpath additivity: off expected=false (1 copies) observed=false (1 copies)
+PASS classpath additivity: n expected=false (1 copies) observed=false (1 copies)
+PASS classpath additivity: false [control] expected=false (1 copies) observed=false (1 copies)
+PASS classpath additivity: FALSE [control] expected=false (1 copies) observed=false (1 copies)
+PASS classpath additivity: 'yes' [control] expected=false (1 copies) observed=false (1 copies)
+PASS classpath level: off expected=0 lines observed=0
+FAIL classpath File append: yes expected=[seed, appended] observed=[appended]
+FAIL classpath Logger includeLocation: yes expected=main|loc observed=|loc
+[classpath] status-logger:

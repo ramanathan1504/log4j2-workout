@@ -140,3 +140,7 @@ Only the composite turns the subclass's own `reconfigure()` into dead code; the 
 ## Class
 
 `log4j-bug`. Reproduced on `origin/2.x` and `origin/main`. It contradicts the code's own contract on 2.x HEAD: #4329 made `CompositeConfiguration` preserve a child's programmatic elements, and the first reconfigure, including the one `monitorInterval` triggers, drops them along with the child's class. The fix lives in `log4j-core`, `CompositeConfiguration.reconfigure()`: reload each child through its own `Reconfigurable.reconfigure()` when it implements it, and fall back to the factory otherwise.
+
+## Review 2026-11-16: reclassified `docs-gap`
+
+Re-run as `output/review-2.26.1`, `output/review-2.x-ea28f5a78b` and `output/review-3.x-main-2bb673f650`, with the same results as above. The class above is superseded. Both documented composites load their children through `ConfigurationFactory.getInstance()`: the `log4j2.configurationFile=a,b` list, and `customconfig.adoc` "Combining multiple configurations". A custom `Configuration` is documented as injected through a `ConfigurationFactory` plugin. On that path `composite-factory` passes before and after reconfigure, and that is #4328's own case. The gap is only in the docs: the 2.27.0 `postConfigure` Javadoc says "every reconfiguration" without saying the child must come from the active factory. Review: `~/knowledge/Projects/log4j/issues/20261116-log4j-finding-composite-reconfigure-child-type.md`.
