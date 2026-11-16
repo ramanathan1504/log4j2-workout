@@ -25,15 +25,23 @@ The fixed builds were 2.x HEAD `ea28f5a78b`, main HEAD `2bb673f650`, and each op
 
 ## Problems the runs found
 
-| PR | Problem | Seen on |
-|---|---|---|
-| [#4410](pr-4410/README.md) | With both Jackson 2 and Jackson 3 present, `additivity: yes` in YAML is read as `false` | 2.x HEAD |
-| [#4400](pr-4400/README.md) | `epochMilli = -1` formats as empty, because the thread-local cache uses -1 as its sentinel | 2.26.1 and 2.x HEAD |
-| [#4329](pr-4329/README.md) | A reconfigure without a custom `ConfigurationFactory` still loses the programmatic logger | 2.x HEAD |
-| [#4153](pr-4153/README.md) | A spurious "invalid attributes onMatch, onMismatch" ERROR is logged | main HEAD |
-| [#4364](pr-4364/README.md) | One credential leak is closed only by #4363, so backporting #4364 alone still leaks | backport risk |
-| [#4071](pr-4071/README.md) | `maxCompressionDelaySeconds` is rejected on both versions; #4165 `maxRandomDelay` superseded it | 2.26.0 and 2.x HEAD |
-| [#4448](pr-4448/README.md) | Reference run of `pr-4234`: zstd writes 0 bytes (NoSuchMethodError with commons-compress 1.27.1) | 2.x HEAD |
+Each one was reproduced again on its own, against the latest release and current `origin/2.x` / `origin/main`, in a `finding-*` folder. Drafts for upstream are in the knowledge base under `Reference/issue-drafts`; none is filed yet.
+
+| Finding | Problem | Affected | Not affected | Introduced by | Rank |
+|---|---|---|---|---|---|
+| [yaml-jackson3-boolean](finding-yaml-jackson3-boolean/README.md) | With Jackson 3 present, YAML `yes`/`on` read as `false`: `additivity`, `append` (truncates the file), `includeLocation` | 2.x HEAD, main HEAD | 2.26.1, 3.0.0-beta3 | #4410 (2.x), #3701 (main) | P1, before 2.27.0 |
+| [zstd-commons-compress-builder](finding-zstd-commons-compress-builder/README.md) | With commons-compress < 1.28.0, every `.zst` rollover leaves a 0-byte archive beside the uncompressed file; error only at StatusLogger WARN; no lines lost | 2.x HEAD | 2.26.1, 3.x | #4234 | P1, before 2.27.0 |
+| [instant-cache-sentinel](finding-instant-cache-sentinel/README.md) | `%d` and JSON `timestamp` print empty for the instant 1 ms (or 1 s) before the epoch | 2.25.0 to 2.x HEAD, 3.0.0-beta3, main | 2.24.3 for this case (it has an older 0-ms cache defect) | #3121 | P2 |
+| [composite-reconfigure-child-type](finding-composite-reconfigure-child-type/README.md) | Reconfigure rebuilds composite children through the active factory, so custom child classes and what they add are lost | 2.7 to 2.x HEAD, 3.x | — | LOG4J2-494 (2016) | P2 |
+| [plugin-validation-unused-attributes](finding-plugin-validation-unused-attributes/README.md) | A failed `@Required` check reports the element's valid attributes, children and the element itself as invalid | 3.0.0-alpha1 to main HEAD | 2.26.1, 2.x HEAD | LOG4J2-2854 DI rewrite | P3 |
+
+Not a defect, or not new:
+
+| PR | Note |
+|---|---|
+| [#4364](pr-4364/README.md) | One credential leak is closed only by #4363; a backport must carry both (#4385 does) |
+| [#4071](pr-4071/README.md) | `maxCompressionDelaySeconds` is rejected on both versions; #4165 `maxRandomDelay` superseded it |
+| [finding-instant-cache-sentinel](finding-instant-cache-sentinel/README.md) sweep | `Rfc5424Layout` prints `null` as the timestamp of the first event at -1 ms (`lastTimestamp = -1`, line 129), on every version back to 2.24.3; not yet drafted |
 
 ## Open pull requests
 

@@ -1,0 +1,74 @@
+2026-11-16T13:59:09.416248Z Log4j2-TF-1-RollingFileManager-2 WARN Exception reported by action 'class org.apache.logging.log4j.core.appender.rolling.RollingFileManager$AsyncAction'
+java.lang.RuntimeException: java.lang.NoSuchMethodError: 'org.apache.commons.compress.compressors.zstandard.ZstdCompressorOutputStream$Builder org.apache.commons.compress.compressors.zstandard.ZstdCompressorOutputStream.builder()'
+	at org.apache.logging.log4j.core.appender.rolling.action.AbstractAction.run(AbstractAction.java:69)
+	at java.base/java.util.concurrent.Executors$RunnableAdapter.call(Executors.java:539)
+	at java.base/java.util.concurrent.FutureTask.run(FutureTask.java:264)
+	at java.base/java.util.concurrent.ScheduledThreadPoolExecutor$ScheduledFutureTask.run(ScheduledThreadPoolExecutor.java:304)
+	at java.base/java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1136)
+	at java.base/java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:635)
+	at java.base/java.lang.Thread.run(Thread.java:840)
+Caused by: java.lang.NoSuchMethodError: 'org.apache.commons.compress.compressors.zstandard.ZstdCompressorOutputStream$Builder org.apache.commons.compress.compressors.zstandard.ZstdCompressorOutputStream.builder()'
+	at org.apache.logging.log4j.core.appender.rolling.action.internal.ZstdCompressAction.createCompressorOutputStream(ZstdCompressAction.java:80)
+	at org.apache.logging.log4j.core.appender.rolling.action.internal.CompressActionSupport.execute(CompressActionSupport.java:97)
+	at org.apache.logging.log4j.core.appender.rolling.action.internal.AbstractCompressAction.execute(AbstractCompressAction.java:64)
+	at org.apache.logging.log4j.core.appender.rolling.RollingFileManager$AsyncAction.execute(RollingFileManager.java:819)
+	at org.apache.logging.log4j.core.appender.rolling.action.AbstractAction.run(AbstractAction.java:63)
+	... 6 more
+
+2026-11-16T13:59:09.915476Z Log4j2-TF-1-RollingFileManager-2 WARN Exception reported by action 'class org.apache.logging.log4j.core.appender.rolling.RollingFileManager$AsyncAction'
+java.lang.RuntimeException: java.lang.NoSuchMethodError: 'org.apache.commons.compress.compressors.zstandard.ZstdCompressorOutputStream$Builder org.apache.commons.compress.compressors.zstandard.ZstdCompressorOutputStream.builder()'
+	at org.apache.logging.log4j.core.appender.rolling.action.AbstractAction.run(AbstractAction.java:69)
+	at java.base/java.util.concurrent.Executors$RunnableAdapter.call(Executors.java:539)
+	at java.base/java.util.concurrent.FutureTask.run(FutureTask.java:264)
+	at java.base/java.util.concurrent.ScheduledThreadPoolExecutor$ScheduledFutureTask.run(ScheduledThreadPoolExecutor.java:304)
+	at java.base/java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1136)
+	at java.base/java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:635)
+	at java.base/java.lang.Thread.run(Thread.java:840)
+Caused by: java.lang.NoSuchMethodError: 'org.apache.commons.compress.compressors.zstandard.ZstdCompressorOutputStream$Builder org.apache.commons.compress.compressors.zstandard.ZstdCompressorOutputStream.builder()'
+	at org.apache.logging.log4j.core.appender.rolling.action.internal.ZstdCompressAction.createCompressorOutputStream(ZstdCompressAction.java:80)
+	at org.apache.logging.log4j.core.appender.rolling.action.internal.CompressActionSupport.execute(CompressActionSupport.java:97)
+	at org.apache.logging.log4j.core.appender.rolling.action.internal.AbstractCompressAction.execute(AbstractCompressAction.java:64)
+	at org.apache.logging.log4j.core.appender.rolling.RollingFileManager$AsyncAction.execute(RollingFileManager.java:819)
+	at org.apache.logging.log4j.core.appender.rolling.action.AbstractAction.run(AbstractAction.java:63)
+	... 6 more
+
+2026-11-16T13:59:10.423297Z Log4j2-TF-2-RollingFileManager-3 WARN Exception reported by action 'class org.apache.logging.log4j.core.appender.rolling.RollingFileManager$AsyncAction'
+java.lang.RuntimeException: java.lang.NoClassDefFoundError: org/apache/commons/compress/compressors/zstandard/ZstdConstants
+	at org.apache.logging.log4j.core.appender.rolling.action.AbstractAction.run(AbstractAction.java:69)
+	at java.base/java.util.concurrent.Executors$RunnableAdapter.call(Executors.java:539)
+	at java.base/java.util.concurrent.FutureTask.run(FutureTask.java:264)
+	at java.base/java.util.concurrent.ScheduledThreadPoolExecutor$ScheduledFutureTask.run(ScheduledThreadPoolExecutor.java:304)
+	at java.base/java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1136)
+	at java.base/java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:635)
+	at java.base/java.lang.Thread.run(Thread.java:840)
+Caused by: java.lang.NoClassDefFoundError: org/apache/commons/compress/compressors/zstandard/ZstdConstants
+	at org.apache.logging.log4j.core.appender.rolling.action.internal.ZstdCompressAction.resolveCompressionLevel(ZstdCompressAction.java:56)
+	at org.apache.logging.log4j.core.appender.rolling.action.internal.ZstdCompressAction.createCompressorOutputStream(ZstdCompressAction.java:79)
+	at org.apache.logging.log4j.core.appender.rolling.action.internal.CompressActionSupport.execute(CompressActionSupport.java:97)
+	at org.apache.logging.log4j.core.appender.rolling.action.internal.AbstractCompressAction.execute(AbstractCompressAction.java:64)
+	at org.apache.logging.log4j.core.appender.rolling.RollingFileManager$AsyncAction.execute(RollingFileManager.java:819)
+	at org.apache.logging.log4j.core.appender.rolling.action.AbstractAction.run(AbstractAction.java:63)
+	... 6 more
+Caused by: java.lang.ClassNotFoundException: org.apache.commons.compress.compressors.zstandard.ZstdConstants
+	... 12 more
+
+2026-11-16T13:59:10.931560Z Log4j2-TF-2-RollingFileManager-3 WARN Exception reported by action 'class org.apache.logging.log4j.core.appender.rolling.RollingFileManager$AsyncAction'
+java.lang.RuntimeException: java.lang.NoClassDefFoundError: org/apache/commons/compress/compressors/zstandard/ZstdConstants
+	at org.apache.logging.log4j.core.appender.rolling.action.AbstractAction.run(AbstractAction.java:69)
+	at java.base/java.util.concurrent.Executors$RunnableAdapter.call(Executors.java:539)
+	at java.base/java.util.concurrent.FutureTask.run(FutureTask.java:264)
+	at java.base/java.util.concurrent.ScheduledThreadPoolExecutor$ScheduledFutureTask.run(ScheduledThreadPoolExecutor.java:304)
+	at java.base/java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1136)
+	at java.base/java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:635)
+	at java.base/java.lang.Thread.run(Thread.java:840)
+Caused by: java.lang.NoClassDefFoundError: org/apache/commons/compress/compressors/zstandard/ZstdConstants
+	at org.apache.logging.log4j.core.appender.rolling.action.internal.ZstdCompressAction.resolveCompressionLevel(ZstdCompressAction.java:56)
+	at org.apache.logging.log4j.core.appender.rolling.action.internal.ZstdCompressAction.createCompressorOutputStream(ZstdCompressAction.java:79)
+	at org.apache.logging.log4j.core.appender.rolling.action.internal.CompressActionSupport.execute(CompressActionSupport.java:97)
+	at org.apache.logging.log4j.core.appender.rolling.action.internal.AbstractCompressAction.execute(AbstractCompressAction.java:64)
+	at org.apache.logging.log4j.core.appender.rolling.RollingFileManager$AsyncAction.execute(RollingFileManager.java:819)
+	at org.apache.logging.log4j.core.appender.rolling.action.AbstractAction.run(AbstractAction.java:63)
+	... 6 more
+Caused by: java.lang.ClassNotFoundException: org.apache.commons.compress.compressors.zstandard.ZstdConstants
+	... 12 more
+

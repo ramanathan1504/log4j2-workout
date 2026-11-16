@@ -1,0 +1,8 @@
+2026-11-16T14:00:22.175998Z main ERROR DefaultRolloverStrategy contains an invalid element or attribute "compressionLevel"
+commons-compress 1.27.1
+PASS gz       recovered=150/150 lost=0 nonEmptyArchives=2/2 uncompressedLeftovers=0 files: app-1.log.gz=135B app-2.log.gz=136B app.log=650B
+FAIL zst      recovered=50/150 lost=100 nonEmptyArchives=2/2 uncompressedLeftovers=0 unreadable=app-2.log.zst: ZstdIOException files: app-1.log.zst=700B app-2.log.zst=700B app.log=700B
+FAIL zstLevel recovered=50/150 lost=100 nonEmptyArchives=2/2 uncompressedLeftovers=0 unreadable=app-2.log.zst: ZstdIOException files: app-1.log.zst=950B app-2.log.zst=950B app.log=950B
+FAIL bz2      recovered=50/150 lost=100 nonEmptyArchives=2/2 uncompressedLeftovers=0 unreadable=app-2.log.bz2: CompressorException files: app-1.log.bz2=700B app-2.log.bz2=700B app.log=700B
+PASS deflate  recovered=150/150 lost=0 nonEmptyArchives=2/2 uncompressedLeftovers=0 files: app-1.log.deflate=130B app-2.log.deflate=131B app.log=900B
+PASS xz       recovered=150/150 lost=0 nonEmptyArchives=2/2 uncompressedLeftovers=0 files: app-1.log.xz=160B app-2.log.xz=164B app.log=650B

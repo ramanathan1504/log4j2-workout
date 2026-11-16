@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Configuration status="WARN" name="base" monitorInterval="1">
+  <Appenders>
+    <Console name="Out"><PatternLayout pattern="%c %p %m%n"/></Console>
+  </Appenders>
+  <Loggers>
+    <Logger name="from.base" level="info"/>
+    <Root level="info"><AppenderRef ref="Out"/></Root>
+  </Loggers>
+</Configuration>

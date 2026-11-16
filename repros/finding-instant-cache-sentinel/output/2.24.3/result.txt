@@ -1,0 +1,18 @@
+PASS | MS: %d{HH:mm:ss.SSS}{UTC}, events -1,-1,0,-1 ms on a fresh thread | expected=23:59:59.999,23:59:59.999,00:00:00.000,23:59:59.999 | observed=23:59:59.999,23:59:59.999,00:00:00.000,23:59:59.999
+PASS | MS: %d{HH:mm:ss.SSS}{UTC}, same layout, -1 ms on a second fresh thread | expected=23:59:59.999 | observed=23:59:59.999
+PASS | MS_POS: control: %d{HH:mm:ss.SSS}{UTC}, events 1000,2000 ms | expected=00:00:01.000,00:00:02.000 | observed=00:00:01.000,00:00:02.000
+PASS | MS_WARM: %d{HH:mm:ss.SSS}{UTC}, events 1000,-1000 ms (cache already populated) | expected=00:00:01.000,23:59:59.000 | observed=00:00:01.000,23:59:59.000
+PASS | DEF: %d{DEFAULT}{UTC}, -1 ms | expected=1969-12-31 23:59:59,999 | observed=1969-12-31 23:59:59,999
+PASS | ISO: %d{ISO8601}{UTC}, -1 ms | expected=1969-12-31T23:59:59,999 | observed=1969-12-31T23:59:59,999
+FAIL | SEC: %d{HH:mm:ss}{UTC}, events -1000,-1000,0,-1000 ms | expected=23:59:59,23:59:59,00:00:00,23:59:59 | observed=23:59:59,23:59:59,23:59:59,23:59:59
+PASS | SEC_SUB: %d{HH:mm:ss}{UTC}, -500 ms | expected=23:59:59 | observed=23:59:59
+PASS | SEC_INSTANT: %d{HH:mm:ss}{UTC}, setInstant(epochSecond=-1) | expected=23:59:59 | observed=23:59:59
+PASS | MIN: %d{yyyy-MM-dd HH:mm}{UTC}, -1000 ms | expected=1969-12-31 23:59 | observed=1969-12-31 23:59
+PASS | HOUR: %d{yyyy-MM-dd HH}{UTC}, -1000 ms | expected=1969-12-31 23 | observed=1969-12-31 23
+PASS | MICRO: %d{HH:mm:ss.SSSSSS}{UTC} (not cached), -1000 ms | expected=23:59:59.000000 | observed=23:59:59.000000
+PASS | UNIX: control: %d{UNIX_MILLIS} (not cached), -1 ms | expected=-1 | observed=-1
+FAIL | ZERO_FIXED: sweep: %d{HH:mm:ss.SSS}{UTC}, events 0,5 ms | expected=00:00:00.000,00:00:00.005 | observed=<empty>,00:00:00.005
+FAIL | ZERO_FREE: sweep: %d{EEE HH:mm:ss.SSS}{UTC}, events 5000,0,0 ms | expected=Thu 00:00:05.000,Thu 00:00:00.000,Thu 00:00:00.000 | observed=Thu 00:00:05.000,Thu 00:00:05.000,Thu 00:00:05.000
+PASS | JTL: JsonTemplateLayout timestamp HH:mm:ss.SSS UTC, -1 ms | expected={"t":"23:59:59.999"} | observed={"t":"23:59:59.999"}
+FAIL | sweep: Rfc5424Layout (instance field lastTimestamp = -1), timestamp field of first event at -1 ms | expected=1969-12-31T23:59:59.999Z | observed=null
+PASS | custom clock returning -1,-1,0,-1 ms, Logger.info through File appender %d{HH:mm:ss.SSS}{UTC}|%m | expected=23:59:59.999|a,23:59:59.999|b,00:00:00.000|c,23:59:59.999|d | observed=23:59:59.999|a,23:59:59.999|b,00:00:00.000|c,23:59:59.999|d

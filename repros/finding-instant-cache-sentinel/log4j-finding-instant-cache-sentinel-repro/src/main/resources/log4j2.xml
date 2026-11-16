@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Configuration status="WARN">
+  <Appenders>
+    <File name="CLOCK" fileName="${sys:logdir}/clock.log" append="false">
+      <PatternLayout pattern="%d{HH:mm:ss.SSS}{UTC}|%m%n"/>
+    </File>
+    <Console name="MS"><PatternLayout pattern="%d{HH:mm:ss.SSS}{UTC}"/></Console>
+    <Console name="MS_POS"><PatternLayout pattern="%d{HH:mm:ss.SSS}{UTC}"/></Console>
+    <Console name="MS_WARM"><PatternLayout pattern="%d{HH:mm:ss.SSS}{UTC}"/></Console>
+    <Console name="DEF"><PatternLayout pattern="%d{DEFAULT}{UTC}"/></Console>
+    <Console name="ISO"><PatternLayout pattern="%d{ISO8601}{UTC}"/></Console>
+    <Console name="SEC"><PatternLayout pattern="%d{HH:mm:ss}{UTC}"/></Console>
+    <Console name="SEC_SUB"><PatternLayout pattern="%d{HH:mm:ss}{UTC}"/></Console>
+    <Console name="SEC_INSTANT"><PatternLayout pattern="%d{HH:mm:ss}{UTC}"/></Console>
+    <Console name="MIN"><PatternLayout pattern="%d{yyyy-MM-dd HH:mm}{UTC}"/></Console>
+    <Console name="HOUR"><PatternLayout pattern="%d{yyyy-MM-dd HH}{UTC}"/></Console>
+    <Console name="MICRO"><PatternLayout pattern="%d{HH:mm:ss.SSSSSS}{UTC}"/></Console>
+    <Console name="UNIX"><PatternLayout pattern="%d{UNIX_MILLIS}"/></Console>
+    <Console name="ZERO_FIXED"><PatternLayout pattern="%d{HH:mm:ss.SSS}{UTC}"/></Console>
+    <Console name="ZERO_FREE"><PatternLayout pattern="%d{EEE HH:mm:ss.SSS}{UTC}"/></Console>
+    <Console name="RFC5424"><Rfc5424Layout appName="app"/></Console>
+    <Console name="JTL">
+      <JsonTemplateLayout eventTemplate='{"t":{"$resolver":"timestamp","pattern":{"format":"HH:mm:ss.SSS","timeZone":"UTC"}}}'/>
+    </Console>
+  </Appenders>
+  <Loggers>
+    <Logger name="clock" level="INFO" additivity="false">
+      <AppenderRef ref="CLOCK"/>
+    </Logger>
+    <Root level="OFF"/>
+  </Loggers>
+</Configuration>

@@ -1,0 +1,127 @@
+Configuration:
+  status: warn
+  name: YamlBooleanRepro
+  Appenders:
+    File:
+      - name: FILE
+        fileName: ${sys:outdir}/app.log
+        append: false
+        PatternLayout:
+          pattern: "%c %m%n"
+      - name: SEED
+        fileName: ${sys:outdir}/seed.log
+        append: yes
+        PatternLayout:
+          pattern: "%m%n"
+      - name: LOC
+        fileName: ${sys:outdir}/loc.log
+        append: false
+        PatternLayout:
+          pattern: "%M|%m%n"
+  Loggers:
+    Logger:
+      - name: s.yes
+        level: debug
+        additivity: yes
+        AppenderRef:
+          ref: FILE
+      - name: s.Yes
+        level: debug
+        additivity: Yes
+        AppenderRef:
+          ref: FILE
+      - name: s.YES
+        level: debug
+        additivity: YES
+        AppenderRef:
+          ref: FILE
+      - name: s.on
+        level: debug
+        additivity: on
+        AppenderRef:
+          ref: FILE
+      - name: s.On
+        level: debug
+        additivity: On
+        AppenderRef:
+          ref: FILE
+      - name: s.ON
+        level: debug
+        additivity: ON
+        AppenderRef:
+          ref: FILE
+      - name: s.y
+        level: debug
+        additivity: y
+        AppenderRef:
+          ref: FILE
+      - name: s.Y
+        level: debug
+        additivity: Y
+        AppenderRef:
+          ref: FILE
+      - name: s.no
+        level: debug
+        additivity: no
+        AppenderRef:
+          ref: FILE
+      - name: s.off
+        level: debug
+        additivity: off
+        AppenderRef:
+          ref: FILE
+      - name: s.n
+        level: debug
+        additivity: n
+        AppenderRef:
+          ref: FILE
+      - name: s.true
+        level: debug
+        additivity: true
+        AppenderRef:
+          ref: FILE
+      - name: s.True
+        level: debug
+        additivity: True
+        AppenderRef:
+          ref: FILE
+      - name: s.TRUE
+        level: debug
+        additivity: TRUE
+        AppenderRef:
+          ref: FILE
+      - name: s.false
+        level: debug
+        additivity: false
+        AppenderRef:
+          ref: FILE
+      - name: s.FALSE
+        level: debug
+        additivity: FALSE
+        AppenderRef:
+          ref: FILE
+      - name: s.qyes
+        level: debug
+        additivity: 'yes'
+        AppenderRef:
+          ref: FILE
+      - name: lvl.off
+        level: off
+        additivity: false
+        AppenderRef:
+          ref: FILE
+      - name: app
+        level: info
+        additivity: false
+        AppenderRef:
+          ref: SEED
+      - name: loc
+        level: info
+        additivity: false
+        includeLocation: yes
+        AppenderRef:
+          ref: LOC
+    Root:
+      level: error
+      AppenderRef:
+        ref: FILE
