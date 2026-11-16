@@ -1,0 +1,21 @@
+[Fatal Error] log4j2.yaml:1:1: Content is not allowed in prolog.
+2026-11-16T12:59:06.489555Z main ERROR Error parsing /Users/ramanathan/apache/log4j2-workout/repros/pr-4410/log4j-pr-4410-repro/target/classes/log4j2.yaml
+org.xml.sax.SAXParseException; systemId: file:///Users/ramanathan/apache/log4j2-workout/repros/pr-4410/log4j-pr-4410-repro/target/classes/log4j2.yaml; lineNumber: 1; columnNumber: 1; Content is not allowed in prolog.
+	at java.xml/com.sun.org.apache.xerces.internal.parsers.DOMParser.parse(DOMParser.java:262)
+	at java.xml/com.sun.org.apache.xerces.internal.jaxp.DocumentBuilderImpl.parse(DocumentBuilderImpl.java:342)
+	at org.apache.logging.log4j.core.config.xml.XmlConfiguration.<init>(XmlConfiguration.java:90)
+	at org.apache.logging.log4j.core.config.xml.XmlConfigurationFactory.getConfiguration(XmlConfigurationFactory.java:46)
+	at org.apache.logging.log4j.core.config.ConfigurationFactory$Factory.getConfiguration(ConfigurationFactory.java:587)
+	at org.apache.logging.log4j.core.config.ConfigurationFactory$Factory.getConfiguration(ConfigurationFactory.java:562)
+	at org.apache.logging.log4j.core.config.ConfigurationFactory$Factory.getConfiguration(ConfigurationFactory.java:483)
+	at org.apache.logging.log4j.core.config.ConfigurationFactory.getConfiguration(ConfigurationFactory.java:323)
+	at org.apache.logging.log4j.core.LoggerContext.reconfigure(LoggerContext.java:778)
+	at org.apache.logging.log4j.core.LoggerContext.reconfigure(LoggerContext.java:808)
+	at org.apache.logging.log4j.core.LoggerContext.start(LoggerContext.java:311)
+	at org.apache.logging.log4j.core.impl.Log4jContextFactory.getContext(Log4jContextFactory.java:264)
+	at org.apache.logging.log4j.core.impl.Log4jContextFactory.getContext(Log4jContextFactory.java:48)
+	at org.apache.logging.log4j.LogManager.getContext(LogManager.java:119)
+	at Repro.main(Repro.java:11)
+
+2026-11-16T12:59:06.510782Z main ERROR No logging configuration
+2026-11-16T12:59:06.511439Z main WARN No Loggers were configured, using default. Is the Loggers element missing?

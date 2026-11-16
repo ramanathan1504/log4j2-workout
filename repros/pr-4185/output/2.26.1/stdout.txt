@@ -1,0 +1,4 @@
+FAIL addAppender-bad-class observed=RuntimeMBeanException cause=NullPointerException: Cannot invoke "org.apache.log4j.Appender.setName(String)" because "appender" is null
+FAIL setLayout-bad-class observed=returned null
+FAIL setLayout-bad-class-keeps-layout observed=null
+FAIL appender-still-writes observed=[]

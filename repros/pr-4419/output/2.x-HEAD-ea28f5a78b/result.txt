@@ -1,0 +1,7 @@
+version=2.x-HEAD-ea28f5a78b
+PASS setAllLevels(com.foo,TRACE) parent logger=com.foo expected=TRACE observed=TRACE
+PASS setAllLevels(com.foo,TRACE) child logger=com.foo.child expected=TRACE observed=TRACE
+PASS setAllLevels(com.foo,TRACE) sibling logger=com.foobar expected=WARN observed=WARN
+PASS setAllLevels(com.foo,TRACE) sibling-child logger=com.foobar.child expected=ERROR observed=ERROR
+PASS addLoggerAppender on key app.service holding LoggerConfig(app) expected=delivered observed=delivered appenders=[SINK]
+status-logger:

@@ -1,0 +1,4 @@
+PASS control message=20000 bytes delivered whole: received datagrams: sizes=[13, 20001, 12] heads=[small-before, xxxxxxxxxxxx, small-after]
+case message=70000 bytes: received datagrams: sizes=[13, 12] heads=[small-before, small-after]
+PASS oversized payload dropped with a warning: "UDP datagram of 70001 bytes exceeds the maximum of 65507 bytes and will be dropped", status ERROR lines=0
+PASS control: the event after the oversized one is still delivered

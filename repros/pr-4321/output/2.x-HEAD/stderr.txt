@@ -1,0 +1,4 @@
+2026-11-16T12:48:55.064583Z main ERROR Log4j API could not find a logging provider.
+Log4j API will use Simple Logger by default.
+See https://logging.apache.org/log4j/2.x/manual/installation.html#impl for instructions on how to configure Log4j API.
+ERROR Repro application message

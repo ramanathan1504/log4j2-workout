@@ -1,0 +1,11 @@
+PASS missingTrustStore expected-received=0 received=0 serverErrors=[SocketException: Broken pipe]
+PASS missingKeyStore expected-received=0 received=0 serverErrors=[SocketException: Broken pipe]
+PASS validTrustStore expected-received=3 received=3 serverErrors=[]
+status: 2026-11-16T13:05:08.946466Z main ERROR Failed to load the store located at `/Users/ramanathan/apache/log4j2-workout/repros/pr-4337/log4j-pr-4337-repro/target/tls/does-not-exist.p12`, all TLS connections using this configuration will be reje
+status: 2026-11-16T13:05:09.118567Z main ERROR TcpSocketManager (TLS:127.0.0.1:50733:1) caught exception and will continue:
+status: 2026-11-16T13:05:09.247858Z main ERROR Failed to load the store located at `/Users/ramanathan/apache/log4j2-workout/repros/pr-4337/log4j-pr-4337-repro/target/tls/does-not-exist.p12`, all TLS connections using this configuration will be reje
+status: 2026-11-16T13:05:09.295344Z main ERROR TcpSocketManager (TLS:127.0.0.1:50734:-1366053761) caught exception and will continue:
+status: 2026-11-16T13:05:09.421008Z main ERROR Unable to write to stream TLS:127.0.0.1:50733:1 for appender missingTrustStore
+status: 2026-11-16T13:05:09.421638Z main ERROR An exception occurred processing Appender missingTrustStore
+status: 2026-11-16T13:05:09.422415Z main ERROR Unable to write to stream TLS:127.0.0.1:50733:1 for appender missingTrustStore
+status: 2026-11-16T13:05:09.422860Z main ERROR An exception occurred processing Appender missingTrustStore

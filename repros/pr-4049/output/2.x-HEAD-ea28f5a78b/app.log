@@ -1,0 +1,9 @@
+event-with-unloadable-frame
+java.lang.RuntimeException: boom
+	at com.missing.Gone.vanish(Gone.java:7) ~[?:?]
+	at Hidden.run(Hidden.java:6) [?:?]
+	at Repro.main(Repro.java:52) [classes/:?]
+event-control
+java.lang.IllegalStateException: plain
+	at Hidden.run(Hidden.java:13) [?:?]
+	at Repro.main(Repro.java:52) [classes/:?]

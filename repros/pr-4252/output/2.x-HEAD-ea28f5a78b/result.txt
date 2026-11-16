@@ -1,0 +1,3 @@
+initial root level=INFO
+PASS watch-disabled-refresh-does-not-reload expected=INFO observed=INFO
+PASS control-watch-enabled-refresh-reloads expected=TRACE observed=TRACE

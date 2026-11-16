@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Configuration status="WARN">
+  <Appenders>
+    <SMTP name="mail" to="to@example.com" from="from@example.com" subject="repro %level"
+          smtpHost="127.0.0.1" smtpPort="${sys:smtpPort}" bufferSize="1">
+      <PatternLayout pattern="%m%n"/>
+      <Property name="X-Static" value="fixed-value"/>
+      <Property name="X-Trace-Id" value="%X{traceId}"/>
+      <Property name="X-Tag" value="first"/>
+      <Property name="X-Tag" value="second"/>
+      <Property name="X-Message" value="%m"/>
+      <Property name="X:Invalid" value="ignored"/>
+    </SMTP>
+  </Appenders>
+  <Loggers>
+    <Root level="INFO">
+      <AppenderRef ref="mail"/>
+    </Root>
+  </Loggers>
+</Configuration>

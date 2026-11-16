@@ -1,0 +1,11 @@
+colliding-event
+Repro$CollidingException: colliding-outer
+	... 1 more
+Caused by: [CIRCULAR REFERENCE: Repro$CollidingException: colliding-middle]
+plain-event
+java.lang.RuntimeException: plain-outer
+	at Repro.main(Repro.java:31) [classes/:?]
+Caused by: java.lang.RuntimeException: plain-middle
+	... 1 more
+Caused by: java.lang.RuntimeException: plain-inner
+	... 1 more

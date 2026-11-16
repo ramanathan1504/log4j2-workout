@@ -1,0 +1,7 @@
+[default] PASS control getLevel() after setLevel(FINE) observed=FINE class=ApiLogger
+FAIL [default] 8 mutator calls on 2 loggers -> warnings=8 (expected 1)
+FAIL [default] warning names the calling class Repro: count=0
+[warn] PASS control getLevel() after setLevel(FINE) observed=FINE class=ApiLogger
+PASS [warn] 8 mutator calls -> warnings=8 (expected 8)
+[ignore] PASS control getLevel() after setLevel(FINE) observed=FINE class=ApiLogger
+FAIL [ignore] 8 mutator calls -> warnings=8 (expected 0)

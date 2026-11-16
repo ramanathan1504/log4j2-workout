@@ -1,0 +1,3 @@
+archives=2
+non-daemon threads 3s after the rollover=[]
+main returning

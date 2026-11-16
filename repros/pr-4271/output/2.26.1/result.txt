@@ -1,0 +1,4 @@
+classpath log4j jars: log4j-core-2.26.1.jar log4j-api-2.26.1.jar 
+FAIL non-allowlisted-message-class observed=GadgetMessage.readObject calls=1 accepted message=Repro$GadgetMessage
+FAIL stream-free-of-MarshalledObject observed=contains java.rmi.MarshalledObject=true bytes=1276
+PASS control-simple-message observed=SimpleMessage=hello

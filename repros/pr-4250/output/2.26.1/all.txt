@@ -1,0 +1,47 @@
+CONFIG_CLASS=PropertiesConfiguration
+CONFIG_STATE=STARTED
+DEFAULT_CONFIG=false
+STDOUT_APPENDER=absent
+2026-11-16T12:40:49.196172Z main ERROR Unable to locate plugin type for ThisLayoutDoesNotExist
+2026-11-16T12:40:49.466708Z main ERROR Unable to locate plugin for ThisLayoutDoesNotExist
+2026-11-16T12:40:49.667426Z main ERROR Could not create plugin of type class org.apache.logging.log4j.core.appender.ConsoleAppender for element Console: java.lang.NullPointerException: Cannot invoke "org.apache.logging.log4j.core.config.plugins.util.PluginType.getElementName()" because "childType" is null
+java.lang.NullPointerException: Cannot invoke "org.apache.logging.log4j.core.config.plugins.util.PluginType.getElementName()" because "childType" is null
+	at org.apache.logging.log4j.core.config.plugins.visitors.PluginElementVisitor.visit(PluginElementVisitor.java:50)
+	at org.apache.logging.log4j.core.config.plugins.util.PluginBuilder.injectFields(PluginBuilder.java:195)
+	at org.apache.logging.log4j.core.config.plugins.util.PluginBuilder.build(PluginBuilder.java:123)
+	at org.apache.logging.log4j.core.config.AbstractConfiguration.createPluginObject(AbstractConfiguration.java:1215)
+	at org.apache.logging.log4j.core.config.AbstractConfiguration.createConfiguration(AbstractConfiguration.java:1134)
+	at org.apache.logging.log4j.core.config.AbstractConfiguration.createConfiguration(AbstractConfiguration.java:1126)
+	at org.apache.logging.log4j.core.config.AbstractConfiguration.doConfigure(AbstractConfiguration.java:734)
+	at org.apache.logging.log4j.core.config.AbstractConfiguration.initialize(AbstractConfiguration.java:271)
+	at org.apache.logging.log4j.core.config.AbstractConfiguration.start(AbstractConfiguration.java:324)
+	at org.apache.logging.log4j.core.LoggerContext.setConfiguration(LoggerContext.java:697)
+	at org.apache.logging.log4j.core.LoggerContext.reconfigure(LoggerContext.java:786)
+	at org.apache.logging.log4j.core.LoggerContext.reconfigure(LoggerContext.java:808)
+	at org.apache.logging.log4j.core.LoggerContext.start(LoggerContext.java:311)
+	at org.apache.logging.log4j.core.impl.Log4jContextFactory.getContext(Log4jContextFactory.java:264)
+	at org.apache.logging.log4j.core.impl.Log4jContextFactory.getContext(Log4jContextFactory.java:48)
+	at org.apache.logging.log4j.LogManager.getContext(LogManager.java:119)
+	at Repro.main(Repro.java:9)
+
+2026-11-16T12:40:49.668906Z main ERROR Unable to invoke factory method in class org.apache.logging.log4j.core.appender.ConsoleAppender for element Console: java.lang.IllegalStateException: No factory method found for class org.apache.logging.log4j.core.appender.ConsoleAppender
+java.lang.IllegalStateException: No factory method found for class org.apache.logging.log4j.core.appender.ConsoleAppender
+	at org.apache.logging.log4j.core.config.plugins.util.PluginBuilder.findFactoryMethod(PluginBuilder.java:268)
+	at org.apache.logging.log4j.core.config.plugins.util.PluginBuilder.build(PluginBuilder.java:140)
+	at org.apache.logging.log4j.core.config.AbstractConfiguration.createPluginObject(AbstractConfiguration.java:1215)
+	at org.apache.logging.log4j.core.config.AbstractConfiguration.createConfiguration(AbstractConfiguration.java:1134)
+	at org.apache.logging.log4j.core.config.AbstractConfiguration.createConfiguration(AbstractConfiguration.java:1126)
+	at org.apache.logging.log4j.core.config.AbstractConfiguration.doConfigure(AbstractConfiguration.java:734)
+	at org.apache.logging.log4j.core.config.AbstractConfiguration.initialize(AbstractConfiguration.java:271)
+	at org.apache.logging.log4j.core.config.AbstractConfiguration.start(AbstractConfiguration.java:324)
+	at org.apache.logging.log4j.core.LoggerContext.setConfiguration(LoggerContext.java:697)
+	at org.apache.logging.log4j.core.LoggerContext.reconfigure(LoggerContext.java:786)
+	at org.apache.logging.log4j.core.LoggerContext.reconfigure(LoggerContext.java:808)
+	at org.apache.logging.log4j.core.LoggerContext.start(LoggerContext.java:311)
+	at org.apache.logging.log4j.core.impl.Log4jContextFactory.getContext(Log4jContextFactory.java:264)
+	at org.apache.logging.log4j.core.impl.Log4jContextFactory.getContext(Log4jContextFactory.java:48)
+	at org.apache.logging.log4j.LogManager.getContext(LogManager.java:119)
+	at Repro.main(Repro.java:9)
+
+2026-11-16T12:40:49.669899Z main ERROR Null object returned for Console in Appenders.
+2026-11-16T12:40:49.671114Z main ERROR Unable to locate appender "StdOut" for logger config "root"

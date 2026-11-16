@@ -1,0 +1,3 @@
+version=2.x-HEAD
+PASS caller-owned streams left open after setConfigLocationUri: 0 of 50
+PASS open file descriptor growth over 49 further calls: 0 (before=12 after=12)

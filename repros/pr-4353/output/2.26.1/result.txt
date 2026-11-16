@@ -1,0 +1,4 @@
+FAIL converted fileName resolved at conversion time: fileName="../output/2.26.1/converter-host/app.log"
+FAIL converted property not translated to a sys lookup: <Property name="app.dir">${repro.dir}/data</Property>
+FAIL converted threshold resolved at conversion time: <ThresholdFilter onMatch="NEUTRAL" onMismatch="DENY" level="DEBUG"/>
+FAIL deployed app did not write to its own repro.dir: deploy-host files=[] converter-host files=[app.log]

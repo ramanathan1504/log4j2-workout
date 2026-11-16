@@ -1,0 +1,3 @@
+FAIL missingTrustStore expected-received=0 received=3 serverErrors=[]
+FAIL missingKeyStore expected-received=0 received=3 serverErrors=[]
+PASS validTrustStore expected-received=3 received=3 serverErrors=[]

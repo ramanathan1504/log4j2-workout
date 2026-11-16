@@ -1,0 +1,15 @@
+2026-11-16T13:12:41.929602Z main ERROR DefaultRolloverStrategy contains an invalid element or attribute "compressionLevel"
+2026-11-16T13:12:42.040146Z main ERROR DefaultRolloverStrategy contains an invalid element or attribute "compressionLevel"
+2026-11-16T13:12:42.062095Z main ERROR DefaultRolloverStrategy contains an invalid element or attribute "compressionLevel"
+2026-11-16T13:12:42.081294Z main ERROR DefaultRolloverStrategy contains an invalid element or attribute "compressionLevel"
+2026-11-16T13:12:42.110176Z main ERROR DefaultRolloverStrategy contains an invalid element or attribute "compressionLevel"
+2026-11-16T13:12:42.126048Z main ERROR DirectWriteRolloverStrategy contains an invalid element or attribute "compressionLevel"
+2026-11-16T13:12:42.140077Z main ERROR DirectWriteRolloverStrategy contains an invalid element or attribute "compressionLevel"
+FAIL default-gz-level0 archive=app-1.log.gz expected=ratio>=0.9 (level 0, stored) observed=compressed:1191 raw:41000 ratio:0.029
+FAIL default-gz-level0-temp archive=app-1.log.gz expected=ratio>=0.9 (level 0, stored) observed=compressed:1191 raw:41000 ratio:0.029
+FAIL default-zip-level0 archive=app-1.log.zip expected=ratio>=0.9 (level 0, stored) observed=compressed:1305 raw:41000 ratio:0.032
+FAIL direct-gz-level0 archive=app-1.log.gz expected=ratio>=0.9 (level 0, stored) observed=compressed:1191 raw:41000 ratio:0.029
+FAIL direct-gz-level0-temp archive=app-1.log.gz expected=ratio>=0.9 (level 0, stored) observed=compressed:1191 raw:41000 ratio:0.029
+PASS default-gz-level9 archive=app-1.log.gz expected=ratio<0.5 observed=compressed:1191 raw:41000 ratio:0.029 (control)
+PASS default-gz-unset archive=app-1.log.gz expected=ratio<0.5 observed=compressed:1191 raw:41000 ratio:0.029 (control)
+PASS default-gz-level42 archive=app-1.log.gz expected=ratio<0.5 observed=compressed:1191 raw:41000 ratio:0.029 (control)

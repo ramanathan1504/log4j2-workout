@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Configuration status="WARN">
+  <Appenders>
+    <Socket name="missingTrustStore" protocol="SSL" host="127.0.0.1" port="${sys:port.missingTrustStore}">
+      <PatternLayout pattern="%m%n"/>
+      <Ssl>
+        <TrustStore location="${sys:tlsdir}/does-not-exist.p12" password="changeit" type="PKCS12"/>
+      </Ssl>
+    </Socket>
+    <Socket name="missingKeyStore" protocol="SSL" host="127.0.0.1" port="${sys:port.missingKeyStore}">
+      <PatternLayout pattern="%m%n"/>
+      <Ssl>
+        <KeyStore location="${sys:tlsdir}/does-not-exist.p12" password="changeit" type="PKCS12"/>
+        <TrustStore location="${sys:tlsdir}/server.p12" password="changeit" type="PKCS12"/>
+      </Ssl>
+    </Socket>
+    <Socket name="validTrustStore" protocol="SSL" host="127.0.0.1" port="${sys:port.validTrustStore}">
+      <PatternLayout pattern="%m%n"/>
+      <Ssl>
+        <TrustStore location="${sys:tlsdir}/server.p12" password="changeit" type="PKCS12"/>
+      </Ssl>
+    </Socket>
+  </Appenders>
+  <Loggers>
+    <Logger name="missingTrustStore" level="INFO" additivity="false">
+      <AppenderRef ref="missingTrustStore"/>
+    </Logger>
+    <Logger name="missingKeyStore" level="INFO" additivity="false">
+      <AppenderRef ref="missingKeyStore"/>
+    </Logger>
+    <Logger name="validTrustStore" level="INFO" additivity="false">
+      <AppenderRef ref="validTrustStore"/>
+    </Logger>
+    <Root level="OFF"/>
+  </Loggers>
+</Configuration>

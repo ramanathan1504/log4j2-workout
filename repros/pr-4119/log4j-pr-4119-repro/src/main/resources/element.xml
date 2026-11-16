@@ -1,0 +1,11 @@
+<Configuration status="WARN">
+  <Appenders>
+    <File name="L" fileName="${sys:out}/app.log" append="false"><PatternLayout pattern="%enc{%m}{CRLF}%n"/></File>
+  </Appenders>
+  <Loggers>
+    <Root level="INFO">
+      <AppenderRef ref="L"/>
+      <RegexFilter regex=".*line.*" onMatch="ACCEPT" onMismatch="DENY"><PatternFlags>DOTALL</PatternFlags></RegexFilter>
+    </Root>
+  </Loggers>
+</Configuration>

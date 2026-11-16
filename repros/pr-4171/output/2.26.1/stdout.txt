@@ -1,0 +1,5 @@
+info TraceContextProvider-SPI-present=false
+FAIL sync-event expected=[sync-event trace=4bf92f3577b34da6a3ce929d0e0e4736 span=00f067aa0ba902b7 flags=01] observed=[sync-event trace=mainraceId span=%spanId flags=mainraceFlags]
+FAIL async-event expected=[async-event trace=4bf92f3577b34da6a3ce929d0e0e4736 span=00f067aa0ba902b7 flags=01] observed=[async-event trace=mainraceId span=%spanId flags=mainraceFlags]
+FAIL async-event-2 expected=[async-event-2 trace=ffffffffffffffffffffffffffffffff span=ffffffffffffffff flags=00] observed=[async-event-2 trace=mainraceId span=%spanId flags=mainraceFlags]
+FAIL no-span-event expected=[no-span-event trace= span= flags=] observed=[no-span-event trace=mainraceId span=%spanId flags=mainraceFlags]

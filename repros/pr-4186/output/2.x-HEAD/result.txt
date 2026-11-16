@@ -1,0 +1,3 @@
+PASS ecs-mdc-cannot-overwrite-structural-fields message-keys=1 log.level-keys=1 forged-present=false line={"@timestamp":"2026-11-16T12:46:34.601Z","ecs.version":"1.2.0","log.level":"INFO","message":"real-message","process.thread.name":"main","log.logger":"ecs","secret":"s3cr3t","user":"alice"}
+PASS mdc-key-allowed-[user] line={"message":"real-message","ctx":{"user":"alice"}}
+statuslogger: 

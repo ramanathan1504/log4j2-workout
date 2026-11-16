@@ -1,0 +1,2 @@
+2026-11-16T12:48:23.396601Z main ERROR DefaultRolloverStrategy contains an invalid element or attribute "maxCompressionDelaySeconds"
+2026-11-16T12:48:23.503780Z main ERROR RollingFile contains an invalid element or attribute "maxRandomDelay"

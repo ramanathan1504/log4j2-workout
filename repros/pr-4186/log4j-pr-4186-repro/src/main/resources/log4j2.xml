@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Configuration status="WARN">
+  <Appenders>
+    <File name="ecs" fileName="${sys:ecsfile}" append="false">
+      <JsonTemplateLayout eventTemplateUri="classpath:EcsLayout.json"/>
+    </File>
+    <File name="allow" fileName="${sys:allowfile}" append="false">
+      <JsonTemplateLayout eventTemplate='{"message":{"$resolver":"message","stringified":true},"ctx":{"$resolver":"mdc","key":{"allowed":["user"]}}}'/>
+    </File>
+  </Appenders>
+  <Loggers>
+    <Logger name="ecs" level="INFO" additivity="false">
+      <AppenderRef ref="ecs"/>
+    </Logger>
+    <Logger name="allow" level="INFO" additivity="false">
+      <AppenderRef ref="allow"/>
+    </Logger>
+    <Root level="OFF"/>
+  </Loggers>
+</Configuration>

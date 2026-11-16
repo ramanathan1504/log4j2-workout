@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Configuration status="WARN">
+  <Appenders>
+    <File name="File" fileName="${sys:repro.out}/app.log" append="false">
+      <PatternLayout pattern="%m|%C|%M|%L%n"/>
+    </File>
+  </Appenders>
+  <Loggers>
+    <Root level="info" includeLocation="true">
+      <AppenderRef ref="File"/>
+    </Root>
+  </Loggers>
+</Configuration>

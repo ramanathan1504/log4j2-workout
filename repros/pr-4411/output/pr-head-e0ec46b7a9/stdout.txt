@@ -1,0 +1,3 @@
+PASS both-events-stored expected=2 observed=2 users=[u1, u2]
+PASS reserved-_id-not-copied expected=ObjectId observed=[ObjectId:6afb011aee5b7041cd95de2b, ObjectId:6afb011bee5b7041cd95de2c]
+PASS non-reserved-_rev-kept-control expected=r1 present observed=[r1, r2]

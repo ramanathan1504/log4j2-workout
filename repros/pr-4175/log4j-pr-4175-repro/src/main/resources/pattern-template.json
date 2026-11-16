@@ -1,0 +1,6 @@
+{
+  "message": {"$resolver": "message", "stringified": true},
+  "traceId": {"$resolver": "pattern", "pattern": "%traceId"},
+  "spanId": {"$resolver": "pattern", "pattern": "%spanId"},
+  "traceFlags": {"$resolver": "pattern", "pattern": "%traceFlags"}
+}

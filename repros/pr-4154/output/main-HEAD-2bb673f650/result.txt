@@ -1,0 +1,5 @@
+PASS rollover-blocked-control archived-files=0
+PASS events-kept-after-failed-rollover written=200/200 last=event seq=0199 padding-to-forty-bytes-xxxxxxx
+status-logger-ERROR-lines: 8
+   8 Unable to copy file  to  java.nio.file.AccessDeniedException 
+classpath-log4j: log4j-api-2.24.3.jar log4j-core-3.0.0-SNAPSHOT.jar log4j-kit-3.0.0-SNAPSHOT.jar log4j-plugins-3.0.0-SNAPSHOT.jar 

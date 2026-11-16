@@ -1,0 +1,3 @@
+version=2.26.1
+FAIL caller-owned streams left open after setConfigLocationUri: 50 of 50
+FAIL open file descriptor growth over 49 further calls: 49 (before=13 after=62)

@@ -1,0 +1,1 @@
+{ "configuration": { "name": "FromJson", "appenders": { "Console": { "name": "Out", "PatternLayout": { "pattern": "JSON %m%n" } } }, "loggers": { "root": { "level": "info", "AppenderRef": { "ref": "Out" } } } } }

@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Configuration status="WARN">
+  <Appenders>
+    <RollingFile name="DELAYED" fileName="${sys:outdir}/logs/delayed/app.log"
+                 filePattern="${sys:outdir}/logs/delayed/app-%i.log.gz">
+      <PatternLayout pattern="%m%n"/>
+      <SizeBasedTriggeringPolicy size="1 KB"/>
+      <DefaultRolloverStrategy max="20" maxCompressionDelaySeconds="2"/>
+    </RollingFile>
+    <RollingFile name="SUCCESSOR" fileName="${sys:outdir}/logs/successor/app.log"
+                 filePattern="${sys:outdir}/logs/successor/app-%i.log.gz" maxRandomDelay="2">
+      <PatternLayout pattern="%m%n"/>
+      <SizeBasedTriggeringPolicy size="1 KB"/>
+      <DefaultRolloverStrategy max="20"/>
+    </RollingFile>
+    <RollingFile name="IMMEDIATE" fileName="${sys:outdir}/logs/immediate/app.log"
+                 filePattern="${sys:outdir}/logs/immediate/app-%i.log.gz">
+      <PatternLayout pattern="%m%n"/>
+      <SizeBasedTriggeringPolicy size="1 KB"/>
+      <DefaultRolloverStrategy max="20"/>
+    </RollingFile>
+  </Appenders>
+  <Loggers>
+    <Logger name="delayed" level="INFO" additivity="false">
+      <AppenderRef ref="DELAYED"/>
+    </Logger>
+    <Logger name="successor" level="INFO" additivity="false">
+      <AppenderRef ref="SUCCESSOR"/>
+    </Logger>
+    <Logger name="immediate" level="INFO" additivity="false">
+      <AppenderRef ref="IMMEDIATE"/>
+    </Logger>
+    <Root level="OFF"/>
+  </Loggers>
+</Configuration>

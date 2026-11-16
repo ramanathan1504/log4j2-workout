@@ -1,0 +1,3 @@
+PASS transient-loggers-registered-while-referenced-control count=5000
+PASS unreferenced-loggers-released-after-gc remaining=0/5000
+PASS referenced-logger-kept-control same-instance=true

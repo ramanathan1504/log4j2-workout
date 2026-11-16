@@ -1,0 +1,3 @@
+version=main-HEAD
+PASS OrderComparator sort of [@Order(5), @Ordered(10), none]: NewOrderedTen,LegacyOrderFive,Unannotated
+PASS @Ordered(10) custom ConfigurationFactory chosen for log4j2.xml: used=true configuration=ReproXml

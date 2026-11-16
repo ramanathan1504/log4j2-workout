@@ -1,0 +1,4 @@
+PASS control message=20000 bytes delivered whole: received datagrams: sizes=[13, 20001, 12] heads=[small-before, xxxxxxxxxxxx, small-after]
+case message=70000 bytes: received datagrams: sizes=[13, 12] heads=[small-before, small-after]
+FAIL oversized payload not handled: status ERROR lines=2, cause="java.net.SocketException: Message too long", drop warning="none"
+PASS control: the event after the oversized one is still delivered

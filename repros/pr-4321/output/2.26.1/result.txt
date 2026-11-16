@@ -1,0 +1,2 @@
+PASS control: missing-provider error printed (2 stderr lines)
+FAIL diagnostic: no installation link, stderr: 2026-11-16T12:48:47.322453Z main ERROR Log4j API could not find a logging provider.|ERROR Repro application message|

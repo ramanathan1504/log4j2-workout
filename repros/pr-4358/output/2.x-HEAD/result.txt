@@ -1,0 +1,4 @@
+PASS legacy-spring-property: logging.auth.encoding=ISO-8859-1 expected=ISO-8859-1 observed=ISO-8859-1 header=Basic dXNlcjpw5HNz config=remote
+PASS control-log4j-property: log4j2.configurationAuthorizationEncoding=ISO-8859-1 expected=ISO-8859-1 observed=ISO-8859-1 header=Basic dXNlcjpw5HNz config=remote
+PASS control-default: none=- expected=UTF-8 observed=UTF-8 header=Basic dXNlcjpww6Rzcw== config=remote
+PASS default-under-latin1-platform: none=- expected=UTF-8 observed=UTF-8 header=Basic dXNlcjpww6Rzcw== config=remote

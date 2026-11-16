@@ -1,0 +1,5 @@
+CONFIG_CLASS=PropertiesConfiguration
+CONFIG_STATE=STARTED
+DEFAULT_CONFIG=false
+STDOUT_APPENDER=PatternLayout
+marker-line-from-repro

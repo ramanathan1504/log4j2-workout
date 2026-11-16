@@ -1,0 +1,3 @@
+version=2.x-HEAD
+PASS RootLogger.Builder.withFilter(Filter) observed=getFilter()==filter is true
+PASS LoggerConfig.Builder (control).withFilter(Filter) observed=getFilter()==filter is true

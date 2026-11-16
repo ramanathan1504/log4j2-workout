@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Configuration status="WARN">
+  <Appenders>
+    <JDBC name="Db" tableName="LOGS" bufferSize="5" ignoreExceptions="true">
+      <ConnectionFactory class="FailingAfterCommitConnectionFactory" method="getConnection"/>
+      <Column name="MSG" pattern="%m"/>
+    </JDBC>
+  </Appenders>
+  <Loggers>
+    <Root level="info"><AppenderRef ref="Db"/></Root>
+  </Loggers>
+</Configuration>

@@ -1,0 +1,3 @@
+PASS missingTrustStore expected-received=0 received=0 serverErrors=[SocketException: Broken pipe]
+PASS missingKeyStore expected-received=0 received=0 serverErrors=[SocketException: Broken pipe]
+PASS validTrustStore expected-received=3 received=3 serverErrors=[]

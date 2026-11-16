@@ -1,0 +1,4 @@
+PASS disruptor-4.0.0 control: async logger wrote the event observed: logger=org.apache.logging.log4j.core.async.AsyncLogger file=async-event statusErrors=0
+PASS disruptor-4.0.0 DEBUG status reports detected major version observed=[LMAX Disruptor version detected: 4]
+PASS disruptor-3.4.4 control: async logger wrote the event observed: logger=org.apache.logging.log4j.core.async.AsyncLogger file=async-event statusErrors=0
+INFO disruptor-3.4.4 DEBUG version line (v3 returns early, none expected either side) observed=[absent]

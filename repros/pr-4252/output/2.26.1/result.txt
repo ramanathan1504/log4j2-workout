@@ -1,0 +1,3 @@
+initial root level=INFO
+FAIL watch-disabled-refresh-does-not-reload expected=INFO observed=DEBUG
+PASS control-watch-enabled-refresh-reloads expected=TRACE observed=TRACE

@@ -1,0 +1,8 @@
+manager=org.apache.logging.log4j.smtp.SmtpManager
+messages-received=1
+FAIL header X-Static expected=[fixed-value] observed=[]
+FAIL header X-Trace-Id expected=[TraceValue1] observed=[]
+FAIL header X-Tag expected=[first, second] observed=[]
+FAIL header X-Message expected=[safe  X-Evil: injected] observed=[]
+PASS header X-Evil expected=[] observed=[]
+PASS header X expected=[] observed=[]

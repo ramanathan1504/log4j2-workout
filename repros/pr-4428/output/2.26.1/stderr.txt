@@ -1,0 +1,5 @@
+2026-11-16T13:16:04.072693Z main ERROR Log4j API could not find a logging provider.
+2026-11-16T13:16:04.159150Z main INFO Using provider:
+Provider 'org.apache.logging.log4j.simple.internal.SimpleProvider'
+WARNING: A command line option has enabled the Security Manager
+WARNING: The Security Manager is deprecated and will be removed in a future release

@@ -1,0 +1,5 @@
+PASS maxRandomDelay=2 compression-delays-ms=[902, 1371, 1040, 1322, 969, 1928] max=1928
+PASS control-no-delay compression-delays-ms=[6, 2, 3, 9, 2, 6] max=9
+PASS stop-right-after-rollover gz=7 uncompressed-archives=0 stop-ms=335 files=[app-5.log.gz, app-7.log.gz, app-3.log.gz, app-1.log.gz, app-4.log.gz, app-6.log.gz, app-2.log.gz, app.log]
+statuslogger maxRandomDelay-rejected=0 
+gzip-t checked 13 archives

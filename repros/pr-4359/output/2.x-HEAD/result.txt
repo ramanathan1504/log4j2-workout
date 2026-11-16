@@ -1,0 +1,2 @@
+PASS trustStoreLocation without type: trust store type=pkcs12 loaded=true
+version=2.x-HEAD 0 status lines

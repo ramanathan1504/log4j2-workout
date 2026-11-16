@@ -1,0 +1,32 @@
+2026-11-16T12:47:54.723709Z main DEBUG Loaded provider:
+Provider 'org.apache.logging.log4j.core.impl.Log4jProvider'
+	priority = 10
+	loggerContextFactory = org.apache.logging.log4j.core.impl.Log4jContextFactory
+2026-11-16T12:47:54.754348Z main INFO Using provider:
+Provider 'org.apache.logging.log4j.core.impl.Log4jProvider'
+	priority = 10
+	loggerContextFactory = org.apache.logging.log4j.core.impl.Log4jContextFactory
+2026-11-16T12:47:54.835682Z main DEBUG Using ShutdownCallbackRegistry class org.apache.logging.log4j.core.util.DefaultShutdownCallbackRegistry
+2026-11-16T12:47:56.360734Z main DEBUG Took 1.281678 seconds to load 228 plugins from jdk.internal.loader.ClassLoaders$AppClassLoader@67424e82
+2026-11-16T12:47:56.362934Z main DEBUG PluginManager 'Lookup' found 15 plugins
+2026-11-16T12:47:56.555943Z main DEBUG AsyncLogger.ThreadNameStrategy=UNCACHED (user specified null, default is UNCACHED)
+2026-11-16T12:47:56.558808Z main DEBUG org.apache.logging.log4j.core.util.SystemClock supports precise timestamps.
+2026-11-16T12:47:56.584219Z main DEBUG PluginManager 'Lookup' found 15 plugins
+2026-11-16T12:47:56.591491Z main DEBUG Starting OutputStreamManager SYSTEM_OUT.false.false-1
+2026-11-16T12:47:56.605826Z main DEBUG No AsyncWaitStrategyFactory was configured in the configuration, using default factory...
+2026-11-16T12:47:56.659209Z main DEBUG [AsyncContext@67424e82] Starting AsyncLogger disruptor for this context with ringbufferSize=4096, waitStrategy=TimeoutBlockingWaitStrategy, exceptionHandler=org.apache.logging.log4j.core.async.AsyncLoggerDefaultExceptionHandler@71623278...
+2026-11-16T12:47:56.668168Z main DEBUG Starting LoggerContext[name=AsyncContext@67424e82, org.apache.logging.log4j.core.async.AsyncLoggerContext@5a4041cc]...
+2026-11-16T12:47:56.680738Z main DEBUG Reconfiguration started for context[name=AsyncContext@67424e82] at URI null (org.apache.logging.log4j.core.async.AsyncLoggerContext@5a4041cc) with optional ClassLoader: null
+2026-11-16T12:47:56.692078Z main DEBUG PluginManager 'Lookup' found 15 plugins
+2026-11-16T12:47:56.693160Z main DEBUG PluginManager 'ConfigurationFactory' found 4 plugins
+2026-11-16T12:47:56.869943Z main DEBUG PluginManager 'Lookup' found 15 plugins
+2026-11-16T12:47:56.872177Z main DEBUG PluginManager 'Lookup' found 15 plugins
+2026-11-16T12:47:56.874813Z main DEBUG Missing dependencies for Yaml support, ConfigurationFactory org.apache.logging.log4j.core.config.yaml.YamlConfigurationFactory is inactive
+2026-11-16T12:47:56.875397Z main DEBUG PluginManager 'Lookup' found 15 plugins
+2026-11-16T12:47:56.876298Z main DEBUG Missing dependencies for Json support, ConfigurationFactory org.apache.logging.log4j.core.config.json.JsonConfigurationFactory is inactive
+2026-11-16T12:47:56.876574Z main DEBUG PluginManager 'Lookup' found 15 plugins
+2026-11-16T12:47:56.884318Z main DEBUG Using configurationFactory org.apache.logging.log4j.core.config.ConfigurationFactory$Factory@17776a8
+2026-11-16T12:47:56.892499Z main DEBUG Found [log4j2.xml] at file:/Users/ramanathan/apache/log4j2-workout/repros/pr-4124/log4j-pr-4124-repro/target/classes/log4j2.xml using context class loader.
+2026-11-16T12:47:56.907565Z main DEBUG PluginManager 'Lookup' found 15 plugins
+2026-11-16T12:47:56.912050Z main DEBUG Closing BufferedInputStream java.io.BufferedInputStream@23bb8443
+RESULT logger=org.apache.logging.log4j.core.async.AsyncLogger file=async-event

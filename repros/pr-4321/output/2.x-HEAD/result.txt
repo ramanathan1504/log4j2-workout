@@ -1,0 +1,2 @@
+PASS control: missing-provider error printed (4 stderr lines)
+PASS diagnostic: points at https://logging.apache.org/log4j/2.x/manual/installation.html#impl

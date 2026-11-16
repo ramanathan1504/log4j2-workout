@@ -1,0 +1,21 @@
+Configuration:
+  status: warn
+  name: Jackson3Repro
+  Appenders:
+    File:
+      name: FILE
+      fileName: ${sys:outdir}/app.log
+      append: false
+      PatternLayout:
+        pattern: "%p %c %m%n"
+  Loggers:
+    Logger:
+      - name: org.example
+        level: debug
+        additivity: yes
+        AppenderRef:
+          ref: FILE
+    Root:
+      level: error
+      AppenderRef:
+        ref: FILE

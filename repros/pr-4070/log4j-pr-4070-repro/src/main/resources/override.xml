@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Configuration status="WARN" name="override">
+  <Loggers>
+    <Logger name="override" level="DEBUG"/>
+  </Loggers>
+</Configuration>

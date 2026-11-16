@@ -1,0 +1,4 @@
+PASS sslVerifyHostName=true, cert for wrong-host.invalid expected=refused observed=refused (handshakesCompleted=0 handshakesRefused=1 firstRefusal=Received fatal alert: certificate_unknown)
+PASS control: sslVerifyHostName=false, cert for wrong-host.invalid expected=accepted observed=accepted (handshakesCompleted=1 handshakesRefused=0 firstRefusal=-)
+PASS control: sslVerifyHostName=true, cert for dns:localhost expected=accepted observed=accepted (handshakesCompleted=1 handshakesRefused=0 firstRefusal=-)
+FAIL sslVerifyHostName=true, cert with only ip:127.0.0.1, host configured as 127.0.0.1 expected=accepted observed=refused (handshakesCompleted=0 handshakesRefused=1 firstRefusal=Received fatal alert: certificate_unknown)

@@ -1,0 +1,7 @@
+PASS rollover-blocked-control archived-files=0
+FAIL events-kept-after-failed-rollover written=23/200 last=event seq=0022 padding-to-forty-bytes-xxxxxxx
+status-logger-ERROR-lines: 181
+ 177 Unable to copy file  to  java.nio.file.AccessDeniedException 
+   2 Unable to write to stream  for appender Rolling org.apache.logging.log4j.core.ap
+   2 An exception occurred processing Appender Rolling org.apache.logging.log4j.core.
+classpath-log4j: log4j-api-2.24.3.jar log4j-core-3.0.0-beta3.jar log4j-kit-3.0.0-beta3.jar log4j-plugins-3.0.0-beta3.jar 

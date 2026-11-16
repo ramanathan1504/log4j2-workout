@@ -1,0 +1,16 @@
+PASS after-startup raf raf-never expected=no app.log observed=no app.log (no dir)
+PASS after-startup raf raf-used expected=no app.log observed=no app.log (no dir)
+PASS after-startup mmf mmf-never expected=no app.log observed=no app.log (no dir)
+PASS after-startup mmf mmf-used expected=no app.log observed=no app.log (no dir)
+PASS after-startup rraf rraf-never expected=no app.log observed=no app.log (no dir)
+PASS after-startup rraf rraf-used expected=no app.log observed=no app.log (no dir)
+PASS after-startup file (control) file-never expected=no app.log observed=no app.log (dir exists)
+PASS after-startup file (control) file-used expected=no app.log observed=no app.log (dir exists)
+PASS after-shutdown raf raf-never expected=no app.log observed=no app.log (no dir)
+PASS after-event raf raf-used expected=first-event observed=first-event
+PASS after-shutdown mmf mmf-never expected=no app.log observed=no app.log (no dir)
+PASS after-event mmf mmf-used expected=first-event observed=first-event
+PASS after-shutdown rraf rraf-never expected=no app.log observed=no app.log (no dir)
+PASS after-event rraf rraf-used expected=first-event observed=first-event
+PASS after-shutdown file (control) file-never expected=no app.log observed=no app.log (dir exists)
+PASS after-event file file-used expected=first-event observed=first-event

@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Configuration status="WARN">
+  <Appenders>
+    <RollingFile name="ON_DEMAND" fileName="${sys:outdir}/logs/ondemand/app.log"
+                 filePattern="${sys:outdir}/logs/ondemand/app-%i.log" createOnDemand="true">
+      <PatternLayout pattern="%m%n"/>
+      <SizeBasedTriggeringPolicy size="10MB"/>
+    </RollingFile>
+    <RollingFile name="ON_DEMAND_DIRECT" filePattern="${sys:outdir}/logs/direct/app-%i.log" createOnDemand="true">
+      <PatternLayout pattern="%m%n"/>
+      <SizeBasedTriggeringPolicy size="10MB"/>
+      <DirectWriteRolloverStrategy/>
+    </RollingFile>
+    <RollingFile name="EAGER" fileName="${sys:outdir}/logs/eager/app.log"
+                 filePattern="${sys:outdir}/logs/eager/app-%i.log" createOnDemand="false">
+      <PatternLayout pattern="%m%n"/>
+      <SizeBasedTriggeringPolicy size="10MB"/>
+    </RollingFile>
+  </Appenders>
+  <Loggers>
+    <Logger name="ondemand" level="INFO" additivity="false">
+      <AppenderRef ref="ON_DEMAND"/>
+    </Logger>
+    <Logger name="direct" level="INFO" additivity="false">
+      <AppenderRef ref="ON_DEMAND_DIRECT"/>
+    </Logger>
+    <Logger name="eager" level="INFO" additivity="false">
+      <AppenderRef ref="EAGER"/>
+    </Logger>
+    <Root level="OFF"/>
+  </Loggers>
+</Configuration>

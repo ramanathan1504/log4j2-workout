@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Configuration status="WARN">
+  <Appenders>
+    <File name="NoText" fileName="${sys:outdir}/no-text.log" append="false">
+      <PatternLayout pattern="%m%n"/>
+      <StringMatchFilter onMatch="DENY" onMismatch="NEUTRAL"/>
+    </File>
+    <File name="WithText" fileName="${sys:outdir}/with-text.log" append="false">
+      <PatternLayout pattern="%m%n"/>
+      <StringMatchFilter text="secret" onMatch="DENY" onMismatch="NEUTRAL"/>
+    </File>
+  </Appenders>
+  <Loggers>
+    <Root level="INFO">
+      <AppenderRef ref="NoText"/>
+      <AppenderRef ref="WithText"/>
+    </Root>
+  </Loggers>
+</Configuration>

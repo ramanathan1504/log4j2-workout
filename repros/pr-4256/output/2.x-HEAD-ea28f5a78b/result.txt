@@ -1,0 +1,7 @@
+PASS default-severity-no-notes options=[-Alog4j.graalvm.groupId=repro, -Alog4j.graalvm.artifactId=repro] notes=0 warnings=0 expectedNotes=0 expectedWarnings=0
+PASS control-opt-in-NOTE-shows-notes options=[-Alog4j.graalvm.groupId=repro, -Alog4j.graalvm.artifactId=repro, -Alog4j.plugin.processor.minAllowedMessageKind=NOTE] notes=2 warnings=0 expectedNotes=2 expectedWarnings=0
+    NOTE: [Log4j] GraalVmProcessor: writing GraalVM metadata for 1 Java classes to `META-INF/native-image/log4j-generated/repro/repro/reflect-config.json`.
+    NOTE: [Log4j] PluginProcessor: writing plugin descriptor for 1 Log4j Plugins to `META-INF/org/apache/logging/log4j/core/config/plugins/Log4j2Plugins.dat`.
+PASS typo-option-reported-once-per-processor options=[-Alog4j.graalvm.groupId=repro, -Alog4j.graalvm.artifactId=repro, -Alog4j.plugin.processor.minAllowedMessageKind=WARNINGS] notes=0 warnings=2 expectedNotes=0 expectedWarnings=2
+    WARNING: [Log4j] org.apache.logging.log4j.core.config.plugins.processor.GraalVmProcessor: unrecognized value `WARNINGS` for option `log4j.plugin.processor.minAllowedMessageKind`, using default `ERROR`. Valid values: [ERROR, WARNING, MANDATORY_WARNING, NOTE, OTHER]
+    WARNING: [Log4j] org.apache.logging.log4j.core.config.plugins.processor.PluginProcessor: unrecognized value `WARNINGS` for option `log4j.plugin.processor.minAllowedMessageKind`, using default `ERROR`. Valid values: [ERROR, WARNING, MANDATORY_WARNING, NOTE, OTHER]

@@ -1,0 +1,17 @@
+Date: Mon, 16 Nov 2026 18:33:17 +0530 (IST)
+From: from@example.com
+To: to@example.com
+Message-ID: <1448061896.1.1794834197630@Ramanathans-MacBook-Air.local>
+Subject: repro ERROR
+MIME-Version: 1.0
+Content-Type: multipart/mixed; 
+	boundary="----=_Part_0_148626113.1794834197539"
+
+------=_Part_0_148626113.1794834197539
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+
+safe
+X-Evil: injected
+
+------=_Part_0_148626113.1794834197539--

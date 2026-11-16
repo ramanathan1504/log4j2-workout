@@ -1,0 +1,4 @@
+logger implementation: org.apache.logging.log4j.core.async.AsyncLogger
+PASS builder-without-location: class=Repro method=main line=12
+PASS plain-info-control: class=Repro method=main line=13
+PASS builder-with-location-control: class=Repro method=main line=14

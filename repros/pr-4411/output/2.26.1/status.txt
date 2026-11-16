@@ -1,0 +1,65 @@
+Nov 16, 2026 6:41:33 PM com.mongodb.internal.diagnostics.logging.Loggers shouldUseSLF4J
+WARNING: SLF4J not found on the classpath.  Logging is disabled for the 'org.mongodb.driver' component
+2026-11-16T13:11:35.706449Z main WARN The MongoDb4 Appender is deprecated, use the MongoDb Appender instead.
+2026-11-16T13:11:36.256484Z main ERROR Unable to write to database [noSqlManager{ description=mongo, bufferSize=0, provider=MongoDb4Provider [connectionString=`mongodb://127.0.0.1:27017/log4j.pr4411_2_26_1`, collectionSize=536870912, isCapped=false, databaseName=`log4j`, collectionName=`pr4411_2_26_1`] }] for appender [mongo].
+org.apache.logging.log4j.core.appender.AppenderLoggingException: Failed to write log event to MongoDB due to error: Write operation error on server 127.0.0.1:27017. Write error: WriteError{code=11000, message='E11000 duplicate key error collection: log4j.pr4411_2_26_1 index: _id_ dup key: { _id: "fixed-id" }', details={}}.
+	at org.apache.logging.log4j.mongodb4.MongoDb4Connection.insertObject(MongoDb4Connection.java:138)
+	at org.apache.logging.log4j.core.appender.nosql.NoSqlDatabaseManager.writeInternal(NoSqlDatabaseManager.java:286)
+	at org.apache.logging.log4j.core.appender.db.AbstractDatabaseManager.writeThrough(AbstractDatabaseManager.java:328)
+	at org.apache.logging.log4j.core.appender.db.AbstractDatabaseManager.write(AbstractDatabaseManager.java:301)
+	at org.apache.logging.log4j.core.appender.db.AbstractDatabaseAppender.append(AbstractDatabaseAppender.java:115)
+	at org.apache.logging.log4j.core.config.AppenderControl.tryCallAppender(AppenderControl.java:160)
+	at org.apache.logging.log4j.core.config.AppenderControl.callAppender0(AppenderControl.java:133)
+	at org.apache.logging.log4j.core.config.AppenderControl.callAppenderPreventRecursion(AppenderControl.java:124)
+	at org.apache.logging.log4j.core.config.AppenderControl.callAppender(AppenderControl.java:88)
+	at org.apache.logging.log4j.core.config.LoggerConfig.callAppenders(LoggerConfig.java:807)
+	at org.apache.logging.log4j.core.config.LoggerConfig.processLogEvent(LoggerConfig.java:765)
+	at org.apache.logging.log4j.core.config.LoggerConfig.log(LoggerConfig.java:741)
+	at org.apache.logging.log4j.core.config.LoggerConfig.log(LoggerConfig.java:685)
+	at org.apache.logging.log4j.core.config.AwaitCompletionReliabilityStrategy.log(AwaitCompletionReliabilityStrategy.java:92)
+	at org.apache.logging.log4j.core.Logger.log(Logger.java:187)
+	at org.apache.logging.log4j.spi.AbstractLogger.tryLogMessage(AbstractLogger.java:2970)
+	at org.apache.logging.log4j.spi.AbstractLogger.logMessageTrackRecursion(AbstractLogger.java:2922)
+	at org.apache.logging.log4j.spi.AbstractLogger.logMessageSafely(AbstractLogger.java:2904)
+	at org.apache.logging.log4j.spi.AbstractLogger.logIfEnabled(AbstractLogger.java:2337)
+	at org.apache.logging.log4j.spi.AbstractLogger.info(AbstractLogger.java:1560)
+	at Repro.main(Repro.java:22)
+Caused by: com.mongodb.MongoWriteException: Write operation error on server 127.0.0.1:27017. Write error: WriteError{code=11000, message='E11000 duplicate key error collection: log4j.pr4411_2_26_1 index: _id_ dup key: { _id: "fixed-id" }', details={}}.
+	at com.mongodb.client.internal.MongoCollectionImpl.executeSingleWriteRequest(MongoCollectionImpl.java:1093)
+	at com.mongodb.client.internal.MongoCollectionImpl.executeInsertOne(MongoCollectionImpl.java:478)
+	at com.mongodb.client.internal.MongoCollectionImpl.insertOne(MongoCollectionImpl.java:461)
+	at com.mongodb.client.internal.MongoCollectionImpl.insertOne(MongoCollectionImpl.java:455)
+	at org.apache.logging.log4j.mongodb4.MongoDb4Connection.insertObject(MongoDb4Connection.java:134)
+	... 20 more
+
+2026-11-16T13:11:36.258428Z main ERROR An exception occurred processing Appender mongo
+org.apache.logging.log4j.core.appender.AppenderLoggingException: Failed to write log event to MongoDB due to error: Write operation error on server 127.0.0.1:27017. Write error: WriteError{code=11000, message='E11000 duplicate key error collection: log4j.pr4411_2_26_1 index: _id_ dup key: { _id: "fixed-id" }', details={}}.
+	at org.apache.logging.log4j.mongodb4.MongoDb4Connection.insertObject(MongoDb4Connection.java:138)
+	at org.apache.logging.log4j.core.appender.nosql.NoSqlDatabaseManager.writeInternal(NoSqlDatabaseManager.java:286)
+	at org.apache.logging.log4j.core.appender.db.AbstractDatabaseManager.writeThrough(AbstractDatabaseManager.java:328)
+	at org.apache.logging.log4j.core.appender.db.AbstractDatabaseManager.write(AbstractDatabaseManager.java:301)
+	at org.apache.logging.log4j.core.appender.db.AbstractDatabaseAppender.append(AbstractDatabaseAppender.java:115)
+	at org.apache.logging.log4j.core.config.AppenderControl.tryCallAppender(AppenderControl.java:160)
+	at org.apache.logging.log4j.core.config.AppenderControl.callAppender0(AppenderControl.java:133)
+	at org.apache.logging.log4j.core.config.AppenderControl.callAppenderPreventRecursion(AppenderControl.java:124)
+	at org.apache.logging.log4j.core.config.AppenderControl.callAppender(AppenderControl.java:88)
+	at org.apache.logging.log4j.core.config.LoggerConfig.callAppenders(LoggerConfig.java:807)
+	at org.apache.logging.log4j.core.config.LoggerConfig.processLogEvent(LoggerConfig.java:765)
+	at org.apache.logging.log4j.core.config.LoggerConfig.log(LoggerConfig.java:741)
+	at org.apache.logging.log4j.core.config.LoggerConfig.log(LoggerConfig.java:685)
+	at org.apache.logging.log4j.core.config.AwaitCompletionReliabilityStrategy.log(AwaitCompletionReliabilityStrategy.java:92)
+	at org.apache.logging.log4j.core.Logger.log(Logger.java:187)
+	at org.apache.logging.log4j.spi.AbstractLogger.tryLogMessage(AbstractLogger.java:2970)
+	at org.apache.logging.log4j.spi.AbstractLogger.logMessageTrackRecursion(AbstractLogger.java:2922)
+	at org.apache.logging.log4j.spi.AbstractLogger.logMessageSafely(AbstractLogger.java:2904)
+	at org.apache.logging.log4j.spi.AbstractLogger.logIfEnabled(AbstractLogger.java:2337)
+	at org.apache.logging.log4j.spi.AbstractLogger.info(AbstractLogger.java:1560)
+	at Repro.main(Repro.java:22)
+Caused by: com.mongodb.MongoWriteException: Write operation error on server 127.0.0.1:27017. Write error: WriteError{code=11000, message='E11000 duplicate key error collection: log4j.pr4411_2_26_1 index: _id_ dup key: { _id: "fixed-id" }', details={}}.
+	at com.mongodb.client.internal.MongoCollectionImpl.executeSingleWriteRequest(MongoCollectionImpl.java:1093)
+	at com.mongodb.client.internal.MongoCollectionImpl.executeInsertOne(MongoCollectionImpl.java:478)
+	at com.mongodb.client.internal.MongoCollectionImpl.insertOne(MongoCollectionImpl.java:461)
+	at com.mongodb.client.internal.MongoCollectionImpl.insertOne(MongoCollectionImpl.java:455)
+	at org.apache.logging.log4j.mongodb4.MongoDb4Connection.insertObject(MongoDb4Connection.java:134)
+	... 20 more
+

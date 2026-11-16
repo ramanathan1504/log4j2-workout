@@ -1,0 +1,3 @@
+archives=2
+non-daemon threads 3s after the rollover=[Log4j2-TF-1-RollingFileManager-1]
+main returning

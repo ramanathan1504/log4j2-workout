@@ -1,0 +1,34 @@
+2026-11-16T12:45:07.820833Z main WARN No Log4j 2 configuration file found. Using default configuration (logging only errors to the console), or user programmatically provided configurations. Set system property 'log4j2.debug' to show Log4j 2 internal initialization logging. See https://logging.apache.org/log4j/2.x/manual/configuration.html for instructions on how to configure Log4j 2
+2026-11-16T12:45:07.911020Z main ERROR Could not instantiate class [com.example.NoSuchAppender].
+java.lang.ClassNotFoundException: com.example.NoSuchAppender
+	at java.base/jdk.internal.loader.BuiltinClassLoader.loadClass(BuiltinClassLoader.java:641)
+	at java.base/jdk.internal.loader.ClassLoaders$AppClassLoader.loadClass(ClassLoaders.java:188)
+	at java.base/java.lang.ClassLoader.loadClass(ClassLoader.java:525)
+	at java.base/java.lang.Class.forName0(Native Method)
+	at java.base/java.lang.Class.forName(Class.java:467)
+	at org.apache.logging.log4j.util.LoaderUtil.loadClass(LoaderUtil.java:212)
+	at org.apache.logging.log4j.util.LoaderUtil.newInstanceOf(LoaderUtil.java:312)
+	at org.apache.log4j.helpers.OptionConverter.instantiateByClassName(OptionConverter.java:273)
+	at org.apache.log4j.jmx.LoggerDynamicMBean.addAppender(LoggerDynamicMBean.java:69)
+	at org.apache.log4j.jmx.LoggerDynamicMBean.invoke(LoggerDynamicMBean.java:168)
+	at java.management/com.sun.jmx.interceptor.DefaultMBeanServerInterceptor.invoke(DefaultMBeanServerInterceptor.java:814)
+	at java.management/com.sun.jmx.mbeanserver.JmxMBeanServer.invoke(JmxMBeanServer.java:802)
+	at Repro.invoke(Repro.java:41)
+	at Repro.main(Repro.java:18)
+
+2026-11-16T12:45:07.951909Z main ERROR Could not instantiate class [com.example.NoSuchLayout].
+java.lang.ClassNotFoundException: com.example.NoSuchLayout
+	at java.base/jdk.internal.loader.BuiltinClassLoader.loadClass(BuiltinClassLoader.java:641)
+	at java.base/jdk.internal.loader.ClassLoaders$AppClassLoader.loadClass(ClassLoaders.java:188)
+	at java.base/java.lang.ClassLoader.loadClass(ClassLoader.java:525)
+	at java.base/java.lang.Class.forName0(Native Method)
+	at java.base/java.lang.Class.forName(Class.java:467)
+	at org.apache.logging.log4j.util.LoaderUtil.loadClass(LoaderUtil.java:212)
+	at org.apache.logging.log4j.util.LoaderUtil.newInstanceOf(LoaderUtil.java:312)
+	at org.apache.log4j.helpers.OptionConverter.instantiateByClassName(OptionConverter.java:273)
+	at org.apache.log4j.jmx.AppenderDynamicMBean.invoke(AppenderDynamicMBean.java:189)
+	at java.management/com.sun.jmx.interceptor.DefaultMBeanServerInterceptor.invoke(DefaultMBeanServerInterceptor.java:814)
+	at java.management/com.sun.jmx.mbeanserver.JmxMBeanServer.invoke(JmxMBeanServer.java:802)
+	at Repro.invoke(Repro.java:41)
+	at Repro.main(Repro.java:27)
+

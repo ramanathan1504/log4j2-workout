@@ -1,0 +1,2 @@
+FAIL latin1 (ISO-8859-1) MSG-LEN=87 payloadBytes=84
+PASS utf8 control MSG-LEN=87 payloadBytes=87

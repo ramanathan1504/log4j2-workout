@@ -1,0 +1,4 @@
+event-control
+java.lang.IllegalStateException: plain
+	at Hidden.run(Hidden.java:13) [?:?]
+	at Repro.main(Repro.java:52) [classes/:?]

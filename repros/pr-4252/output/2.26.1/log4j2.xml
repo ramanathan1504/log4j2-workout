@@ -1,0 +1,1 @@
+<Configuration status="WARN" monitorInterval="3600"><Appenders><Console name="OUT"/></Appenders><Loggers><Root level="TRACE"><AppenderRef ref="OUT"/></Root></Loggers></Configuration>

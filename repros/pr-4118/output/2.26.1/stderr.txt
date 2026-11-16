@@ -1,0 +1,40 @@
+2026-11-16T12:43:16.941806Z Log4j2-TF-1-Scheduled-1 ERROR Log4j2 ConfigurationScheduler caught error running command
+java.lang.NullPointerException: Cannot invoke "org.apache.logging.log4j.core.config.CronScheduledFuture.getFireTime()" because "this.scheduledFuture" is null
+	at org.apache.logging.log4j.core.config.ConfigurationScheduler$CronRunnable.run(ConfigurationScheduler.java:234)
+	at java.base/java.util.concurrent.Executors$RunnableAdapter.call(Executors.java:539)
+	at java.base/java.util.concurrent.FutureTask.run(FutureTask.java:264)
+	at java.base/java.util.concurrent.ScheduledThreadPoolExecutor$ScheduledFutureTask.run(ScheduledThreadPoolExecutor.java:304)
+	at java.base/java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1136)
+	at java.base/java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:635)
+	at java.base/java.lang.Thread.run(Thread.java:840)
+
+2026-11-16T12:43:17.001203Z Log4j2-TF-1-Scheduled-1 ERROR Log4j2 ConfigurationScheduler caught error running command
+java.lang.NullPointerException: Cannot invoke "org.apache.logging.log4j.core.config.CronScheduledFuture.getFireTime()" because "this.scheduledFuture" is null
+	at org.apache.logging.log4j.core.config.ConfigurationScheduler$CronRunnable.run(ConfigurationScheduler.java:234)
+	at java.base/java.util.concurrent.Executors$RunnableAdapter.call(Executors.java:539)
+	at java.base/java.util.concurrent.FutureTask.run(FutureTask.java:264)
+	at java.base/java.util.concurrent.ScheduledThreadPoolExecutor$ScheduledFutureTask.run(ScheduledThreadPoolExecutor.java:304)
+	at java.base/java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1136)
+	at java.base/java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:635)
+	at java.base/java.lang.Thread.run(Thread.java:840)
+
+2026-11-16T12:43:18.001498Z Log4j2-TF-1-Scheduled-1 ERROR Log4j2 ConfigurationScheduler caught error running command
+java.lang.NullPointerException: Cannot invoke "org.apache.logging.log4j.core.config.CronScheduledFuture.getFireTime()" because "this.scheduledFuture" is null
+	at org.apache.logging.log4j.core.config.ConfigurationScheduler$CronRunnable.run(ConfigurationScheduler.java:234)
+	at java.base/java.util.concurrent.Executors$RunnableAdapter.call(Executors.java:539)
+	at java.base/java.util.concurrent.FutureTask.run(FutureTask.java:264)
+	at java.base/java.util.concurrent.ScheduledThreadPoolExecutor$ScheduledFutureTask.run(ScheduledThreadPoolExecutor.java:304)
+	at java.base/java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1136)
+	at java.base/java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:635)
+	at java.base/java.lang.Thread.run(Thread.java:840)
+
+2026-11-16T12:43:19.002117Z Log4j2-TF-1-Scheduled-1 ERROR Log4j2 ConfigurationScheduler caught error running command
+java.lang.NullPointerException: Cannot invoke "org.apache.logging.log4j.core.config.CronScheduledFuture.getFireTime()" because "this.scheduledFuture" is null
+	at org.apache.logging.log4j.core.config.ConfigurationScheduler$CronRunnable.run(ConfigurationScheduler.java:234)
+	at java.base/java.util.concurrent.Executors$RunnableAdapter.call(Executors.java:539)
+	at java.base/java.util.concurrent.FutureTask.run(FutureTask.java:264)
+	at java.base/java.util.concurrent.ScheduledThreadPoolExecutor$ScheduledFutureTask.run(ScheduledThreadPoolExecutor.java:304)
+	at java.base/java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1136)
+	at java.base/java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:635)
+	at java.base/java.lang.Thread.run(Thread.java:840)
+

@@ -1,0 +1,3 @@
+PASS no-arg constructor with message expected=Message from default constructor. observed=class=DefaultConstructorException message=Message from default constructor.
+PASS control: no-arg constructor with cause expected=Message from default constructor. observed=class=DefaultConstructorException message=Message from default constructor.
+PASS control: String constructor expected=String constructor message. observed=class=IllegalStateException message=String constructor message.

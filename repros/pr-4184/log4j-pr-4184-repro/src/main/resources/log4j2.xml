@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Configuration status="WARN">
+  <Appenders>
+    <File name="file" fileName="${sys:logfile}" append="false">
+      <PatternLayout disableAnsi="false" pattern="underline=%style{U}{underline}%nitalic=%style{I}{italic}%nbold-control=%style{B}{bold}%n"/>
+    </File>
+  </Appenders>
+  <Loggers>
+    <Root level="INFO">
+      <AppenderRef ref="file"/>
+    </Root>
+  </Loggers>
+</Configuration>

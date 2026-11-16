@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Configuration status="WARN">
+  <Appenders>
+    <File name="backslashN" fileName="${sys:outdir}/backslash-n.log" append="false">
+      <Rfc5424Layout appName="repro" mdcId="mdc" includeMDC="true" newLine="true" newLineEscape="\n"/>
+    </File>
+    <File name="bracket" fileName="${sys:outdir}/bracket.log" append="false">
+      <Rfc5424Layout appName="repro" mdcId="mdc" includeMDC="true" newLine="true" newLineEscape="]"/>
+    </File>
+    <File name="octal" fileName="${sys:outdir}/octal.log" append="false">
+      <Rfc5424Layout appName="repro" mdcId="mdc" includeMDC="true" newLine="true" newLineEscape="#012"/>
+    </File>
+  </Appenders>
+  <Loggers>
+    <Root level="INFO">
+      <AppenderRef ref="backslashN"/>
+      <AppenderRef ref="bracket"/>
+      <AppenderRef ref="octal"/>
+    </Root>
+  </Loggers>
+</Configuration>

@@ -1,0 +1,2 @@
+FAIL trustStoreLocation without type: threw java.lang.NullPointerException: Cannot invoke "String.equals(Object)" because "keyStoreType" is null
+version=2.26.1 0 status lines

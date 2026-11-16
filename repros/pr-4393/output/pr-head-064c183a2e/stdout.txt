@@ -1,0 +1,9 @@
+PASS escaped-delimiter input=${sys:undefined:-a$:-b} expected=a:-b observed=a:-b
+PASS escaped-escape input=${sys:undefined:-a$$b} expected=a$b observed=a$b
+PASS deferred-lookup-default-var-set input=${sys:x:-$${ctx:k}} expected=set observed=set
+PASS deferred-lookup-default-var-unset input=${sys:undefined:-$${ctx:k}} expected=${ctx:k} observed=${ctx:k}
+PASS nested-value-dollar-dollar input=${sys:undefined:-${sys:p}} expected=a$$b observed=a$$b
+PASS nested-value-dollar-brace input=${sys:undefined:-${sys:q}} expected=a$}b observed=a$}b
+PASS plain-default-control input=${sys:undefined:-plain} expected=plain observed=plain
+INFO trailing-escape input=${sys:undefined:-a$} observed=${sys:undefined:-a$}
+PASS layout-escaped-braces pattern=${sys:undefined.tz:-%d{HH:mm:ss$}{GMT+00$}} expected=<HH:mm:ss> msg observed=13:06:51 msg

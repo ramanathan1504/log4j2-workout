@@ -1,0 +1,2 @@
+mode=single ctx=CompositeTest event
+mode=composite ctx=CompositeTest event

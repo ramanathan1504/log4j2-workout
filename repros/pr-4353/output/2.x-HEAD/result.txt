@@ -1,0 +1,4 @@
+PASS converted fileName kept as lookup: fileName="${sys:repro.dir}/app.log"
+PASS converted property kept as lookup: <Property name="app.dir">${sys:repro.dir}/data</Property>
+PASS converted threshold kept as lookup: <ThresholdFilter onMatch="NEUTRAL" onMismatch="DENY" level="${sys:repro.threshold}"/>
+PASS deployed app wrote to its own repro.dir: deploy-host/app.log=written-by-converted-config

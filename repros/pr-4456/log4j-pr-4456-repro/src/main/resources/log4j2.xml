@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Configuration status="warn">
+  <Appenders>
+    <File name="latin1" fileName="${sys:logdir}/latin1.bin" append="false">
+      <Rfc5424Layout appName="repro" facility="LOCAL0" charset="ISO-8859-1" useTlsMessageFormat="true" includeMDC="false"/>
+    </File>
+    <File name="utf8" fileName="${sys:logdir}/utf8.bin" append="false">
+      <Rfc5424Layout appName="repro" facility="LOCAL0" charset="UTF-8" useTlsMessageFormat="true" includeMDC="false"/>
+    </File>
+  </Appenders>
+  <Loggers>
+    <Root level="info">
+      <AppenderRef ref="latin1"/>
+      <AppenderRef ref="utf8"/>
+    </Root>
+  </Loggers>
+</Configuration>

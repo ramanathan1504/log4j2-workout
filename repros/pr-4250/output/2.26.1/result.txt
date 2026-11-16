@@ -1,0 +1,8 @@
+version=2.26.1
+FAIL NullPointerException reported during configuration (count=2)
+FAIL no 'Ignoring unresolved element' status message (count=0)
+FAIL StdOut appender not built (STDOUT_APPENDER=absent)
+INFO marker line on stdout count=0
+INFO CONFIG_CLASS=PropertiesConfiguration
+INFO CONFIG_STATE=STARTED
+INFO DEFAULT_CONFIG=false

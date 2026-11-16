@@ -1,0 +1,3 @@
+PASS control %m: observed=[INFO] <b>Tom</b> & "Jerry" 'x'
+FAIL %m{html}: observed=[INFO] (6 chars)
+status lines: 0

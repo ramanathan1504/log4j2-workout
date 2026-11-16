@@ -1,0 +1,6 @@
+PASS processor-ran-control javac-exit=0 plugin-index-files=1 generated-classes=1
+FAIL field-without-setter-reported javac-exit=0
+PASS field-with-setter-not-reported-control not-flagged
+PASS suppressed-field-not-reported-control not-flagged
+javac-errors: 0
+classpath-log4j: log4j-api-2.24.3.jar log4j-core-3.0.0-beta3.jar log4j-kit-3.0.0-beta3.jar log4j-plugins-3.0.0-beta3.jar log4j-plugin-processor-3.0.0-beta3.jar 

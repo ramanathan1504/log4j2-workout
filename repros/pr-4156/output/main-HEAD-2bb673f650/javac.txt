@@ -1,0 +1,4 @@
+src/main/java/example/ReproLayout.java:25: error: The field `fieldWithoutSetter` does not have a public setter. Note that @SuppressWarnings("log4j.public.setter") can be used on the field to suppress this error.
+        private String fieldWithoutSetter;
+                       ^
+1 error

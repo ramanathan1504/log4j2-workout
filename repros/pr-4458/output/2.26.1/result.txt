@@ -1,0 +1,4 @@
+FAIL unknown key falls back to <Properties> expected=fromProperties observed=${java:build}
+PASS unknown key uses :-default expected=dflt observed=dflt
+PASS control java:version observed=Java version 17.0.14
+FAIL status errors 'Resolver failed to lookup java:'=3

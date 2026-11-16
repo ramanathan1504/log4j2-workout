@@ -1,0 +1,41 @@
+2026-11-16T13:02:47.930999Z main WARN No Log4j 2 configuration file found. Using default configuration (logging only errors to the console), or user programmatically provided configurations. Set system property 'log4j2.debug' to show Log4j 2 internal initialization logging. See https://logging.apache.org/log4j/2.x/manual/configuration.html for instructions on how to configure Log4j 2
+2026-11-16T13:02:48.036415Z main WARN Ignoring call to `j.u.l.Logger.setLevel(FINE)` from `Repro.main(Repro.java:11)`, since the Log4j API does not provide methods to modify the underlying implementation.
+To modify the configuration using JUL, use an `AbstractLoggerAdapter` appropriate for your logging implementation.
+Please report this to the maintainer of the calling class.
+Set log4j2.julMutatorAccess=warn to see further calls, or ignore to silence these warnings.
+See https://logging.apache.org/log4j/2.x/log4j-jul.html#log4j2.julLoggerAdapter for more information.
+2026-11-16T13:02:48.037013Z main WARN Ignoring call to `j.u.l.Logger.setUseParentHandlers(false)` from `Repro.main(Repro.java:12)`, since the Log4j API does not provide methods to modify the underlying implementation.
+To modify the configuration using JUL, use an `AbstractLoggerAdapter` appropriate for your logging implementation.
+Please report this to the maintainer of the calling class.
+Set log4j2.julMutatorAccess=warn to see further calls, or ignore to silence these warnings.
+See https://logging.apache.org/log4j/2.x/log4j-jul.html#log4j2.julLoggerAdapter for more information.
+2026-11-16T13:02:48.037396Z main WARN Ignoring call to `j.u.l.Logger.addHandler(java.util.logging.ConsoleHandler@fcd6521)` from `Repro.main(Repro.java:13)`, since the Log4j API does not provide methods to modify the underlying implementation.
+To modify the configuration using JUL, use an `AbstractLoggerAdapter` appropriate for your logging implementation.
+Please report this to the maintainer of the calling class.
+Set log4j2.julMutatorAccess=warn to see further calls, or ignore to silence these warnings.
+See https://logging.apache.org/log4j/2.x/log4j-jul.html#log4j2.julLoggerAdapter for more information.
+2026-11-16T13:02:48.037700Z main WARN Ignoring call to `j.u.l.Logger.removeHandler(java.util.logging.ConsoleHandler@fcd6521)` from `Repro.main(Repro.java:14)`, since the Log4j API does not provide methods to modify the underlying implementation.
+To modify the configuration using JUL, use an `AbstractLoggerAdapter` appropriate for your logging implementation.
+Please report this to the maintainer of the calling class.
+Set log4j2.julMutatorAccess=warn to see further calls, or ignore to silence these warnings.
+See https://logging.apache.org/log4j/2.x/log4j-jul.html#log4j2.julLoggerAdapter for more information.
+2026-11-16T13:02:48.043479Z main WARN Ignoring call to `j.u.l.Logger.setLevel(FINE)` from `Repro.main(Repro.java:11)`, since the Log4j API does not provide methods to modify the underlying implementation.
+To modify the configuration using JUL, use an `AbstractLoggerAdapter` appropriate for your logging implementation.
+Please report this to the maintainer of the calling class.
+Set log4j2.julMutatorAccess=warn to see further calls, or ignore to silence these warnings.
+See https://logging.apache.org/log4j/2.x/log4j-jul.html#log4j2.julLoggerAdapter for more information.
+2026-11-16T13:02:48.043897Z main WARN Ignoring call to `j.u.l.Logger.setUseParentHandlers(false)` from `Repro.main(Repro.java:12)`, since the Log4j API does not provide methods to modify the underlying implementation.
+To modify the configuration using JUL, use an `AbstractLoggerAdapter` appropriate for your logging implementation.
+Please report this to the maintainer of the calling class.
+Set log4j2.julMutatorAccess=warn to see further calls, or ignore to silence these warnings.
+See https://logging.apache.org/log4j/2.x/log4j-jul.html#log4j2.julLoggerAdapter for more information.
+2026-11-16T13:02:48.044192Z main WARN Ignoring call to `j.u.l.Logger.addHandler(java.util.logging.ConsoleHandler@fcd6521)` from `Repro.main(Repro.java:13)`, since the Log4j API does not provide methods to modify the underlying implementation.
+To modify the configuration using JUL, use an `AbstractLoggerAdapter` appropriate for your logging implementation.
+Please report this to the maintainer of the calling class.
+Set log4j2.julMutatorAccess=warn to see further calls, or ignore to silence these warnings.
+See https://logging.apache.org/log4j/2.x/log4j-jul.html#log4j2.julLoggerAdapter for more information.
+2026-11-16T13:02:48.044492Z main WARN Ignoring call to `j.u.l.Logger.removeHandler(java.util.logging.ConsoleHandler@fcd6521)` from `Repro.main(Repro.java:14)`, since the Log4j API does not provide methods to modify the underlying implementation.
+To modify the configuration using JUL, use an `AbstractLoggerAdapter` appropriate for your logging implementation.
+Please report this to the maintainer of the calling class.
+Set log4j2.julMutatorAccess=warn to see further calls, or ignore to silence these warnings.
+See https://logging.apache.org/log4j/2.x/log4j-jul.html#log4j2.julLoggerAdapter for more information.

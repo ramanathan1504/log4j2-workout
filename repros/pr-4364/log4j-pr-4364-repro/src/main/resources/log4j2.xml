@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Configuration status="WARN">
+  <Appenders>
+    <JMS-Javax name="JmsJavax"
+               factoryName="Repro$UnreachableNamingServerFactory"
+               providerUrl="tcp://broker-javax:61616"
+               securityPrincipalName="jndi-user"
+               securityCredentials="JndiSecretJavax"
+               factoryBindingName="ConnectionFactory"
+               destinationBindingName="logQueue"
+               userName="jms-user"
+               password="JmsSecretJavax">
+      <PatternLayout pattern="%m"/>
+    </JMS-Javax>
+    <JMS-Jakarta name="JmsJakarta"
+                 factoryName="Repro$UnreachableNamingServerFactory"
+                 providerUrl="tcp://broker-jakarta:61616"
+                 securityPrincipalName="jndi-user"
+                 securityCredentials="JndiSecretJakarta"
+                 factoryBindingName="ConnectionFactory"
+                 destinationBindingName="logQueue"
+                 userName="jms-user"
+                 password="JmsSecretJakarta">
+      <PatternLayout pattern="%m"/>
+    </JMS-Jakarta>
+  </Appenders>
+  <Loggers>
+    <Root level="INFO">
+      <AppenderRef ref="JmsJavax"/>
+      <AppenderRef ref="JmsJakarta"/>
+    </Root>
+  </Loggers>
+</Configuration>

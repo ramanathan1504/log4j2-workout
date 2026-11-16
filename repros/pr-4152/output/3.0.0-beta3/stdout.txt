@@ -1,0 +1,2 @@
+FAIL createFilter-with-null-useRawMsg observed=threw java.lang.NullPointerException: Cannot invoke "java.lang.Boolean.booleanValue()" because "useRawMsg" is null
+PASS xml-RegexFilter-without-useRawMsg-control lines=[public-message]

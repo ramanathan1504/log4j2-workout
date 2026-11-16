@@ -1,0 +1,3 @@
+PASS api-free-form-text observed=<StructuredData>\n<type>audit</type>\n<id>login@32473</id>\n<message>user &lt;alice&gt; logged in</message>\n<Map>\n  <Entry key="ip">10.0.0.1</Entry>\n</Map>\n</StructuredData>\n
+PASS api-text-and-map-key-message-distinct observed=<StructuredData>\n<type>audit</type>\n<id>login@32473</id>\n<message>text</message>\n<Map>\n  <Entry key="message">from-map</Entry>\n</Map>\n</StructuredData>\n
+PASS layout-%m{XML}-free-form-text observed=<StructuredData>\n<type>audit</type>\n<id>login@32473</id>\n<message>user &lt;alice&gt; logged in</message>\n<Map>\n  <Entry key="ip">10.0.0.1</Entry>\n</Map>\n</StructuredData>\n\n

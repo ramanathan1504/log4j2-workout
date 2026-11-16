@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Configuration status="warn">
+  <Properties>
+    <Property name="build">fromProperties</Property>
+  </Properties>
+  <Appenders>
+    <File name="file" fileName="${sys:logdir}/app.log" append="false">
+      <PatternLayout pattern="%m|${java:build}|${java:nosuchkey:-dflt}|${java:version}%n"/>
+    </File>
+  </Appenders>
+  <Loggers>
+    <Root level="info">
+      <AppenderRef ref="file"/>
+    </Root>
+  </Loggers>
+</Configuration>

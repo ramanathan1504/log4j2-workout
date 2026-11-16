@@ -1,0 +1,4 @@
+FAIL first cron fire runs the command observed=did-not-run-within-3s
+FAIL no run after cancel() within 2.5s observed=runsAfterCancel=3
+INFO total-runs=3 future=org.apache.logging.log4j.core.config.CronScheduledFuture@6193b845
+FAIL 'caught error running command' status errors observed=4

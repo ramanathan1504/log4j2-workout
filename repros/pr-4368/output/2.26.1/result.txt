@@ -1,0 +1,4 @@
+file bytes=7934, events read=[event-1], reader error=WriteAbortedException
+PASS control event-1 readable: true
+FAIL event-3 readable after failed event-2: false, reader error=WriteAbortedException
+status: 'Serialization of LogEvent failed' lines=1

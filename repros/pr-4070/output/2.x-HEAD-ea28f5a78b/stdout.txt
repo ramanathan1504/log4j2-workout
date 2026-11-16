@@ -1,0 +1,8 @@
+INFO mode=single log4jConfiguration=base.xml configuration=XmlConfiguration
+PASS mode=single ${web:servletContextName} -> CompositeTest
+PASS mode=single WebLoggerContextUtils.getServletContext() found=true
+PASS mode=single after setExternalContext(other) found=true lookup -> CompositeTest
+INFO mode=composite log4jConfiguration=base.xml,override.xml configuration=CompositeConfiguration
+PASS mode=composite ${web:servletContextName} -> CompositeTest
+PASS mode=composite WebLoggerContextUtils.getServletContext() found=true
+PASS mode=composite after setExternalContext(other) found=true lookup -> CompositeTest

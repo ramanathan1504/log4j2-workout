@@ -1,0 +1,1 @@
+logged=20 stored=0 distinct=0 duplicated=0 rowsSentPerFlush=[5, 5, 5, 5, 0] stop=DbAppenderLoggingException

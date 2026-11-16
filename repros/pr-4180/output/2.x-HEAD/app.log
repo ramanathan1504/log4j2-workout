@@ -1,0 +1,9 @@
+<StructuredData>
+<type>audit</type>
+<id>login@32473</id>
+<message>user &lt;alice&gt; logged in</message>
+<Map>
+  <Entry key="ip">10.0.0.1</Entry>
+</Map>
+</StructuredData>
+

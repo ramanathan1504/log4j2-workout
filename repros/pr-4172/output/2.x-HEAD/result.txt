@@ -1,0 +1,3 @@
+PASS valid-appender-configured configuration=XmlConfiguration appenders=[good]
+PASS valid-appender-received-event file=hello-from-log4j1
+statuslogger NullPointerException=0 could-not-create-warning=1

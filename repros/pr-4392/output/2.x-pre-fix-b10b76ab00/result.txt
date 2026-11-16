@@ -1,0 +1,6 @@
+archives=2
+non-daemon threads 3s after the rollover=[Log4j2-TF-1-RollingFileManager-1]
+main returning
+PASS control: rollover ran observed=archives=2
+FAIL no idle non-daemon Log4j thread observed=[Log4j2-TF-1-RollingFileManager-1]
+FAIL JVM exits after main returns observed=still running after 15s, killed

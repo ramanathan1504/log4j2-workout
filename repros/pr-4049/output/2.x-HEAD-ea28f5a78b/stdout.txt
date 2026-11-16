@@ -1,0 +1,4 @@
+PASS event-with-unloadable-frame written=true
+PASS missing-class frame rendered=true
+PASS control event-control written=true
+log-bytes=321

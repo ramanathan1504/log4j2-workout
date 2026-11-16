@@ -1,0 +1,2 @@
+FAIL native-resolvers observed=traced event
+FAIL pattern-resolver-control observed={"message":"traced event","traceId":"mainraceId","spanId":"%spanId","traceFlags":"mainraceFlags"}
