@@ -16,6 +16,17 @@ updates:
       interval: weekly
       day: monday
     open-pull-requests-limit: 5
+    # repros/ pin the exact versions a bug was reproduced on; a bump destroys the repro.
+    exclude-paths:
+      - "repros/**"
+    # Log4j is the axis under test, chosen per run by pack.sh (-Dlog4j.version), and
+    # log4j:log4j 1.2.17 is kept for the 1.x comparison. commons-compress is held
+    # below 1.28.0 so the zstd codec cells still see what users on 1.26/1.27 get.
+    # ignore applies to security updates too, so none of these opens a pull request.
+    ignore:
+      - dependency-name: "org.apache.logging.log4j:*"
+      - dependency-name: "log4j:log4j"
+      - dependency-name: "org.apache.commons:commons-compress"
     groups:
       routine:
         patterns: ["*"]

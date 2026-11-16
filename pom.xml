@@ -47,7 +47,7 @@
     <spring-boot.version>3.4.3</spring-boot.version>
     <ecs-layout.version>1.8.0</ecs-layout.version>
     <jackson.version>2.23.0</jackson.version>
-    <commons-compress.version>1.28.0</commons-compress.version>
+    <commons-compress.version>1.27.1</commons-compress.version>
     <kafka.version>4.4.0</kafka.version>
     <mysql.version>8.3.0</mysql.version>
     <postgresql.version>42.7.14</postgresql.version>
