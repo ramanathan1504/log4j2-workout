@@ -1,0 +1,8 @@
+2026-11-16 14:31:25,529 main ERROR Rfc5424Layout contains an invalid element or attribute "includeNL"
+FAIL | SENTINEL: Rfc5424Layout, events -1,-1,1,-1 ms on one layout | expected=1969-12-31T23:59:59.999Z,1969-12-31T23:59:59.999Z,1970-01-01T00:00:00.001Z,1969-12-31T23:59:59.999Z | observed=null,null,1970-01-01T00:00:00.001Z,1969-12-31T23:59:59.999Z
+FAIL | FRESH: Rfc5424Layout, first event -1 ms on a second layout instance | expected=1969-12-31T23:59:59.999Z | observed=null
+PASS | OTHER_PRE_EPOCH: Rfc5424Layout, first event -2 ms (pre-epoch, not the sentinel) | expected=1969-12-31T23:59:59.998Z | observed=1969-12-31T23:59:59.998Z
+PASS | WARM: Rfc5424Layout, 1000 ms then -1 ms (cache populated first) | expected=1970-01-01T00:00:01.000Z,1969-12-31T23:59:59.999Z | observed=1970-01-01T00:00:01.000Z,1969-12-31T23:59:59.999Z
+PASS | POS: control: Rfc5424Layout, 1000,2000 ms | expected=1970-01-01T00:00:01.000Z,1970-01-01T00:00:02.000Z | observed=1970-01-01T00:00:01.000Z,1970-01-01T00:00:02.000Z
+FAIL | YEAR: sweep: Rfc5424Layout, year 999 (DATE-FULLYEAR = 4DIGIT) | expected=0999-06-15T00:00:00.000Z | observed=999-06-10T00:00:00.000Z
+FAIL | custom clock returning -1,-1,1,-1 ms, Logger.info through File appender with Rfc5424Layout | expected=1969-12-31T23:59:59.999Z,1969-12-31T23:59:59.999Z,1970-01-01T00:00:00.001Z,1969-12-31T23:59:59.999Z | observed=null

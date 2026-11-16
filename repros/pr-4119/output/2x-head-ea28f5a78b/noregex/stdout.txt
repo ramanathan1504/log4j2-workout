@@ -1,0 +1,23 @@
+2026-11-16T12:46:49.556374Z main ERROR No `regex` provided for `RegexFilter`
+2026-11-16T12:46:49.560215Z main ERROR Could not create plugin of type class org.apache.logging.log4j.core.filter.RegexFilter for element RegexFilter
+org.apache.logging.log4j.core.config.ConfigurationException: Arguments given for element RegexFilter are invalid: field 'regex' has invalid value 'null'
+	at org.apache.logging.log4j.core.config.plugins.util.PluginBuilder.injectFields(PluginBuilder.java:208)
+	at org.apache.logging.log4j.core.config.plugins.util.PluginBuilder.build(PluginBuilder.java:123)
+	at org.apache.logging.log4j.core.config.AbstractConfiguration.createPluginObject(AbstractConfiguration.java:1250)
+	at org.apache.logging.log4j.core.config.AbstractConfiguration.createConfiguration(AbstractConfiguration.java:1169)
+	at org.apache.logging.log4j.core.config.AbstractConfiguration.createConfiguration(AbstractConfiguration.java:1161)
+	at org.apache.logging.log4j.core.config.AbstractConfiguration.createConfiguration(AbstractConfiguration.java:1161)
+	at org.apache.logging.log4j.core.config.AbstractConfiguration.doConfigure(AbstractConfiguration.java:734)
+	at org.apache.logging.log4j.core.config.AbstractConfiguration.initialize(AbstractConfiguration.java:271)
+	at org.apache.logging.log4j.core.config.AbstractConfiguration.start(AbstractConfiguration.java:324)
+	at org.apache.logging.log4j.core.LoggerContext.setConfiguration(LoggerContext.java:705)
+	at org.apache.logging.log4j.core.LoggerContext.reconfigure(LoggerContext.java:794)
+	at org.apache.logging.log4j.core.LoggerContext.reconfigure(LoggerContext.java:816)
+	at org.apache.logging.log4j.core.LoggerContext.start(LoggerContext.java:315)
+	at org.apache.logging.log4j.core.impl.Log4jContextFactory.getContext(Log4jContextFactory.java:272)
+	at org.apache.logging.log4j.core.impl.Log4jContextFactory.getContext(Log4jContextFactory.java:48)
+	at org.apache.logging.log4j.LogManager.getContext(LogManager.java:119)
+	at org.apache.logging.log4j.LogManager.getLogger(LogManager.java:624)
+	at Repro.main(Repro.java:21)
+
+RESULT case=noregex multiLineEventKept=true file=[first\nline two]

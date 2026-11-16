@@ -1,0 +1,2 @@
+FAIL DOMConfigurator-warning-links-production-site observed=https://logging.staged.apache.org/log4j/2.x/migrate-from-log4j1.html#log4j1.compatibility
+FAIL PropertyConfigurator-warning-links-production-site observed=https://logging.staged.apache.org/log4j/2.x/migrate-from-log4j1.html#log4j1.compatibility

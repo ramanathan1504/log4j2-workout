@@ -1,0 +1,4 @@
+Nov 16, 2026 6:41:53 PM com.mongodb.internal.diagnostics.logging.Loggers shouldUseSLF4J
+WARNING: SLF4J not found on the classpath.  Logging is disabled for the 'org.mongodb.driver' component
+2026-11-16T13:11:54.903431Z main WARN The MongoDb4 Appender is deprecated, use the MongoDb Appender instead.
+2026-11-16T13:11:54.957188Z main WARN NoSQL manager noSqlManager{ description=mongo, bufferSize=0, provider=MongoDb4Provider [connectionString=`mongodb://127.0.0.1:27017/log4j.pr4411_pr_head_e0ec46b7a9`, collectionSize=536870912, isCapped=false, databaseName=`log4j`, collectionName=`pr4411_pr_head_e0ec46b7a9`] } ignored reserved field '_id'; further reserved field warnings will be suppressed

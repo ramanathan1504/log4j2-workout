@@ -1,0 +1,3 @@
+PASS escaped output equals String.replace reference, length=7600
+INFO 16 KiB of '"' = 35 ms, 64 KiB = 886 ms
+FAIL 4x input costs 24.9x time (linear ~4x, quadratic ~16x; PASS below 8x)

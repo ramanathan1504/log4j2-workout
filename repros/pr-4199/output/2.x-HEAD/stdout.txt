@@ -1,0 +1,2 @@
+CONFIG_NAME=FromXml
+CONFIG_CLASS=XmlConfiguration

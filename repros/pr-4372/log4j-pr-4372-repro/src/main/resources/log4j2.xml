@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Configuration status="WARN">
+  <Appenders>
+    <RollingFile name="Rolling" fileName="${sys:logdir}/app.log" filePattern="${sys:logdir}/app-%i.log">
+      <PatternLayout pattern="%m%n"/>
+      <OnStartupTriggeringPolicy/>
+      <DefaultRolloverStrategy max="5"/>
+    </RollingFile>
+  </Appenders>
+  <Loggers>
+    <Root level="info">
+      <AppenderRef ref="Rolling"/>
+    </Root>
+  </Loggers>
+</Configuration>

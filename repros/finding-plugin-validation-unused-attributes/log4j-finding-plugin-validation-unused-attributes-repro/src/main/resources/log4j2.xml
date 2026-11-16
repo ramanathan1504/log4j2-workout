@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Configuration status="WARN">
+  <Appenders>
+    <File name="NoFileName" append="false" immediateFlush="true">
+      <PatternLayout pattern="%m%n"/>
+    </File>
+    <RandomAccessFile name="Host" fileName="${sys:outdir}/host.log" append="false">
+      <PatternLayout pattern="%m%n"/>
+      <StringMatchFilter onMatch="DENY" onMismatch="NEUTRAL"/>
+    </RandomAccessFile>
+    <Console name="Typo" bogusAttr="1">
+      <PatternLayout pattern="%m%n"/>
+    </Console>
+  </Appenders>
+  <Loggers>
+    <Logger name="noref" level="INFO" additivity="false">
+      <AppenderRef level="DEBUG"/>
+    </Logger>
+    <Root level="INFO">
+      <AppenderRef ref="Host"/>
+    </Root>
+  </Loggers>
+</Configuration>

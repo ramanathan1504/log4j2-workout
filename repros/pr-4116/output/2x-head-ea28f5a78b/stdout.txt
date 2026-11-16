@@ -1,0 +1,4 @@
+PASS filter-type observed=MarkerFilter
+PASS onMatch=DENY observed=DENY
+PASS onMisMatch=ACCEPT observed=ACCEPT
+PASS file-content (marked denied, unmarked kept) observed=[unmarked-event]

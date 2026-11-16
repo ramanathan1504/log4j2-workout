@@ -1,0 +1,6 @@
+version=main-HEAD-2bb673f650
+classpath-core=log4j-api-2.24.3.jar log4j-core-3.0.0-SNAPSHOT.jar log4j-kit-3.0.0-SNAPSHOT.jar log4j-plugins-3.0.0-SNAPSHOT.jar 
+PASS LoggerConfig(String, Level, boolean) expected=present observed=present
+PASS DEBUG com.example after addLogger expected=written observed=written
+PASS control before=false other-info=true
+status-logger:

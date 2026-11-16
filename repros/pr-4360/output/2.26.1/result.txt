@@ -1,0 +1,7 @@
+PASS control event-1 delivered: received, X-Tenant=acme
+FAIL event-2 with CRLF in X-Tenant delivered: not received
+PASS control event-3 delivered: received, X-Tenant=acme
+requests received=2 of 3
+status lines matching 'Unable to send HTTP|Skipping HTTP header': 1
+  2026-11-16T12:57:45.558578Z main ERROR Unable to send HTTP in appender [Http]
+  java.lang.IllegalArgumentException: Illegal character(s) in message header value: evil

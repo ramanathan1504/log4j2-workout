@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Configuration status="WARN">
+  <Appenders>
+    <RollingFile name="delayed" fileName="${sys:logdir}/delayed/app.log" filePattern="${sys:logdir}/delayed/app-%i.log.gz" maxRandomDelay="2">
+      <PatternLayout pattern="%m%n"/>
+      <SizeBasedTriggeringPolicy size="1 KB"/>
+      <DefaultRolloverStrategy max="20"/>
+    </RollingFile>
+    <RollingFile name="immediate" fileName="${sys:logdir}/immediate/app.log" filePattern="${sys:logdir}/immediate/app-%i.log.gz">
+      <PatternLayout pattern="%m%n"/>
+      <SizeBasedTriggeringPolicy size="1 KB"/>
+      <DefaultRolloverStrategy max="20"/>
+    </RollingFile>
+  </Appenders>
+  <Loggers>
+    <Logger name="delayed" level="INFO" additivity="false">
+      <AppenderRef ref="delayed"/>
+    </Logger>
+    <Logger name="immediate" level="INFO" additivity="false">
+      <AppenderRef ref="immediate"/>
+    </Logger>
+    <Root level="OFF"/>
+  </Loggers>
+</Configuration>

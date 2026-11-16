@@ -1,0 +1,4 @@
+info logger=org.apache.logging.log4j.core.async.AsyncLogger threadlocals=false
+PASS case-classic expected=Repro.main:65 thread=main observed=Repro.main:65 thread=main
+PASS case-builder expected=Repro.main:67 thread=main observed=Repro.main:67 thread=main
+PASS case-explicit expected=com.example.Caller.explicitMethod:4242 thread=main observed=com.example.Caller.explicitMethod:4242 thread=main

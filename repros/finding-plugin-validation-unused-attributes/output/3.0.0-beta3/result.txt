@@ -1,0 +1,10 @@
+unused-attribute-or-element-errors: [File:name, append, immediateFlush, File:<PatternLayout>, Console:bogusAttr, Appenders:<File>, AppenderRef:level, Logger:<AppenderRef>]
+PASS StringMatchFilter-without-text valid-attribute 'onMatch' reported-as-invalid=false expected=false
+FAIL File-without-fileName valid-attribute 'append' reported-as-invalid=true (File:name, append, immediateFlush) expected=false
+FAIL File-without-fileName-child valid-attribute '<PatternLayout>' reported-as-invalid=true (File:<PatternLayout>) expected=false
+FAIL Appenders-parent-of-failed-File valid-attribute '<File>' reported-as-invalid=true (Appenders:<File>) expected=false
+FAIL AppenderRef-without-ref valid-attribute 'level' reported-as-invalid=true (AppenderRef:level) expected=false
+FAIL AppenderRef-without-ref-parent valid-attribute '<AppenderRef>' reported-as-invalid=true (Logger:<AppenderRef>) expected=false
+PASS control-Console-typo-bogusAttr valid-attribute 'bogusAttr' reported-as-invalid=true (Console:bogusAttr) expected=true
+PASS control-valid-RandomAccessFile valid-attribute 'fileName' reported-as-invalid=false expected=false
+classpath-log4j: log4j-api-2.24.3.jar log4j-core-3.0.0-beta3.jar log4j-kit-3.0.0-beta3.jar log4j-plugins-3.0.0-beta3.jar 

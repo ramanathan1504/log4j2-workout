@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Configuration name="FromXml" status="WARN">
+  <Appenders>
+    <File name="File" fileName="${sys:repro.out}/app.log">
+      <PatternLayout pattern="XML %m%n"/>
+    </File>
+  </Appenders>
+  <Loggers>
+    <Root level="info">
+      <AppenderRef ref="File"/>
+    </Root>
+  </Loggers>
+</Configuration>

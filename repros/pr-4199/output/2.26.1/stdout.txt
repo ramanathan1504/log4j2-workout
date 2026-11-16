@@ -1,0 +1,2 @@
+CONFIG_NAME=Default@4eb7f003
+CONFIG_CLASS=DefaultConfiguration

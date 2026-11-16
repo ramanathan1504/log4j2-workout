@@ -1,0 +1,6 @@
+2026-11-16T12:45:19.253889Z main ERROR Could not instantiate appender class [com.example.NoSuchAppender] for name [ghost].
+PASS addAppender-bad-class observed=MBeanException cause=IllegalArgumentException: Could not instantiate appender class [com.example.NoSuchAppender] for name [ghost].
+2026-11-16T12:45:19.297760Z main ERROR Could not instantiate layout class [com.example.NoSuchLayout] for appender [sink].
+PASS setLayout-bad-class observed=MBeanException cause=IllegalArgumentException: Could not instantiate layout class [com.example.NoSuchLayout] for appender [sink].
+PASS setLayout-bad-class-keeps-layout observed=org.apache.log4j.PatternLayout@34a3d150
+PASS appender-still-writes observed=[after-failed-setLayout]

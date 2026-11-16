@@ -1,0 +1,3 @@
+version=2.26.1
+FAIL RootLogger.Builder.withFilter(Filter) observed=NoSuchMethodException
+PASS LoggerConfig.Builder (control).withFilter(Filter) observed=getFilter()==filter is true

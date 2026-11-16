@@ -1,0 +1,5 @@
+version=2.26.1
+binding=/Users/ramanathan/.m2/repository/org/apache/logging/log4j/log4j-slf4j2-impl/2.26.1/log4j-slf4j2-impl-2.26.1.jar
+PASS control Logger.info("info %s") expected="info formatted | Repro" observed="info formatted | Repro"
+FAIL LocationAwareLogger.log("location-aware %s") expected="location-aware formatted | Repro" observed="location-aware %s | Repro"
+status-logger:

@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Configuration status="WARN">
+  <Appenders>
+    <Http name="Http" url="http://127.0.0.1:${sys:repro.port}/ingest" connectTimeoutMillis="2000" readTimeoutMillis="2000">
+      <Property name="X-Tenant" value="$${ctx:tenant}"/>
+      <Property name="X-Static" value="static-ok"/>
+      <PatternLayout pattern="%m"/>
+    </Http>
+  </Appenders>
+  <Loggers>
+    <Root level="INFO">
+      <AppenderRef ref="Http"/>
+    </Root>
+  </Loggers>
+</Configuration>

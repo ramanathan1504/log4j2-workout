@@ -1,0 +1,10 @@
+version=2.x-HEAD-ea28f5a78b
+[jackson3-only] jackson jars: jackson-dataformat-yaml-3.2.3.jar jackson-core-3.2.3.jar jackson-databind-3.2.3.jar snakeyaml-engine-3.0.1.jar 
+PASS jackson3-only log4j2.yaml loaded expected=Jackson3Repro observed=Jackson3Repro (Jackson3YamlConfiguration)
+PASS jackson3-only DEBUG org.example.Service written expected>=1 observed=1
+[jackson3-only] status-logger:
+[jackson2+jackson3] jackson jars: jackson-dataformat-yaml-3.2.3.jar jackson-core-3.2.3.jar jackson-databind-3.2.3.jar snakeyaml-engine-3.0.1.jar jackson-dataformat-yaml-2.20.0.jar jackson-databind-2.20.0.jar snakeyaml-2.4.jar jackson-core-2.20.0.jar 
+PASS jackson2+jackson3 log4j2.yaml loaded expected=Jackson3Repro observed=Jackson3Repro (Jackson3YamlConfiguration)
+PASS jackson2+jackson3 DEBUG org.example.Service written expected>=1 observed=1
+FAIL jackson2+jackson3 'additivity: yes' keeps its Jackson 2 meaning (true, 2 copies) observed=1 copy
+[jackson2+jackson3] status-logger:

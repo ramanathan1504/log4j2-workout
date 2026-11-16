@@ -1,0 +1,6 @@
+archives=2
+non-daemon threads 3s after the rollover=[]
+main returning
+PASS control: rollover ran observed=archives=2
+PASS no idle non-daemon Log4j thread observed=[]
+PASS JVM exits after main returns observed=exited within 4s

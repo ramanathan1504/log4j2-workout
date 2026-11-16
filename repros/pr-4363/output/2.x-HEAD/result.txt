@@ -1,0 +1,5 @@
+PASS two environments give two managers: distinct=true
+PASS control manager A resolves from: ConnectionFactory from tcp://broker-a:61616
+PASS manager B resolves from: ConnectionFactory from tcp://broker-b:61616
+PASS InitialContextFactory calls=2 (expected 2)
+status lines matching 'JndiManager|InitialContext': 0

@@ -1,0 +1,65 @@
+ERROR StatusConsoleListener The parameter is null or empty: fileName
+ERROR StatusConsoleListener Could not configure plugin element File: org.apache.logging.log4j.plugins.validation.ConstraintValidationException: Validation failed for fileName (source: private java.lang.String org.apache.logging.log4j.core.appender.FileAppender$Builder.fileName) and value null
+ org.apache.logging.log4j.plugins.validation.ConstraintValidationException: Validation failed for fileName (source: private java.lang.String org.apache.logging.log4j.core.appender.FileAppender$Builder.fileName) and value null
+	at org.apache.logging.log4j.plugins.di.DefaultInjector.validate(DefaultInjector.java:380)
+	at org.apache.logging.log4j.plugins.di.DefaultInjector.injectField(DefaultInjector.java:410)
+	at org.apache.logging.log4j.plugins.di.DefaultInjector.injectFields(DefaultInjector.java:394)
+	at org.apache.logging.log4j.plugins.di.DefaultInjector.injectMembers(DefaultInjector.java:386)
+	at org.apache.logging.log4j.plugins.di.DefaultInjector.inject(DefaultInjector.java:459)
+	at org.apache.logging.log4j.plugins.di.DefaultInjector.configure(DefaultInjector.java:138)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1511)
+	at org.apache.logging.log4j.plugins.di.DefaultInjector.configure(DefaultInjector.java:132)
+	at org.apache.logging.log4j.core.config.AbstractConfiguration.createConfiguration(AbstractConfiguration.java:1066)
+	at org.apache.logging.log4j.core.config.AbstractConfiguration.doConfigure(AbstractConfiguration.java:681)
+	at org.apache.logging.log4j.core.config.AbstractConfiguration.initialize(AbstractConfiguration.java:270)
+	at org.apache.logging.log4j.core.config.AbstractConfiguration.start(AbstractConfiguration.java:333)
+	at org.apache.logging.log4j.core.LoggerContext.setConfiguration(LoggerContext.java:669)
+	at org.apache.logging.log4j.core.LoggerContext.start(LoggerContext.java:327)
+	at org.apache.logging.log4j.core.impl.Log4jContextFactory.startContext(Log4jContextFactory.java:412)
+	at org.apache.logging.log4j.core.impl.Log4jContextFactory.getContext(Log4jContextFactory.java:169)
+	at org.apache.logging.log4j.core.impl.Log4jContextFactory.getContext(Log4jContextFactory.java:50)
+	at org.apache.logging.log4j.LogManager.getContext(LogManager.java:120)
+	at org.apache.logging.log4j.LogManager.getLogger(LogManager.java:522)
+	at Repro.main(Repro.java:24)
+ERROR StatusConsoleListener File contains invalid attributes "name", "append", "immediateFlush"
+ERROR StatusConsoleListener appender File has no field or parameter that matches element PatternLayout
+ERROR StatusConsoleListener Console contains an invalid element or attribute "bogusAttr"
+ERROR StatusConsoleListener Skipping null child object with name File in element Appenders
+ERROR StatusConsoleListener Appenders has no field or parameter that matches element File
+ERROR StatusConsoleListener Appender references must contain a reference: ref
+ERROR StatusConsoleListener Could not configure plugin element AppenderRef: org.apache.logging.log4j.plugins.validation.ConstraintValidationException: Validation failed for ref (source: final java.lang.String ref) and value null
+ org.apache.logging.log4j.plugins.validation.ConstraintValidationException: Validation failed for ref (source: final java.lang.String ref) and value null
+	at org.apache.logging.log4j.plugins.di.DefaultInjector.validate(DefaultInjector.java:380)
+	at org.apache.logging.log4j.plugins.di.DefaultInjector.lambda$getArguments$33(DefaultInjector.java:560)
+	at java.base/java.util.stream.ReferencePipeline$3$1.accept(ReferencePipeline.java:197)
+	at java.base/java.util.Iterator.forEachRemaining(Iterator.java:133)
+	at java.base/java.util.Spliterators$IteratorSpliterator.forEachRemaining(Spliterators.java:1845)
+	at java.base/java.util.stream.AbstractPipeline.copyInto(AbstractPipeline.java:509)
+	at java.base/java.util.stream.AbstractPipeline.wrapAndCopyInto(AbstractPipeline.java:499)
+	at java.base/java.util.stream.AbstractPipeline.evaluate(AbstractPipeline.java:575)
+	at java.base/java.util.stream.AbstractPipeline.evaluateToArrayNode(AbstractPipeline.java:260)
+	at java.base/java.util.stream.ReferencePipeline.toArray(ReferencePipeline.java:616)
+	at java.base/java.util.stream.ReferencePipeline.toArray(ReferencePipeline.java:622)
+	at org.apache.logging.log4j.plugins.di.DefaultInjector.getArguments(DefaultInjector.java:563)
+	at org.apache.logging.log4j.plugins.di.DefaultInjector.getInjectablePluginInstance(DefaultInjector.java:487)
+	at org.apache.logging.log4j.plugins.di.DefaultInjector.inject(DefaultInjector.java:456)
+	at org.apache.logging.log4j.plugins.di.DefaultInjector.configure(DefaultInjector.java:138)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1511)
+	at org.apache.logging.log4j.plugins.di.DefaultInjector.configure(DefaultInjector.java:132)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1511)
+	at org.apache.logging.log4j.plugins.di.DefaultInjector.configure(DefaultInjector.java:132)
+	at org.apache.logging.log4j.core.config.AbstractConfiguration.createConfiguration(AbstractConfiguration.java:1066)
+	at org.apache.logging.log4j.core.config.AbstractConfiguration.doConfigure(AbstractConfiguration.java:681)
+	at org.apache.logging.log4j.core.config.AbstractConfiguration.initialize(AbstractConfiguration.java:270)
+	at org.apache.logging.log4j.core.config.AbstractConfiguration.start(AbstractConfiguration.java:333)
+	at org.apache.logging.log4j.core.LoggerContext.setConfiguration(LoggerContext.java:669)
+	at org.apache.logging.log4j.core.LoggerContext.start(LoggerContext.java:327)
+	at org.apache.logging.log4j.core.impl.Log4jContextFactory.startContext(Log4jContextFactory.java:412)
+	at org.apache.logging.log4j.core.impl.Log4jContextFactory.getContext(Log4jContextFactory.java:169)
+	at org.apache.logging.log4j.core.impl.Log4jContextFactory.getContext(Log4jContextFactory.java:50)
+	at org.apache.logging.log4j.LogManager.getContext(LogManager.java:120)
+	at org.apache.logging.log4j.LogManager.getLogger(LogManager.java:522)
+	at Repro.main(Repro.java:24)
+ERROR StatusConsoleListener AppenderRef contains an invalid element or attribute "level"
+ERROR StatusConsoleListener Skipping null child object with name AppenderRef in element Logger
+ERROR StatusConsoleListener Logger has no field or parameter that matches element AppenderRef

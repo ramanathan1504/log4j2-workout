@@ -1,0 +1,25 @@
+version=2.26.1
+log4j-jars=log4j-api-2.26.1.jar log4j-core-2.26.1.jar 
+FAIL after-startup raf raf-never expected=no app.log observed=app.log exists
+FAIL after-startup raf raf-used expected=no app.log observed=app.log exists
+FAIL after-startup mmf mmf-never expected=no app.log observed=app.log exists
+FAIL after-startup mmf mmf-used expected=no app.log observed=app.log exists
+FAIL after-startup rraf rraf-never expected=no app.log observed=app.log exists
+FAIL after-startup rraf rraf-used expected=no app.log observed=app.log exists
+PASS after-startup file (control) file-never expected=no app.log observed=no app.log (dir exists)
+PASS after-startup file (control) file-used expected=no app.log observed=no app.log (dir exists)
+FAIL after-shutdown raf raf-never expected=no app.log observed=app.log exists
+PASS after-event raf raf-used expected=first-event observed=first-event
+FAIL after-shutdown mmf mmf-never expected=no app.log observed=app.log exists
+PASS after-event mmf mmf-used expected=first-event observed=first-event
+FAIL after-shutdown rraf rraf-never expected=no app.log observed=app.log exists
+PASS after-event rraf rraf-used expected=first-event observed=first-event
+PASS after-shutdown file (control) file-never expected=no app.log observed=no app.log (dir exists)
+PASS after-event file file-used expected=first-event observed=first-event
+status-logger:
+  2026-11-16T13:05:10.052833Z main ERROR RandomAccessFile contains an invalid element or attribute "createOnDemand"
+  2026-11-16T13:05:10.062451Z main ERROR RandomAccessFile contains an invalid element or attribute "createOnDemand"
+  2026-11-16T13:05:10.065341Z main ERROR MemoryMappedFile contains an invalid element or attribute "createOnDemand"
+  2026-11-16T13:05:10.084680Z main ERROR MemoryMappedFile contains an invalid element or attribute "createOnDemand"
+  2026-11-16T13:05:10.146116Z main ERROR RollingRandomAccessFile contains an invalid element or attribute "createOnDemand"
+  2026-11-16T13:05:10.167062Z main ERROR RollingRandomAccessFile contains an invalid element or attribute "createOnDemand"

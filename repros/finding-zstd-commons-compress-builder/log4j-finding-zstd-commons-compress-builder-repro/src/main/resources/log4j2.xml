@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Configuration>
+  <Appenders>
+    <RollingFile name="zst" fileName="${sys:logdir}/zst/app.log" filePattern="${sys:logdir}/zst/app-%i.log.zst">
+      <PatternLayout pattern="%m%n"/>
+      <SizeBasedTriggeringPolicy size="100 MB"/>
+      <DefaultRolloverStrategy max="5"/>
+    </RollingFile>
+    <RollingFile name="zstLevel" fileName="${sys:logdir}/zstLevel/app.log" filePattern="${sys:logdir}/zstLevel/app-%i.log.zst">
+      <PatternLayout pattern="%m%n"/>
+      <SizeBasedTriggeringPolicy size="100 MB"/>
+      <DefaultRolloverStrategy max="5" compressionLevel="5"/>
+    </RollingFile>
+    <RollingFile name="bz2" fileName="${sys:logdir}/bz2/app.log" filePattern="${sys:logdir}/bz2/app-%i.log.bz2">
+      <PatternLayout pattern="%m%n"/>
+      <SizeBasedTriggeringPolicy size="100 MB"/>
+      <DefaultRolloverStrategy max="5"/>
+    </RollingFile>
+    <RollingFile name="deflate" fileName="${sys:logdir}/deflate/app.log" filePattern="${sys:logdir}/deflate/app-%i.log.deflate">
+      <PatternLayout pattern="%m%n"/>
+      <SizeBasedTriggeringPolicy size="100 MB"/>
+      <DefaultRolloverStrategy max="5"/>
+    </RollingFile>
+    <RollingFile name="xz" fileName="${sys:logdir}/xz/app.log" filePattern="${sys:logdir}/xz/app-%i.log.xz">
+      <PatternLayout pattern="%m%n"/>
+      <SizeBasedTriggeringPolicy size="100 MB"/>
+      <DefaultRolloverStrategy max="5"/>
+    </RollingFile>
+    <RollingFile name="gz" fileName="${sys:logdir}/gz/app.log" filePattern="${sys:logdir}/gz/app-%i.log.gz">
+      <PatternLayout pattern="%m%n"/>
+      <SizeBasedTriggeringPolicy size="100 MB"/>
+      <DefaultRolloverStrategy max="5"/>
+    </RollingFile>
+  </Appenders>
+  <Loggers>
+    <Logger name="zst" level="INFO" additivity="false"><AppenderRef ref="zst"/></Logger>
+    <Logger name="zstLevel" level="INFO" additivity="false"><AppenderRef ref="zstLevel"/></Logger>
+    <Logger name="bz2" level="INFO" additivity="false"><AppenderRef ref="bz2"/></Logger>
+    <Logger name="deflate" level="INFO" additivity="false"><AppenderRef ref="deflate"/></Logger>
+    <Logger name="xz" level="INFO" additivity="false"><AppenderRef ref="xz"/></Logger>
+    <Logger name="gz" level="INFO" additivity="false"><AppenderRef ref="gz"/></Logger>
+    <Root level="OFF"/>
+  </Loggers>
+</Configuration>

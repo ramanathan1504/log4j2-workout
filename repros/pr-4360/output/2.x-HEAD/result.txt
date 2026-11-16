@@ -1,0 +1,7 @@
+PASS control event-1 delivered: received, X-Tenant=acme
+PASS event-2 with CRLF in X-Tenant delivered: received, X-Tenant=<absent>
+PASS control event-3 delivered: received, X-Tenant=acme
+requests received=3 of 3
+status lines matching 'Unable to send HTTP|Skipping HTTP header': 1
+  2026-11-16T12:57:56.578060Z main WARN Skipping HTTP header X-Tenant because its value is invalid
+  java.lang.IllegalArgumentException: Illegal character(s) in message header value: evil

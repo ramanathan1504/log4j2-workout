@@ -1,0 +1,1 @@
+RESULT case=api createFilter(".*line.*", {"DOTALL"}) on multi-line message -> DENY

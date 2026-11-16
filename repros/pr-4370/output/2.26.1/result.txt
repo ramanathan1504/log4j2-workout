@@ -1,0 +1,5 @@
+PASS control StringMapMessage plain value: observed=user="alice" expected=user="alice"
+FAIL StringMapMessage value with " \ ]: observed=user="a"b\c]d" expected=user="a\"b\\c\]d"
+FAIL StructuredDataMessage value with " \ ]: observed=type [id@32473 user="a"b\c]d"] message expected=type [id@32473 user="a\"b\\c\]d"] message
+FAIL PatternLayout %m of StringMapMessage: observed=user="x" admin="true" expected=user="x\" admin=\"true"
+status lines: 0

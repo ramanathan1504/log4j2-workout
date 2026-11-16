@@ -1,0 +1,4 @@
+WARN com.foo event
+WARN com.foo.Service event
+INFO com.foobar.Service event
+INFO com.food event

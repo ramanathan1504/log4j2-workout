@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Configuration name="ReproXml" status="WARN">
+  <Appenders>
+    <Console name="Out"/>
+  </Appenders>
+  <Loggers>
+    <Root level="info">
+      <AppenderRef ref="Out"/>
+    </Root>
+  </Loggers>
+</Configuration>

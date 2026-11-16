@@ -1,0 +1,5 @@
+version=2.26.1 classpath: log4j2.json + log4j2.xml, no jackson-databind
+FAIL log4j2.xml not used (configuration name=Default@4eb7f003)
+FAIL INFO event not in app.log (lines=0)
+PASS inactive-factory diagnostic for log4j2.json still reported (count=1)
+INFO CONFIG_CLASS=DefaultConfiguration

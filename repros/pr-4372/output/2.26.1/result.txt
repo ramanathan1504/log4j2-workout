@@ -1,0 +1,3 @@
+runs=30 exposed=7 rolled=7
+PASS control: the condition occurred observed=7/30 runs with the rounded file time before the JVM start
+FAIL second LoggerContext does not roll the file this JVM created observed=rolled 7/30

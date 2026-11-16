@@ -1,0 +1,3 @@
+PASS File (control) content=HEADER\nDATA\nFOOTER\n
+FAIL RandomAccessFile content=DATA\nFOOTER\n
+FAIL MemoryMappedFile content=DATA\nFOOTER\n

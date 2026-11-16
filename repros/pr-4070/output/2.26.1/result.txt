@@ -1,0 +1,14 @@
+version=2.26.1
+classpath=/Users/ramanathan/.m2/repository/org/apache/logging/log4j/log4j-core/2.26.1/log4j-core-2.26.1.jar /Users/ramanathan/.m2/repository/org/apache/logging/log4j/log4j-web/2.26.1/log4j-web-2.26.1.jar 
+INFO mode=single log4jConfiguration=base.xml configuration=XmlConfiguration
+PASS mode=single ${web:servletContextName} -> CompositeTest
+PASS mode=single WebLoggerContextUtils.getServletContext() found=true
+PASS mode=single after setExternalContext(other) found=true lookup -> CompositeTest
+INFO mode=composite log4jConfiguration=base.xml,override.xml configuration=CompositeConfiguration
+FAIL mode=composite ${web:servletContextName} -> ${web:servletContextName}
+FAIL mode=composite WebLoggerContextUtils.getServletContext() found=false
+FAIL mode=composite after setExternalContext(other) found=false lookup -> ${web:servletContextName}
+app.log:
+  mode=single ctx=CompositeTest event
+  mode=composite ctx=${web:servletContextName} event
+status-logger:

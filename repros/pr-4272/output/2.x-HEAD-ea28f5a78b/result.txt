@@ -1,0 +1,6 @@
+classpath log4j jars: log4j-api-2.27.0-SNAPSHOT.jar 
+INFO forged legacy stream bytes=146 capacity=16777216 mappings=1
+PASS forged-legacy-capacity observed=rejected InvalidClassException: org.apache.logging.log4j.util.SortedArrayStringMap; local class incompatible: stream classdesc serialVersionUID = -5748905872274478116, local class serialVersionUID = -3516174557123823846
+PASS non-serializable-value observed=object=non-serializable
+PASS control-serializable-value observed=plain=text keys.length=4
+INFO serialVersionUID SortedArrayStringMap=-3516174557123823846

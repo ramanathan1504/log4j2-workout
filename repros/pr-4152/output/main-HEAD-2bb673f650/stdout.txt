@@ -1,0 +1,2 @@
+PASS createFilter-with-null-useRawMsg observed=created, filter(secret-message)=DENY
+PASS xml-RegexFilter-without-useRawMsg-control lines=[public-message]

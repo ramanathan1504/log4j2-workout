@@ -1,0 +1,18 @@
+package sample;
+
+import org.apache.logging.log4j.core.LogEvent;
+import org.apache.logging.log4j.core.config.plugins.Plugin;
+import org.apache.logging.log4j.core.lookup.StrLookup;
+
+@Plugin(name = "sample", category = StrLookup.CATEGORY)
+public final class SampleLookup implements StrLookup {
+    @Override
+    public String lookup(final String key) {
+        return key;
+    }
+
+    @Override
+    public String lookup(final LogEvent event, final String key) {
+        return key;
+    }
+}

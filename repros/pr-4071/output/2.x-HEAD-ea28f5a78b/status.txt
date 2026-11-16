@@ -1,0 +1,1 @@
+2026-11-16T12:48:32.653884Z main ERROR DefaultRolloverStrategy contains an invalid element or attribute "maxCompressionDelaySeconds"

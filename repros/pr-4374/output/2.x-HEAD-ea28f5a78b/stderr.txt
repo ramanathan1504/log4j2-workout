@@ -1,0 +1,108 @@
+SLF4J: Failed to load class "org.slf4j.impl.StaticLoggerBinder".
+SLF4J: Defaulting to no-operation (NOP) logger implementation
+SLF4J: See http://www.slf4j.org/codes.html#StaticLoggerBinder for further details.
+2026-11-16T13:09:24.627635Z main ERROR CassandraManager Cassandra Could not perform database startup operations: com.datastax.driver.core.exceptions.NoHostAvailableException: All host(s) tried for query failed (tried: localhost/127.0.0.1:50815 (com.datastax.driver.core.exceptions.TransportException: [localhost/127.0.0.1:50815] Error writing))
+com.datastax.driver.core.exceptions.NoHostAvailableException: All host(s) tried for query failed (tried: localhost/127.0.0.1:50815 (com.datastax.driver.core.exceptions.TransportException: [localhost/127.0.0.1:50815] Error writing))
+	at com.datastax.driver.core.ControlConnection.reconnectInternal(ControlConnection.java:270)
+	at com.datastax.driver.core.ControlConnection.connect(ControlConnection.java:109)
+	at com.datastax.driver.core.Cluster$Manager.negotiateProtocolVersionAndConnect(Cluster.java:1813)
+	at com.datastax.driver.core.Cluster$Manager.init(Cluster.java:1726)
+	at com.datastax.driver.core.Cluster.init(Cluster.java:214)
+	at com.datastax.driver.core.Cluster.connectAsync(Cluster.java:387)
+	at com.datastax.driver.core.Cluster.connect(Cluster.java:338)
+	at org.apache.logging.log4j.cassandra.CassandraManager.startupInternal(CassandraManager.java:85)
+	at org.apache.logging.log4j.core.appender.db.AbstractDatabaseManager.startup(AbstractDatabaseManager.java:295)
+	at org.apache.logging.log4j.core.appender.db.AbstractDatabaseAppender.start(AbstractDatabaseAppender.java:183)
+	at org.apache.logging.log4j.core.config.AbstractConfiguration.start(AbstractConfiguration.java:344)
+	at org.apache.logging.log4j.core.LoggerContext.setConfiguration(LoggerContext.java:705)
+	at org.apache.logging.log4j.core.LoggerContext.reconfigure(LoggerContext.java:820)
+	at org.apache.logging.log4j.core.LoggerContext.start(LoggerContext.java:344)
+	at org.apache.logging.log4j.core.impl.Log4jContextFactory.getContext(Log4jContextFactory.java:269)
+	at org.apache.logging.log4j.core.config.Configurator.initialize(Configurator.java:146)
+	at org.apache.logging.log4j.core.config.Configurator.initialize(Configurator.java:117)
+	at org.apache.logging.log4j.core.config.Configurator.initialize(Configurator.java:99)
+	at org.apache.logging.log4j.core.config.Configurator.initialize(Configurator.java:211)
+	at Repro.main(Repro.java:36)
+
+2026-11-16T13:09:24.656087Z main WARN CassandraManager Cassandra is not running; skipping database write until startup succeeds
+SLF4J: Failed to load class "org.slf4j.impl.StaticLoggerBinder".
+SLF4J: Defaulting to no-operation (NOP) logger implementation
+SLF4J: See http://www.slf4j.org/codes.html#StaticLoggerBinder for further details.
+2026-11-16T13:09:31.441779Z main ERROR CassandraManager Cassandra Could not perform database startup operations: com.datastax.driver.core.exceptions.NoHostAvailableException: All host(s) tried for query failed (tried: localhost/127.0.0.1:50817 (com.datastax.driver.core.exceptions.TransportException: [localhost/127.0.0.1:50817] Channel has been closed))
+com.datastax.driver.core.exceptions.NoHostAvailableException: All host(s) tried for query failed (tried: localhost/127.0.0.1:50817 (com.datastax.driver.core.exceptions.TransportException: [localhost/127.0.0.1:50817] Channel has been closed))
+	at com.datastax.driver.core.ControlConnection.reconnectInternal(ControlConnection.java:270)
+	at com.datastax.driver.core.ControlConnection.connect(ControlConnection.java:109)
+	at com.datastax.driver.core.Cluster$Manager.negotiateProtocolVersionAndConnect(Cluster.java:1813)
+	at com.datastax.driver.core.Cluster$Manager.init(Cluster.java:1726)
+	at com.datastax.driver.core.Cluster.init(Cluster.java:214)
+	at com.datastax.driver.core.Cluster.connectAsync(Cluster.java:387)
+	at com.datastax.driver.core.Cluster.connect(Cluster.java:338)
+	at org.apache.logging.log4j.cassandra.CassandraManager.startupInternal(CassandraManager.java:85)
+	at org.apache.logging.log4j.core.appender.db.AbstractDatabaseManager.startup(AbstractDatabaseManager.java:295)
+	at org.apache.logging.log4j.core.appender.db.AbstractDatabaseAppender.start(AbstractDatabaseAppender.java:183)
+	at org.apache.logging.log4j.core.config.AbstractConfiguration.start(AbstractConfiguration.java:344)
+	at org.apache.logging.log4j.core.LoggerContext.setConfiguration(LoggerContext.java:705)
+	at org.apache.logging.log4j.core.LoggerContext.reconfigure(LoggerContext.java:820)
+	at org.apache.logging.log4j.core.LoggerContext.start(LoggerContext.java:344)
+	at org.apache.logging.log4j.core.impl.Log4jContextFactory.getContext(Log4jContextFactory.java:269)
+	at org.apache.logging.log4j.core.config.Configurator.initialize(Configurator.java:146)
+	at org.apache.logging.log4j.core.config.Configurator.initialize(Configurator.java:117)
+	at org.apache.logging.log4j.core.config.Configurator.initialize(Configurator.java:99)
+	at org.apache.logging.log4j.core.config.Configurator.initialize(Configurator.java:211)
+	at Repro.main(Repro.java:36)
+
+2026-11-16T13:09:31.516153Z main WARN CassandraManager Cassandra is not running; skipping database write until startup succeeds
+SLF4J: Failed to load class "org.slf4j.impl.StaticLoggerBinder".
+SLF4J: Defaulting to no-operation (NOP) logger implementation
+SLF4J: See http://www.slf4j.org/codes.html#StaticLoggerBinder for further details.
+2026-11-16T13:09:40.154658Z main ERROR CassandraManager Cassandra Could not perform database startup operations: com.datastax.driver.core.exceptions.NoHostAvailableException: All host(s) tried for query failed (tried: localhost/127.0.0.1:50819 (com.datastax.driver.core.exceptions.TransportException: [localhost/127.0.0.1:50819] Channel has been closed))
+com.datastax.driver.core.exceptions.NoHostAvailableException: All host(s) tried for query failed (tried: localhost/127.0.0.1:50819 (com.datastax.driver.core.exceptions.TransportException: [localhost/127.0.0.1:50819] Channel has been closed))
+	at com.datastax.driver.core.ControlConnection.reconnectInternal(ControlConnection.java:270)
+	at com.datastax.driver.core.ControlConnection.connect(ControlConnection.java:109)
+	at com.datastax.driver.core.Cluster$Manager.negotiateProtocolVersionAndConnect(Cluster.java:1813)
+	at com.datastax.driver.core.Cluster$Manager.init(Cluster.java:1726)
+	at com.datastax.driver.core.Cluster.init(Cluster.java:214)
+	at com.datastax.driver.core.Cluster.connectAsync(Cluster.java:387)
+	at com.datastax.driver.core.Cluster.connect(Cluster.java:338)
+	at org.apache.logging.log4j.cassandra.CassandraManager.startupInternal(CassandraManager.java:85)
+	at org.apache.logging.log4j.core.appender.db.AbstractDatabaseManager.startup(AbstractDatabaseManager.java:295)
+	at org.apache.logging.log4j.core.appender.db.AbstractDatabaseAppender.start(AbstractDatabaseAppender.java:183)
+	at org.apache.logging.log4j.core.config.AbstractConfiguration.start(AbstractConfiguration.java:344)
+	at org.apache.logging.log4j.core.LoggerContext.setConfiguration(LoggerContext.java:705)
+	at org.apache.logging.log4j.core.LoggerContext.reconfigure(LoggerContext.java:820)
+	at org.apache.logging.log4j.core.LoggerContext.start(LoggerContext.java:344)
+	at org.apache.logging.log4j.core.impl.Log4jContextFactory.getContext(Log4jContextFactory.java:269)
+	at org.apache.logging.log4j.core.config.Configurator.initialize(Configurator.java:146)
+	at org.apache.logging.log4j.core.config.Configurator.initialize(Configurator.java:117)
+	at org.apache.logging.log4j.core.config.Configurator.initialize(Configurator.java:99)
+	at org.apache.logging.log4j.core.config.Configurator.initialize(Configurator.java:211)
+	at Repro.main(Repro.java:36)
+
+2026-11-16T13:09:40.203635Z main WARN CassandraManager Cassandra is not running; skipping database write until startup succeeds
+SLF4J: Failed to load class "org.slf4j.impl.StaticLoggerBinder".
+SLF4J: Defaulting to no-operation (NOP) logger implementation
+SLF4J: See http://www.slf4j.org/codes.html#StaticLoggerBinder for further details.
+2026-11-16T13:09:50.934696Z main ERROR CassandraManager Cassandra Could not perform database startup operations: com.datastax.driver.core.exceptions.NoHostAvailableException: All host(s) tried for query failed (tried: localhost/127.0.0.1:50822 (com.datastax.driver.core.exceptions.TransportException: [localhost/127.0.0.1:50822] Error writing))
+com.datastax.driver.core.exceptions.NoHostAvailableException: All host(s) tried for query failed (tried: localhost/127.0.0.1:50822 (com.datastax.driver.core.exceptions.TransportException: [localhost/127.0.0.1:50822] Error writing))
+	at com.datastax.driver.core.ControlConnection.reconnectInternal(ControlConnection.java:270)
+	at com.datastax.driver.core.ControlConnection.connect(ControlConnection.java:109)
+	at com.datastax.driver.core.Cluster$Manager.negotiateProtocolVersionAndConnect(Cluster.java:1813)
+	at com.datastax.driver.core.Cluster$Manager.init(Cluster.java:1726)
+	at com.datastax.driver.core.Cluster.init(Cluster.java:214)
+	at com.datastax.driver.core.Cluster.connectAsync(Cluster.java:387)
+	at com.datastax.driver.core.Cluster.connect(Cluster.java:338)
+	at org.apache.logging.log4j.cassandra.CassandraManager.startupInternal(CassandraManager.java:85)
+	at org.apache.logging.log4j.core.appender.db.AbstractDatabaseManager.startup(AbstractDatabaseManager.java:295)
+	at org.apache.logging.log4j.core.appender.db.AbstractDatabaseAppender.start(AbstractDatabaseAppender.java:183)
+	at org.apache.logging.log4j.core.config.AbstractConfiguration.start(AbstractConfiguration.java:344)
+	at org.apache.logging.log4j.core.LoggerContext.setConfiguration(LoggerContext.java:705)
+	at org.apache.logging.log4j.core.LoggerContext.reconfigure(LoggerContext.java:820)
+	at org.apache.logging.log4j.core.LoggerContext.start(LoggerContext.java:344)
+	at org.apache.logging.log4j.core.impl.Log4jContextFactory.getContext(Log4jContextFactory.java:269)
+	at org.apache.logging.log4j.core.config.Configurator.initialize(Configurator.java:146)
+	at org.apache.logging.log4j.core.config.Configurator.initialize(Configurator.java:117)
+	at org.apache.logging.log4j.core.config.Configurator.initialize(Configurator.java:99)
+	at org.apache.logging.log4j.core.config.Configurator.initialize(Configurator.java:211)
+	at Repro.main(Repro.java:36)
+
+2026-11-16T13:09:50.972299Z main WARN CassandraManager Cassandra is not running; skipping database write until startup succeeds

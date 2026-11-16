@@ -1,0 +1,6 @@
+PASS single+factory initial: config=ProgrammaticXmlConfiguration loggers=[, programmatic] programmatic.trace=true from.xml.debug=false
+PASS single+factory after reconfigure: config=ProgrammaticXmlConfiguration loggers=[, programmatic] programmatic.trace=true from.xml.debug=false
+FAIL composite+factory initial: config=CompositeConfiguration loggers=[, from.xml] programmatic.trace=false from.xml.debug=true
+FAIL composite+factory after reconfigure: config=CompositeConfiguration loggers=[, from.xml] programmatic.trace=false from.xml.debug=true
+FAIL composite+no-factory initial: config=CompositeConfiguration loggers=[, from.xml] programmatic.trace=false from.xml.debug=true
+FAIL composite+no-factory after reconfigure: config=CompositeConfiguration loggers=[, from.xml] programmatic.trace=false from.xml.debug=true

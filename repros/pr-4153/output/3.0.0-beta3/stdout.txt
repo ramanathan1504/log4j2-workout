@@ -1,0 +1,3 @@
+FAIL xml-StringMatchFilter-without-text-not-built lines=[]
+FAIL builder-without-text-build() returned=filter text=''
+PASS xml-StringMatchFilter-with-text-control lines=[public-message]

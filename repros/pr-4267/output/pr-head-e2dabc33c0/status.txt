@@ -1,0 +1,1 @@
+2026-11-16T13:03:25.963666Z main ERROR SmtpAppender 'mail' ignores the header with the invalid name 'X:Invalid'.

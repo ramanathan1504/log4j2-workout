@@ -1,0 +1,7 @@
+log4j-api-2.24.3.jar
+log4j-core-3.0.0-SNAPSHOT.jar
+log4j-kit-3.0.0-SNAPSHOT.jar
+log4j-plugins-3.0.0-SNAPSHOT.jar
+commons-compress-1.27.1.jar
+zstd-jni-1.5.7-24.jar
+log4j-compress-3.0.0-SNAPSHOT.jar

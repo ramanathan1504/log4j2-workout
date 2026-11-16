@@ -1,0 +1,2 @@
+FAIL ecs-mdc-cannot-overwrite-structural-fields message-keys=2 log.level-keys=2 forged-present=true line={"@timestamp":"2026-11-16T12:46:25.824Z","ecs.version":"1.2.0","log.level":"INFO","message":"real-message","process.thread.name":"main","log.logger":"ecs","log.level":"FATAL","message":"forged-by-mdc","secret":"s3cr3t","user":"alice"}
+FAIL mdc-key-allowed-[user] line=real-message

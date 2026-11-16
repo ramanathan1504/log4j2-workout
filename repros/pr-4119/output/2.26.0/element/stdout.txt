@@ -1,0 +1,2 @@
+2026-11-16T12:46:36.285659Z main ERROR RegexFilter contains an invalid element or attribute "PatternFlags"
+RESULT case=element multiLineEventKept=false file=[]

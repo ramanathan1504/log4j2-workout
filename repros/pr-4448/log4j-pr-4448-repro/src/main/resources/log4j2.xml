@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Configuration status="WARN">
+  <Appenders>
+    <RollingFile name="default-gz-level0" fileName="${sys:outdir}/logs/default-gz-level0/app.log" filePattern="${sys:outdir}/logs/default-gz-level0/app-%i.log.gz">
+      <PatternLayout pattern="%m%n"/>
+      <SizeBasedTriggeringPolicy size="40KB"/>
+      <DefaultRolloverStrategy compressionLevel="0"/>
+    </RollingFile>
+    <RollingFile name="default-gz-level0-temp" fileName="${sys:outdir}/logs/default-gz-level0-temp/app.log" filePattern="${sys:outdir}/logs/default-gz-level0-temp/app-%i.log.gz">
+      <PatternLayout pattern="%m%n"/>
+      <SizeBasedTriggeringPolicy size="40KB"/>
+      <DefaultRolloverStrategy compressionLevel="0" tempCompressedFilePattern="${sys:outdir}/logs/default-gz-level0-temp/tmp/app-%i.log.gz"/>
+    </RollingFile>
+    <RollingFile name="default-zip-level0" fileName="${sys:outdir}/logs/default-zip-level0/app.log" filePattern="${sys:outdir}/logs/default-zip-level0/app-%i.log.zip">
+      <PatternLayout pattern="%m%n"/>
+      <SizeBasedTriggeringPolicy size="40KB"/>
+      <DefaultRolloverStrategy compressionLevel="0"/>
+    </RollingFile>
+    <RollingFile name="default-gz-level9" fileName="${sys:outdir}/logs/default-gz-level9/app.log" filePattern="${sys:outdir}/logs/default-gz-level9/app-%i.log.gz">
+      <PatternLayout pattern="%m%n"/>
+      <SizeBasedTriggeringPolicy size="40KB"/>
+      <DefaultRolloverStrategy compressionLevel="9"/>
+    </RollingFile>
+    <RollingFile name="default-gz-unset" fileName="${sys:outdir}/logs/default-gz-unset/app.log" filePattern="${sys:outdir}/logs/default-gz-unset/app-%i.log.gz">
+      <PatternLayout pattern="%m%n"/>
+      <SizeBasedTriggeringPolicy size="40KB"/>
+      <DefaultRolloverStrategy/>
+    </RollingFile>
+    <RollingFile name="default-gz-level42" fileName="${sys:outdir}/logs/default-gz-level42/app.log" filePattern="${sys:outdir}/logs/default-gz-level42/app-%i.log.gz">
+      <PatternLayout pattern="%m%n"/>
+      <SizeBasedTriggeringPolicy size="40KB"/>
+      <DefaultRolloverStrategy compressionLevel="42"/>
+    </RollingFile>
+    <RollingFile name="direct-gz-level0" filePattern="${sys:outdir}/logs/direct-gz-level0/app-%i.log.gz">
+      <PatternLayout pattern="%m%n"/>
+      <SizeBasedTriggeringPolicy size="40KB"/>
+      <DirectWriteRolloverStrategy compressionLevel="0"/>
+    </RollingFile>
+    <RollingFile name="direct-gz-level0-temp" filePattern="${sys:outdir}/logs/direct-gz-level0-temp/app-%i.log.gz">
+      <PatternLayout pattern="%m%n"/>
+      <SizeBasedTriggeringPolicy size="40KB"/>
+      <DirectWriteRolloverStrategy compressionLevel="0" tempCompressedFilePattern="${sys:outdir}/logs/direct-gz-level0-temp/tmp/app-%i.log.gz"/>
+    </RollingFile>
+  </Appenders>
+  <Loggers>
+    <Root level="INFO">
+      <AppenderRef ref="default-gz-level0"/>
+      <AppenderRef ref="default-gz-level0-temp"/>
+      <AppenderRef ref="default-zip-level0"/>
+      <AppenderRef ref="default-gz-level9"/>
+      <AppenderRef ref="default-gz-unset"/>
+      <AppenderRef ref="default-gz-level42"/>
+      <AppenderRef ref="direct-gz-level0"/>
+      <AppenderRef ref="direct-gz-level0-temp"/>
+    </Root>
+  </Loggers>
+</Configuration>

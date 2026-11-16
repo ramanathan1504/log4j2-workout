@@ -1,0 +1,2 @@
+<134>1 2026-11-16T18:42:31.223+05:30 localhost repro 74024 - [mdc@32473 mdcKey="A#012B"] mdc-event
+<134>1 2026-11-16T18:42:31.340+05:30 localhost repro 74024 audit [sd@32473 sdKey="C#012D"] sd-event

@@ -1,0 +1,4 @@
+FAIL logger.db.property expected=subsystem=Database line=app.db|db-event|subsystem=|region=
+FAIL rootLogger.property expected=region=eu-west line=app.web|root-event|subsystem=|region=
+status-logger-lines: 0
+classpath-log4j: log4j-core-2.26.1.jar

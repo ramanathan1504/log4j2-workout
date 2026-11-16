@@ -1,0 +1,8 @@
+<Configuration status="WARN">
+  <Appenders>
+    <File name="F" fileName="${sys:out}/app.log" append="false"><PatternLayout pattern="%m%n"/></File>
+  </Appenders>
+  <Loggers>
+    <Root level="INFO"><AppenderRef ref="F"/></Root>
+  </Loggers>
+</Configuration>

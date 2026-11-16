@@ -1,0 +1,4 @@
+FAIL underline expected=ESC[4mUESC[m observed=ESC[3mUESC[m
+FAIL italic expected=ESC[3mIESC[m observed=ESC[mIESC[m
+PASS bold-control expected=ESC[1mBESC[m observed=ESC[1mBESC[m
+statuslogger-lines=37 2026-11-16T12:37:19.874005Z main WARN The style attribute italic is incorrect.

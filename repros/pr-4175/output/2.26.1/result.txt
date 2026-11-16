@@ -1,0 +1,8 @@
+provider: TraceContextProvider SPI absent from log4j-api, provider not compiled
+FAIL native-resolvers observed=traced event
+FAIL pattern-resolver-control observed={"message":"traced event","traceId":"mainraceId","spanId":"%spanId","traceFlags":"mainraceFlags"}
+status: 2026-11-16T12:58:35.002182Z main ERROR Could not create plugin of type class org.apache.logging.log4j.layout.template.json.JsonTemplateLayout for element JsonTemplateLayout: java.lang.IllegalArgumentException: unknown resolver: traceId
+status: java.lang.IllegalArgumentException: unknown resolver: traceId
+status: 	at org.apache.logging.log4j.layout.template.json.resolver.TemplateResolvers.ofResolver(TemplateResolvers.java:397)
+status: 	at org.apache.logging.log4j.layout.template.json.resolver.TemplateResolvers.ofMap(TemplateResolvers.java:192)
+status: 	at org.apache.logging.log4j.layout.template.json.resolver.TemplateResolvers.ofObject(TemplateResolvers.java:123)

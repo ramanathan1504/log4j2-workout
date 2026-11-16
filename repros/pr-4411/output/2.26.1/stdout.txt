@@ -1,0 +1,3 @@
+FAIL both-events-stored expected=2 observed=1 users=[u1]
+FAIL reserved-_id-not-copied expected=ObjectId observed=[String:fixed-id]
+PASS non-reserved-_rev-kept-control expected=r1 present observed=[r1]

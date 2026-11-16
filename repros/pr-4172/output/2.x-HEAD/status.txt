@@ -1,0 +1,131 @@
+2026-11-16T12:42:40.822352Z main DEBUG Took 0.264507 seconds to load 261 plugins from jdk.internal.loader.ClassLoaders$AppClassLoader@67424e82
+2026-11-16T12:42:40.866240Z main DEBUG PluginManager 'Lookup' found 15 plugins
+2026-11-16T12:42:40.881009Z main DEBUG Loaded provider:
+Provider 'org.apache.logging.log4j.core.impl.Log4jProvider'
+	priority = 10
+	loggerContextFactory = org.apache.logging.log4j.core.impl.Log4jContextFactory
+2026-11-16T12:42:40.888185Z main INFO Using provider:
+Provider 'org.apache.logging.log4j.core.impl.Log4jProvider'
+	priority = 10
+	loggerContextFactory = org.apache.logging.log4j.core.impl.Log4jContextFactory
+2026-11-16T12:42:40.905473Z main DEBUG AsyncLogger.ThreadNameStrategy=UNCACHED (user specified null, default is UNCACHED)
+2026-11-16T12:42:40.910007Z main TRACE Using default SystemClock for timestamps.
+2026-11-16T12:42:40.914707Z main DEBUG org.apache.logging.log4j.core.util.SystemClock supports precise timestamps.
+2026-11-16T12:42:40.934609Z main DEBUG Using ShutdownCallbackRegistry class org.apache.logging.log4j.core.util.DefaultShutdownCallbackRegistry
+2026-11-16T12:42:40.939866Z main DEBUG PluginManager 'Lookup' found 15 plugins
+2026-11-16T12:42:40.945685Z main DEBUG Starting OutputStreamManager SYSTEM_OUT.false.false-1
+2026-11-16T12:42:40.946689Z main DEBUG Starting LoggerContext[name=67424e82, org.apache.logging.log4j.core.LoggerContext@75881071]...
+2026-11-16T12:42:40.947011Z main DEBUG Reconfiguration started for context[name=67424e82] at URI null (org.apache.logging.log4j.core.LoggerContext@75881071) with optional ClassLoader: null
+2026-11-16T12:42:40.948305Z main DEBUG PluginManager 'Lookup' found 15 plugins
+2026-11-16T12:42:40.949532Z main DEBUG PluginManager 'ConfigurationFactory' found 6 plugins
+2026-11-16T12:42:40.965791Z main DEBUG PluginManager 'Lookup' found 15 plugins
+2026-11-16T12:42:40.966359Z main DEBUG PluginManager 'Lookup' found 15 plugins
+2026-11-16T12:42:40.966915Z main DEBUG Missing dependencies for Yaml support, ConfigurationFactory org.apache.logging.log4j.core.config.yaml.YamlConfigurationFactory is inactive
+2026-11-16T12:42:40.967072Z main DEBUG PluginManager 'Lookup' found 15 plugins
+2026-11-16T12:42:40.967418Z main DEBUG Missing dependencies for Json support, ConfigurationFactory org.apache.logging.log4j.core.config.json.JsonConfigurationFactory is inactive
+2026-11-16T12:42:40.967556Z main DEBUG PluginManager 'Lookup' found 15 plugins
+2026-11-16T12:42:40.967918Z main DEBUG PluginManager 'Lookup' found 15 plugins
+2026-11-16T12:42:40.968301Z main DEBUG PluginManager 'Lookup' found 15 plugins
+2026-11-16T12:42:40.970607Z main DEBUG Using configurationFactory org.apache.logging.log4j.core.config.ConfigurationFactory$Factory@44a3ec6b
+2026-11-16T12:42:40.972249Z main TRACE Trying to find [log4j.xml] using context class loader jdk.internal.loader.ClassLoaders$AppClassLoader@67424e82.
+2026-11-16T12:42:40.972734Z main DEBUG Found [log4j.xml] at file:/Users/ramanathan/apache/log4j2-workout/repros/pr-4172/log4j-pr-4172-repro/target/classes/log4j.xml using context class loader.
+2026-11-16T12:42:40.995874Z main DEBUG PluginManager 'Lookup' found 15 plugins
+2026-11-16T12:42:40.998394Z main DEBUG PluginManager 'Log4j Builder' found 23 plugins
+2026-11-16T12:42:41.034994Z main DEBUG System property is : null
+2026-11-16T12:42:41.104588Z main DEBUG Standard DocumentBuilderFactory search succeeded.
+2026-11-16T12:42:41.104734Z main DEBUG DocumentBuilderFactory is: com.sun.org.apache.xerces.internal.jaxp.DocumentBuilderFactoryImpl
+2026-11-16T12:42:41.257620Z main DEBUG debug attribute= "null".
+2026-11-16T12:42:41.257749Z main DEBUG Ignoring debug attribute.
+2026-11-16T12:42:41.274678Z main DEBUG Class name: [com.example.DoesNotExistAppender]
+2026-11-16T12:42:41.274869Z main WARN Unable to load plugin class name com.example.DoesNotExistAppender with key com.example.doesnotexistappender
+2026-11-16T12:42:41.275345Z main ERROR Could not create an Appender. Reported error follows.
+java.lang.ClassNotFoundException: com.example.DoesNotExistAppender
+	at java.base/jdk.internal.loader.BuiltinClassLoader.loadClass(BuiltinClassLoader.java:641)
+	at java.base/jdk.internal.loader.ClassLoaders$AppClassLoader.loadClass(ClassLoaders.java:188)
+	at java.base/java.lang.ClassLoader.loadClass(ClassLoader.java:525)
+	at java.base/java.lang.Class.forName0(Native Method)
+	at java.base/java.lang.Class.forName(Class.java:467)
+	at org.apache.logging.log4j.util.LoaderUtil.loadClass(LoaderUtil.java:212)
+	at org.apache.logging.log4j.util.LoaderUtil.newInstanceOf(LoaderUtil.java:312)
+	at org.apache.log4j.xml.XmlConfiguration.buildAppender(XmlConfiguration.java:401)
+	at org.apache.log4j.xml.XmlConfiguration.parseAppender(XmlConfiguration.java:394)
+	at org.apache.log4j.xml.XmlConfiguration.lambda$parse$6(XmlConfiguration.java:800)
+	at org.apache.log4j.xml.XmlConfiguration.lambda$forEachElement$8(XmlConfiguration.java:832)
+	at java.base/java.util.stream.ForEachOps$ForEachOp$OfRef.accept(ForEachOps.java:183)
+	at java.base/java.util.stream.ReferencePipeline$2$1.accept(ReferencePipeline.java:179)
+	at java.base/java.util.stream.IntPipeline$1$1.accept(IntPipeline.java:180)
+	at java.base/java.util.stream.Streams$RangeIntSpliterator.forEachRemaining(Streams.java:104)
+	at java.base/java.util.Spliterator$OfInt.forEachRemaining(Spliterator.java:711)
+	at java.base/java.util.stream.AbstractPipeline.copyInto(AbstractPipeline.java:509)
+	at java.base/java.util.stream.AbstractPipeline.wrapAndCopyInto(AbstractPipeline.java:499)
+	at java.base/java.util.stream.ForEachOps$ForEachOp.evaluateSequential(ForEachOps.java:150)
+	at java.base/java.util.stream.ForEachOps$ForEachOp$OfRef.evaluateSequential(ForEachOps.java:173)
+	at java.base/java.util.stream.AbstractPipeline.evaluate(AbstractPipeline.java:234)
+	at java.base/java.util.stream.ReferencePipeline.forEach(ReferencePipeline.java:596)
+	at org.apache.log4j.xml.XmlConfiguration.forEachElement(XmlConfiguration.java:832)
+	at org.apache.log4j.xml.XmlConfiguration.parse(XmlConfiguration.java:780)
+	at org.apache.log4j.xml.XmlConfiguration.doConfigure(XmlConfiguration.java:197)
+	at org.apache.log4j.xml.XmlConfiguration.doConfigure(XmlConfiguration.java:172)
+	at org.apache.log4j.config.Log4j1Configuration.initialize(Log4j1Configuration.java:68)
+	at org.apache.logging.log4j.core.config.AbstractConfiguration.start(AbstractConfiguration.java:324)
+	at org.apache.logging.log4j.core.LoggerContext.setConfiguration(LoggerContext.java:705)
+	at org.apache.logging.log4j.core.LoggerContext.reconfigure(LoggerContext.java:794)
+	at org.apache.logging.log4j.core.LoggerContext.reconfigure(LoggerContext.java:816)
+	at org.apache.logging.log4j.core.LoggerContext.start(LoggerContext.java:315)
+	at org.apache.logging.log4j.core.impl.Log4jContextFactory.getContext(Log4jContextFactory.java:162)
+	at org.apache.logging.log4j.core.impl.Log4jContextFactory.getContext(Log4jContextFactory.java:48)
+	at org.apache.logging.log4j.LogManager.getContext(LogManager.java:259)
+	at org.apache.log4j.Hierarchy$PrivateLogManager.getContext(Hierarchy.java:87)
+	at org.apache.log4j.Hierarchy.getContext(Hierarchy.java:103)
+	at org.apache.log4j.Category.<init>(Category.java:184)
+	at org.apache.log4j.Logger.<init>(Logger.java:57)
+	at org.apache.log4j.spi.RootLogger.<init>(RootLogger.java:38)
+	at org.apache.log4j.LogManager.<clinit>(LogManager.java:70)
+	at org.apache.log4j.Logger.getLogger(Logger.java:40)
+	at Repro.main(Repro.java:10)
+
+2026-11-16T12:42:41.276162Z main WARN Could not create appender named [broken] of class [com.example.DoesNotExistAppender]; ignoring.
+2026-11-16T12:42:41.276266Z main DEBUG Class name: [org.apache.log4j.FileAppender]
+2026-11-16T12:42:41.280351Z main DEBUG Parsing layout of class: "org.apache.log4j.PatternLayout"
+2026-11-16T12:42:41.283231Z main DEBUG PluginManager 'Converter' found 51 plugins
+2026-11-16T12:42:41.322067Z main WARN The bufferSize is set to 8192 but bufferedIo is false: false
+2026-11-16T12:42:41.325765Z main DEBUG Starting FileManager ../output/2.x-HEAD/app.log
+2026-11-16T12:42:41.340347Z main DEBUG Level value for root is [info].
+2026-11-16T12:42:41.340533Z main DEBUG root level set to INFO
+2026-11-16T12:42:41.340670Z main DEBUG Adding appender named [good] to loggerConfig [].
+2026-11-16T12:42:41.340910Z main DEBUG Configuration org.apache.log4j.xml.XmlConfiguration@769f71a9 initialized
+2026-11-16T12:42:41.340997Z main INFO Starting configuration org.apache.log4j.xml.XmlConfiguration@769f71a9...
+2026-11-16T12:42:41.341103Z main INFO Configuration org.apache.log4j.xml.XmlConfiguration@769f71a9 started.
+2026-11-16T12:42:41.342531Z main INFO Stopping configuration org.apache.logging.log4j.core.config.DefaultConfiguration@4eb7f003...
+2026-11-16T12:42:41.342648Z main TRACE DefaultConfiguration notified 1 ReliabilityStrategies that config will be stopped.
+2026-11-16T12:42:41.342788Z main TRACE DefaultConfiguration stopping root LoggerConfig.
+2026-11-16T12:42:41.343303Z main TRACE DefaultConfiguration notifying ReliabilityStrategies that appenders will be stopped.
+2026-11-16T12:42:41.343599Z main TRACE DefaultConfiguration stopping remaining Appenders.
+2026-11-16T12:42:41.344548Z main DEBUG Shutting down OutputStreamManager SYSTEM_OUT.false.false-1
+2026-11-16T12:42:41.344948Z main DEBUG OutputStream closed
+2026-11-16T12:42:41.345622Z main DEBUG Shut down OutputStreamManager SYSTEM_OUT.false.false-1, all resources released: true
+2026-11-16T12:42:41.345941Z main DEBUG Appender DefaultConsole-1 stopped with status true
+2026-11-16T12:42:41.346208Z main TRACE DefaultConfiguration stopped 1 remaining Appenders.
+2026-11-16T12:42:41.346316Z main TRACE DefaultConfiguration cleaning Appenders from 1 LoggerConfigs.
+2026-11-16T12:42:41.346576Z main INFO Configuration org.apache.logging.log4j.core.config.DefaultConfiguration@4eb7f003 stopped.
+2026-11-16T12:42:41.347902Z main TRACE Using default SystemClock for timestamps.
+2026-11-16T12:42:41.348067Z main DEBUG org.apache.logging.log4j.core.util.SystemClock supports precise timestamps.
+2026-11-16T12:42:41.348261Z main TRACE Using DummyNanoClock for nanosecond timestamps.
+2026-11-16T12:42:41.348427Z main DEBUG Reconfiguration complete for context[name=67424e82] at URI /Users/ramanathan/apache/log4j2-workout/repros/pr-4172/log4j-pr-4172-repro/target/classes/log4j.xml (org.apache.logging.log4j.core.LoggerContext@75881071) with optional ClassLoader: null
+2026-11-16T12:42:41.348572Z main DEBUG Shutdown hook enabled. Registering a new one.
+2026-11-16T12:42:41.349161Z main DEBUG LoggerContext[name=67424e82, org.apache.logging.log4j.core.LoggerContext@75881071] started OK.
+2026-11-16T12:42:41.359816Z main DEBUG Stopping LoggerContext[name=67424e82, org.apache.logging.log4j.core.LoggerContext@75881071]...
+2026-11-16T12:42:41.360497Z main INFO Stopping configuration org.apache.log4j.xml.XmlConfiguration@769f71a9...
+2026-11-16T12:42:41.360589Z main TRACE XmlConfiguration notified 2 ReliabilityStrategies that config will be stopped.
+2026-11-16T12:42:41.360676Z main TRACE XmlConfiguration stopping 1 LoggerConfigs.
+2026-11-16T12:42:41.360734Z main TRACE XmlConfiguration stopping root LoggerConfig.
+2026-11-16T12:42:41.360799Z main TRACE XmlConfiguration notifying ReliabilityStrategies that appenders will be stopped.
+2026-11-16T12:42:41.360860Z main TRACE XmlConfiguration stopping remaining Appenders.
+2026-11-16T12:42:41.360971Z main DEBUG Shutting down FileManager ../output/2.x-HEAD/app.log
+2026-11-16T12:42:41.361161Z main DEBUG OutputStream closed
+2026-11-16T12:42:41.361266Z main DEBUG Shut down FileManager ../output/2.x-HEAD/app.log, all resources released: true
+2026-11-16T12:42:41.361344Z main DEBUG Appender good stopped with status true
+2026-11-16T12:42:41.361439Z main TRACE XmlConfiguration stopped 1 remaining Appenders.
+2026-11-16T12:42:41.361555Z main TRACE XmlConfiguration cleaning Appenders from 2 LoggerConfigs.
+2026-11-16T12:42:41.361685Z main INFO Configuration org.apache.log4j.xml.XmlConfiguration@769f71a9 stopped.
+2026-11-16T12:42:41.361846Z main DEBUG Stopped LoggerContext[name=67424e82, org.apache.logging.log4j.core.LoggerContext@75881071] with status true

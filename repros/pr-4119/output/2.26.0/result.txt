@@ -1,0 +1,5 @@
+PASS inline (control: (?s) inline flag keeps multi-line event) observed: case=inline multiLineEventKept=true file=[first\nline two] status=[]
+PASS attr (patternFlags from config is rejected) observed: case=attr multiLineEventKept=false file=[] status=[ERROR RegexFilter contains an invalid element or attribute "patternFlags"]
+PASS element (patternFlags from config is rejected) observed: case=element multiLineEventKept=false file=[] status=[ERROR RegexFilter contains an invalid element or attribute "PatternFlags"]
+PASS noregex (missing regex reported) observed: case=noregex multiLineEventKept=true file=[first\nline two] status=[ERROR A regular expression must be provided for RegexFilter]
+FAIL api (PR contract: patternFlags ignored, so DENY) observed: case=api createFilter(".*line.*", {"DOTALL"}) on multi-line message -> ACCEPT

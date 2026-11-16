@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Configuration status="WARN">
+  <Appenders>
+    <File name="native" fileName="${sys:outdir}/native.json" immediateFlush="true">
+      <JsonTemplateLayout eventTemplateUri="classpath:native-template.json"/>
+    </File>
+    <File name="pattern" fileName="${sys:outdir}/pattern.json" immediateFlush="true">
+      <JsonTemplateLayout eventTemplateUri="classpath:pattern-template.json"/>
+    </File>
+  </Appenders>
+  <Loggers>
+    <Root level="INFO">
+      <AppenderRef ref="native"/>
+      <AppenderRef ref="pattern"/>
+    </Root>
+  </Loggers>
+</Configuration>

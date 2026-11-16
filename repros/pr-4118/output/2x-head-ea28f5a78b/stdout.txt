@@ -1,0 +1,3 @@
+PASS first cron fire runs the command observed=ran
+PASS no run after cancel() within 2.5s observed=runsAfterCancel=0
+INFO total-runs=1 future=org.apache.logging.log4j.core.config.CronScheduledFuture@c4437c4

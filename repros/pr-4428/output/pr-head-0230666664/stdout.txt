@@ -1,0 +1,6 @@
+PASS no-security-manager-control statuslogger-init expected=no-throw observed=ok
+PASS no-security-manager-control per-key-sysprop log4j2.StatusLogger.level=INFO expected=INFO observed=INFO
+PASS no-security-manager-control logmanager-getLogger expected=no-throw observed=ok
+PASS policy-denies-bulk-reads statuslogger-init expected=no-throw observed=ok
+PASS policy-denies-bulk-reads per-key-sysprop log4j2.StatusLogger.level=INFO expected=INFO observed=INFO
+PASS policy-denies-bulk-reads logmanager-getLogger expected=no-throw observed=ok

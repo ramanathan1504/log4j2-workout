@@ -1,0 +1,4 @@
+2026-11-16T12:41:12.361205Z main ERROR Unable to locate plugin type for ThisLayoutDoesNotExist
+2026-11-16T12:41:12.527366Z main ERROR Unable to locate plugin for ThisLayoutDoesNotExist
+2026-11-16T12:41:12.765113Z main ERROR Ignoring unresolved element ThisLayoutDoesNotExist in Console.
+2026-11-16T12:41:12.766969Z main ERROR appender Console has no parameter that matches element ThisLayoutDoesNotExist

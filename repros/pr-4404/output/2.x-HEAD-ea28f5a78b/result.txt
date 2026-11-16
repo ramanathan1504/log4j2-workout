@@ -1,0 +1,5 @@
+version=2.x-HEAD-ea28f5a78b
+binding=/private/tmp/claude-501/-Users-ramanathan-apache-log4j2-workout/7180a8bd-7341-4eed-92c9-cb3b625c5257/scratchpad/wt/jars-2x/log4j-slf4j2-impl-2.27.0-SNAPSHOT.jar
+PASS control Logger.info("info %s") expected="info formatted | Repro" observed="info formatted | Repro"
+PASS LocationAwareLogger.log("location-aware %s") expected="location-aware formatted | Repro" observed="location-aware formatted | Repro"
+status-logger:

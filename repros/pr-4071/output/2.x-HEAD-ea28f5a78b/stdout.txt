@@ -1,0 +1,6 @@
+FAIL maxCompressionDelaySeconds=2 rollover-to-gz latencies ms=[12, 2, 1, 14, 1] max=14
+PASS successor #4165 RollingFile maxRandomDelay=2 latencies ms=[1276, 1190, 1719, 1612, 1349] max=1719
+PASS control no delay attribute latencies ms=[5, 1, 15, 2, 1] max=15
+PASS archives=5 valid=5 delayed archives decompress
+PASS archives=5 valid=5 successor archives decompress
+PASS archives=5 valid=5 control archives decompress

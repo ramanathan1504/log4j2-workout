@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Configuration status="WARN">
+  <Appenders>
+    <Cassandra name="Cassandra" clusterName="Test" keyspace="test" table="logs" useTls="true" bufferSize="0">
+      <SocketAddress host="127.0.0.1" port="${sys:repro.port}"/>
+      <ColumnMapping name="message" pattern="%m"/>
+    </Cassandra>
+  </Appenders>
+  <Loggers>
+    <Root level="info">
+      <AppenderRef ref="Cassandra"/>
+    </Root>
+  </Loggers>
+</Configuration>

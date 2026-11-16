@@ -1,0 +1,251 @@
+2026-11-16T12:58:35.965075Z main DEBUG Loaded provider:
+Provider 'org.apache.logging.log4j.core.impl.Log4jProvider'
+	priority = 10
+	loggerContextFactory = org.apache.logging.log4j.core.impl.Log4jContextFactory
+2026-11-16T12:58:35.971649Z main INFO Using provider:
+Provider 'org.apache.logging.log4j.core.impl.Log4jProvider'
+	priority = 10
+	loggerContextFactory = org.apache.logging.log4j.core.impl.Log4jContextFactory
+2026-11-16T12:58:36.040283Z main DEBUG Using ShutdownCallbackRegistry class org.apache.logging.log4j.core.util.DefaultShutdownCallbackRegistry
+2026-11-16T12:58:36.222679Z main DEBUG Took 0.105333 seconds to load 232 plugins from jdk.internal.loader.ClassLoaders$AppClassLoader@67424e82
+2026-11-16T12:58:36.223098Z main DEBUG PluginManager 'Lookup' found 15 plugins
+2026-11-16T12:58:36.255909Z main DEBUG AsyncLogger.ThreadNameStrategy=UNCACHED (user specified null, default is UNCACHED)
+2026-11-16T12:58:36.258070Z main DEBUG org.apache.logging.log4j.core.util.SystemClock supports precise timestamps.
+2026-11-16T12:58:36.277470Z main DEBUG PluginManager 'Lookup' found 15 plugins
+2026-11-16T12:58:36.282113Z main DEBUG Starting OutputStreamManager SYSTEM_OUT.false.false-1
+2026-11-16T12:58:36.286853Z main DEBUG Starting LoggerContext[name=67424e82, org.apache.logging.log4j.core.LoggerContext@1a8a8f7c]...
+2026-11-16T12:58:36.287493Z main DEBUG Reconfiguration started for context[name=67424e82] at URI null (org.apache.logging.log4j.core.LoggerContext@1a8a8f7c) with optional ClassLoader: null
+2026-11-16T12:58:36.290476Z main DEBUG PluginManager 'Lookup' found 15 plugins
+2026-11-16T12:58:36.291822Z main DEBUG PluginManager 'ConfigurationFactory' found 4 plugins
+2026-11-16T12:58:36.326249Z main DEBUG PluginManager 'Lookup' found 15 plugins
+2026-11-16T12:58:36.327054Z main DEBUG PluginManager 'Lookup' found 15 plugins
+2026-11-16T12:58:36.327854Z main DEBUG Missing dependencies for Yaml support, ConfigurationFactory org.apache.logging.log4j.core.config.yaml.YamlConfigurationFactory is inactive
+2026-11-16T12:58:36.328121Z main DEBUG PluginManager 'Lookup' found 15 plugins
+2026-11-16T12:58:36.328677Z main DEBUG Missing dependencies for Json support, ConfigurationFactory org.apache.logging.log4j.core.config.json.JsonConfigurationFactory is inactive
+2026-11-16T12:58:36.328918Z main DEBUG PluginManager 'Lookup' found 15 plugins
+2026-11-16T12:58:36.332885Z main DEBUG Using configurationFactory org.apache.logging.log4j.core.config.ConfigurationFactory$Factory@7cbd213e
+2026-11-16T12:58:36.342511Z main DEBUG Found [log4j2.xml] at file:/Users/ramanathan/apache/log4j2-workout/repros/pr-4364/log4j-pr-4364-repro/target/classes/log4j2.xml using context class loader.
+2026-11-16T12:58:36.347723Z main DEBUG PluginManager 'Lookup' found 15 plugins
+2026-11-16T12:58:36.349076Z main DEBUG Closing BufferedInputStream java.io.BufferedInputStream@43738a82
+2026-11-16T12:58:36.601195Z main ERROR Error creating JNDI InitialContext for 'org.apache.logging.log4j.core.net.JndiManager'.
+javax.naming.NamingException: naming server tcp://broker-javax:61616 unreachable
+	at Repro$UnreachableNamingServerFactory.getInitialContext(Repro.java:13)
+	at java.naming/javax.naming.spi.NamingManager.getInitialContext(NamingManager.java:732)
+	at java.naming/javax.naming.InitialContext.getDefaultInitCtx(InitialContext.java:305)
+	at java.naming/javax.naming.InitialContext.init(InitialContext.java:236)
+	at java.naming/javax.naming.InitialContext.<init>(InitialContext.java:208)
+	at org.apache.logging.log4j.core.net.JndiManager.createManager(JndiManager.java:169)
+	at org.apache.logging.log4j.core.net.JndiManager.getJndiManager(JndiManager.java:160)
+	at org.apache.logging.log4j.core.appender.mom.JmsManager$JmsManagerConfiguration.getJndiManager(JmsManager.java:91)
+	at org.apache.logging.log4j.core.appender.mom.JmsManager.<init>(JmsManager.java:272)
+	at org.apache.logging.log4j.core.appender.mom.JmsManager.<init>(JmsManager.java:52)
+	at org.apache.logging.log4j.core.appender.mom.JmsManager$JmsManagerFactory.createManager(JmsManager.java:139)
+	at org.apache.logging.log4j.core.appender.mom.JmsManager$JmsManagerFactory.createManager(JmsManager.java:133)
+	at org.apache.logging.log4j.core.appender.AbstractManager.getManager(AbstractManager.java:147)
+	at org.apache.logging.log4j.core.appender.mom.JmsAppender$Builder.build(JmsAppender.java:112)
+	at org.apache.logging.log4j.core.appender.mom.JmsAppender$Builder.build(JmsAppender.java:50)
+	at org.apache.logging.log4j.core.config.plugins.util.PluginBuilder.build(PluginBuilder.java:124)
+	at org.apache.logging.log4j.core.config.AbstractConfiguration.createPluginObject(AbstractConfiguration.java:1250)
+	at org.apache.logging.log4j.core.config.AbstractConfiguration.createConfiguration(AbstractConfiguration.java:1169)
+	at org.apache.logging.log4j.core.config.AbstractConfiguration.createConfiguration(AbstractConfiguration.java:1161)
+	at org.apache.logging.log4j.core.config.AbstractConfiguration.doConfigure(AbstractConfiguration.java:734)
+	at org.apache.logging.log4j.core.config.AbstractConfiguration.initialize(AbstractConfiguration.java:271)
+	at org.apache.logging.log4j.core.config.AbstractConfiguration.start(AbstractConfiguration.java:324)
+	at org.apache.logging.log4j.core.LoggerContext.setConfiguration(LoggerContext.java:705)
+	at org.apache.logging.log4j.core.LoggerContext.reconfigure(LoggerContext.java:794)
+	at org.apache.logging.log4j.core.LoggerContext.reconfigure(LoggerContext.java:816)
+	at org.apache.logging.log4j.core.LoggerContext.start(LoggerContext.java:315)
+	at org.apache.logging.log4j.core.impl.Log4jContextFactory.getContext(Log4jContextFactory.java:272)
+	at org.apache.logging.log4j.core.impl.Log4jContextFactory.getContext(Log4jContextFactory.java:48)
+	at org.apache.logging.log4j.LogManager.getContext(LogManager.java:119)
+	at Repro.main(Repro.java:18)
+
+2026-11-16T12:58:36.602431Z main ERROR Error creating JmsManager using JmsManagerConfiguration [JmsManagerConfiguration [jndiProperties={java.naming.security.principal=jndi-user, java.naming.factory.initial=Repro$UnreachableNamingServerFactory, java.naming.provider.url=tcp://broker-javax:61616, java.naming.security.credentials=*****}, connectionFactoryName=ConnectionFactory, destinationName=logQueue, userName=jms-user, immediateFail=false, retry=true, reconnectIntervalMillis=5000]]
+java.lang.IllegalStateException: Unable to create JNDI InitialContext for 'org.apache.logging.log4j.core.net.JndiManager'
+	at org.apache.logging.log4j.core.net.JndiManager.createManager(JndiManager.java:172)
+	at org.apache.logging.log4j.core.net.JndiManager.getJndiManager(JndiManager.java:160)
+	at org.apache.logging.log4j.core.appender.mom.JmsManager$JmsManagerConfiguration.getJndiManager(JmsManager.java:91)
+	at org.apache.logging.log4j.core.appender.mom.JmsManager.<init>(JmsManager.java:272)
+	at org.apache.logging.log4j.core.appender.mom.JmsManager.<init>(JmsManager.java:52)
+	at org.apache.logging.log4j.core.appender.mom.JmsManager$JmsManagerFactory.createManager(JmsManager.java:139)
+	at org.apache.logging.log4j.core.appender.mom.JmsManager$JmsManagerFactory.createManager(JmsManager.java:133)
+	at org.apache.logging.log4j.core.appender.AbstractManager.getManager(AbstractManager.java:147)
+	at org.apache.logging.log4j.core.appender.mom.JmsAppender$Builder.build(JmsAppender.java:112)
+	at org.apache.logging.log4j.core.appender.mom.JmsAppender$Builder.build(JmsAppender.java:50)
+	at org.apache.logging.log4j.core.config.plugins.util.PluginBuilder.build(PluginBuilder.java:124)
+	at org.apache.logging.log4j.core.config.AbstractConfiguration.createPluginObject(AbstractConfiguration.java:1250)
+	at org.apache.logging.log4j.core.config.AbstractConfiguration.createConfiguration(AbstractConfiguration.java:1169)
+	at org.apache.logging.log4j.core.config.AbstractConfiguration.createConfiguration(AbstractConfiguration.java:1161)
+	at org.apache.logging.log4j.core.config.AbstractConfiguration.doConfigure(AbstractConfiguration.java:734)
+	at org.apache.logging.log4j.core.config.AbstractConfiguration.initialize(AbstractConfiguration.java:271)
+	at org.apache.logging.log4j.core.config.AbstractConfiguration.start(AbstractConfiguration.java:324)
+	at org.apache.logging.log4j.core.LoggerContext.setConfiguration(LoggerContext.java:705)
+	at org.apache.logging.log4j.core.LoggerContext.reconfigure(LoggerContext.java:794)
+	at org.apache.logging.log4j.core.LoggerContext.reconfigure(LoggerContext.java:816)
+	at org.apache.logging.log4j.core.LoggerContext.start(LoggerContext.java:315)
+	at org.apache.logging.log4j.core.impl.Log4jContextFactory.getContext(Log4jContextFactory.java:272)
+	at org.apache.logging.log4j.core.impl.Log4jContextFactory.getContext(Log4jContextFactory.java:48)
+	at org.apache.logging.log4j.LogManager.getContext(LogManager.java:119)
+	at Repro.main(Repro.java:18)
+Caused by: javax.naming.NamingException: naming server tcp://broker-javax:61616 unreachable
+	at Repro$UnreachableNamingServerFactory.getInitialContext(Repro.java:13)
+	at java.naming/javax.naming.spi.NamingManager.getInitialContext(NamingManager.java:732)
+	at java.naming/javax.naming.InitialContext.getDefaultInitCtx(InitialContext.java:305)
+	at java.naming/javax.naming.InitialContext.init(InitialContext.java:236)
+	at java.naming/javax.naming.InitialContext.<init>(InitialContext.java:208)
+	at org.apache.logging.log4j.core.net.JndiManager.createManager(JndiManager.java:169)
+	... 24 more
+
+2026-11-16T12:58:36.603309Z main ERROR Could not create plugin of type class org.apache.logging.log4j.core.appender.mom.JmsAppender for element JMS-Javax: java.lang.IllegalStateException: ManagerFactory [org.apache.logging.log4j.core.appender.mom.JmsManager$JmsManagerFactory@7b227d8d] unable to create manager for [JmsJavax] with data [JmsManagerConfiguration [jndiProperties={java.naming.security.principal=jndi-user, java.naming.factory.initial=Repro$UnreachableNamingServerFactory, java.naming.provider.url=tcp://broker-javax:61616, java.naming.security.credentials=*****}, connectionFactoryName=ConnectionFactory, destinationName=logQueue, userName=jms-user, immediateFail=false, retry=true, reconnectIntervalMillis=5000]]
+java.lang.IllegalStateException: ManagerFactory [org.apache.logging.log4j.core.appender.mom.JmsManager$JmsManagerFactory@7b227d8d] unable to create manager for [JmsJavax] with data [JmsManagerConfiguration [jndiProperties={java.naming.security.principal=jndi-user, java.naming.factory.initial=Repro$UnreachableNamingServerFactory, java.naming.provider.url=tcp://broker-javax:61616, java.naming.security.credentials=*****}, connectionFactoryName=ConnectionFactory, destinationName=logQueue, userName=jms-user, immediateFail=false, retry=true, reconnectIntervalMillis=5000]]
+	at org.apache.logging.log4j.core.appender.AbstractManager.getManager(AbstractManager.java:149)
+	at org.apache.logging.log4j.core.appender.mom.JmsAppender$Builder.build(JmsAppender.java:112)
+	at org.apache.logging.log4j.core.appender.mom.JmsAppender$Builder.build(JmsAppender.java:50)
+	at org.apache.logging.log4j.core.config.plugins.util.PluginBuilder.build(PluginBuilder.java:124)
+	at org.apache.logging.log4j.core.config.AbstractConfiguration.createPluginObject(AbstractConfiguration.java:1250)
+	at org.apache.logging.log4j.core.config.AbstractConfiguration.createConfiguration(AbstractConfiguration.java:1169)
+	at org.apache.logging.log4j.core.config.AbstractConfiguration.createConfiguration(AbstractConfiguration.java:1161)
+	at org.apache.logging.log4j.core.config.AbstractConfiguration.doConfigure(AbstractConfiguration.java:734)
+	at org.apache.logging.log4j.core.config.AbstractConfiguration.initialize(AbstractConfiguration.java:271)
+	at org.apache.logging.log4j.core.config.AbstractConfiguration.start(AbstractConfiguration.java:324)
+	at org.apache.logging.log4j.core.LoggerContext.setConfiguration(LoggerContext.java:705)
+	at org.apache.logging.log4j.core.LoggerContext.reconfigure(LoggerContext.java:794)
+	at org.apache.logging.log4j.core.LoggerContext.reconfigure(LoggerContext.java:816)
+	at org.apache.logging.log4j.core.LoggerContext.start(LoggerContext.java:315)
+	at org.apache.logging.log4j.core.impl.Log4jContextFactory.getContext(Log4jContextFactory.java:272)
+	at org.apache.logging.log4j.core.impl.Log4jContextFactory.getContext(Log4jContextFactory.java:48)
+	at org.apache.logging.log4j.LogManager.getContext(LogManager.java:119)
+	at Repro.main(Repro.java:18)
+
+2026-11-16T12:58:36.604163Z main ERROR Unable to invoke factory method in class org.apache.logging.log4j.core.appender.mom.JmsAppender for element JMS-Javax: java.lang.IllegalStateException: No factory method found for class org.apache.logging.log4j.core.appender.mom.JmsAppender
+java.lang.IllegalStateException: No factory method found for class org.apache.logging.log4j.core.appender.mom.JmsAppender
+	at org.apache.logging.log4j.core.config.plugins.util.PluginBuilder.findFactoryMethod(PluginBuilder.java:268)
+	at org.apache.logging.log4j.core.config.plugins.util.PluginBuilder.build(PluginBuilder.java:140)
+	at org.apache.logging.log4j.core.config.AbstractConfiguration.createPluginObject(AbstractConfiguration.java:1250)
+	at org.apache.logging.log4j.core.config.AbstractConfiguration.createConfiguration(AbstractConfiguration.java:1169)
+	at org.apache.logging.log4j.core.config.AbstractConfiguration.createConfiguration(AbstractConfiguration.java:1161)
+	at org.apache.logging.log4j.core.config.AbstractConfiguration.doConfigure(AbstractConfiguration.java:734)
+	at org.apache.logging.log4j.core.config.AbstractConfiguration.initialize(AbstractConfiguration.java:271)
+	at org.apache.logging.log4j.core.config.AbstractConfiguration.start(AbstractConfiguration.java:324)
+	at org.apache.logging.log4j.core.LoggerContext.setConfiguration(LoggerContext.java:705)
+	at org.apache.logging.log4j.core.LoggerContext.reconfigure(LoggerContext.java:794)
+	at org.apache.logging.log4j.core.LoggerContext.reconfigure(LoggerContext.java:816)
+	at org.apache.logging.log4j.core.LoggerContext.start(LoggerContext.java:315)
+	at org.apache.logging.log4j.core.impl.Log4jContextFactory.getContext(Log4jContextFactory.java:272)
+	at org.apache.logging.log4j.core.impl.Log4jContextFactory.getContext(Log4jContextFactory.java:48)
+	at org.apache.logging.log4j.LogManager.getContext(LogManager.java:119)
+	at Repro.main(Repro.java:18)
+
+2026-11-16T12:58:36.617413Z main ERROR Error creating JNDI InitialContext for 'org.apache.logging.log4j.core.net.JndiManager'.
+javax.naming.NamingException: naming server tcp://broker-jakarta:61616 unreachable
+	at Repro$UnreachableNamingServerFactory.getInitialContext(Repro.java:13)
+	at java.naming/javax.naming.spi.NamingManager.getInitialContext(NamingManager.java:732)
+	at java.naming/javax.naming.InitialContext.getDefaultInitCtx(InitialContext.java:305)
+	at java.naming/javax.naming.InitialContext.init(InitialContext.java:236)
+	at java.naming/javax.naming.InitialContext.<init>(InitialContext.java:208)
+	at org.apache.logging.log4j.core.net.JndiManager.createManager(JndiManager.java:169)
+	at org.apache.logging.log4j.core.net.JndiManager.getJndiManager(JndiManager.java:160)
+	at org.apache.logging.log4j.core.appender.mom.jakarta.JmsManager$JmsManagerConfiguration.getJndiManager(JmsManager.java:88)
+	at org.apache.logging.log4j.core.appender.mom.jakarta.JmsManager.<init>(JmsManager.java:269)
+	at org.apache.logging.log4j.core.appender.mom.jakarta.JmsManager.<init>(JmsManager.java:49)
+	at org.apache.logging.log4j.core.appender.mom.jakarta.JmsManager$JmsManagerFactory.createManager(JmsManager.java:136)
+	at org.apache.logging.log4j.core.appender.mom.jakarta.JmsManager$JmsManagerFactory.createManager(JmsManager.java:130)
+	at org.apache.logging.log4j.core.appender.AbstractManager.getManager(AbstractManager.java:147)
+	at org.apache.logging.log4j.core.appender.mom.jakarta.JmsAppender$Builder.build(JmsAppender.java:107)
+	at org.apache.logging.log4j.core.appender.mom.jakarta.JmsAppender$Builder.build(JmsAppender.java:45)
+	at org.apache.logging.log4j.core.config.plugins.util.PluginBuilder.build(PluginBuilder.java:124)
+	at org.apache.logging.log4j.core.config.AbstractConfiguration.createPluginObject(AbstractConfiguration.java:1250)
+	at org.apache.logging.log4j.core.config.AbstractConfiguration.createConfiguration(AbstractConfiguration.java:1169)
+	at org.apache.logging.log4j.core.config.AbstractConfiguration.createConfiguration(AbstractConfiguration.java:1161)
+	at org.apache.logging.log4j.core.config.AbstractConfiguration.doConfigure(AbstractConfiguration.java:734)
+	at org.apache.logging.log4j.core.config.AbstractConfiguration.initialize(AbstractConfiguration.java:271)
+	at org.apache.logging.log4j.core.config.AbstractConfiguration.start(AbstractConfiguration.java:324)
+	at org.apache.logging.log4j.core.LoggerContext.setConfiguration(LoggerContext.java:705)
+	at org.apache.logging.log4j.core.LoggerContext.reconfigure(LoggerContext.java:794)
+	at org.apache.logging.log4j.core.LoggerContext.reconfigure(LoggerContext.java:816)
+	at org.apache.logging.log4j.core.LoggerContext.start(LoggerContext.java:315)
+	at org.apache.logging.log4j.core.impl.Log4jContextFactory.getContext(Log4jContextFactory.java:272)
+	at org.apache.logging.log4j.core.impl.Log4jContextFactory.getContext(Log4jContextFactory.java:48)
+	at org.apache.logging.log4j.LogManager.getContext(LogManager.java:119)
+	at Repro.main(Repro.java:18)
+
+2026-11-16T12:58:36.619187Z main ERROR Error creating JmsManager using JmsManagerConfiguration [JmsManagerConfiguration [jndiProperties={java.naming.security.principal=jndi-user, java.naming.factory.initial=Repro$UnreachableNamingServerFactory, java.naming.provider.url=tcp://broker-jakarta:61616, java.naming.security.credentials=*****}, connectionFactoryName=ConnectionFactory, destinationName=logQueue, userName=jms-user, immediateFail=false, retry=true, reconnectIntervalMillis=5000]]
+java.lang.IllegalStateException: Unable to create JNDI InitialContext for 'org.apache.logging.log4j.core.net.JndiManager'
+	at org.apache.logging.log4j.core.net.JndiManager.createManager(JndiManager.java:172)
+	at org.apache.logging.log4j.core.net.JndiManager.getJndiManager(JndiManager.java:160)
+	at org.apache.logging.log4j.core.appender.mom.jakarta.JmsManager$JmsManagerConfiguration.getJndiManager(JmsManager.java:88)
+	at org.apache.logging.log4j.core.appender.mom.jakarta.JmsManager.<init>(JmsManager.java:269)
+	at org.apache.logging.log4j.core.appender.mom.jakarta.JmsManager.<init>(JmsManager.java:49)
+	at org.apache.logging.log4j.core.appender.mom.jakarta.JmsManager$JmsManagerFactory.createManager(JmsManager.java:136)
+	at org.apache.logging.log4j.core.appender.mom.jakarta.JmsManager$JmsManagerFactory.createManager(JmsManager.java:130)
+	at org.apache.logging.log4j.core.appender.AbstractManager.getManager(AbstractManager.java:147)
+	at org.apache.logging.log4j.core.appender.mom.jakarta.JmsAppender$Builder.build(JmsAppender.java:107)
+	at org.apache.logging.log4j.core.appender.mom.jakarta.JmsAppender$Builder.build(JmsAppender.java:45)
+	at org.apache.logging.log4j.core.config.plugins.util.PluginBuilder.build(PluginBuilder.java:124)
+	at org.apache.logging.log4j.core.config.AbstractConfiguration.createPluginObject(AbstractConfiguration.java:1250)
+	at org.apache.logging.log4j.core.config.AbstractConfiguration.createConfiguration(AbstractConfiguration.java:1169)
+	at org.apache.logging.log4j.core.config.AbstractConfiguration.createConfiguration(AbstractConfiguration.java:1161)
+	at org.apache.logging.log4j.core.config.AbstractConfiguration.doConfigure(AbstractConfiguration.java:734)
+	at org.apache.logging.log4j.core.config.AbstractConfiguration.initialize(AbstractConfiguration.java:271)
+	at org.apache.logging.log4j.core.config.AbstractConfiguration.start(AbstractConfiguration.java:324)
+	at org.apache.logging.log4j.core.LoggerContext.setConfiguration(LoggerContext.java:705)
+	at org.apache.logging.log4j.core.LoggerContext.reconfigure(LoggerContext.java:794)
+	at org.apache.logging.log4j.core.LoggerContext.reconfigure(LoggerContext.java:816)
+	at org.apache.logging.log4j.core.LoggerContext.start(LoggerContext.java:315)
+	at org.apache.logging.log4j.core.impl.Log4jContextFactory.getContext(Log4jContextFactory.java:272)
+	at org.apache.logging.log4j.core.impl.Log4jContextFactory.getContext(Log4jContextFactory.java:48)
+	at org.apache.logging.log4j.LogManager.getContext(LogManager.java:119)
+	at Repro.main(Repro.java:18)
+Caused by: javax.naming.NamingException: naming server tcp://broker-jakarta:61616 unreachable
+	at Repro$UnreachableNamingServerFactory.getInitialContext(Repro.java:13)
+	at java.naming/javax.naming.spi.NamingManager.getInitialContext(NamingManager.java:732)
+	at java.naming/javax.naming.InitialContext.getDefaultInitCtx(InitialContext.java:305)
+	at java.naming/javax.naming.InitialContext.init(InitialContext.java:236)
+	at java.naming/javax.naming.InitialContext.<init>(InitialContext.java:208)
+	at org.apache.logging.log4j.core.net.JndiManager.createManager(JndiManager.java:169)
+	... 24 more
+
+2026-11-16T12:58:36.620110Z main ERROR Could not create plugin of type class org.apache.logging.log4j.core.appender.mom.jakarta.JmsAppender for element JMS-Jakarta: java.lang.IllegalStateException: ManagerFactory [org.apache.logging.log4j.core.appender.mom.jakarta.JmsManager$JmsManagerFactory@4445629] unable to create manager for [JmsJakarta] with data [JmsManagerConfiguration [jndiProperties={java.naming.security.principal=jndi-user, java.naming.factory.initial=Repro$UnreachableNamingServerFactory, java.naming.provider.url=tcp://broker-jakarta:61616, java.naming.security.credentials=*****}, connectionFactoryName=ConnectionFactory, destinationName=logQueue, userName=jms-user, immediateFail=false, retry=true, reconnectIntervalMillis=5000]]
+java.lang.IllegalStateException: ManagerFactory [org.apache.logging.log4j.core.appender.mom.jakarta.JmsManager$JmsManagerFactory@4445629] unable to create manager for [JmsJakarta] with data [JmsManagerConfiguration [jndiProperties={java.naming.security.principal=jndi-user, java.naming.factory.initial=Repro$UnreachableNamingServerFactory, java.naming.provider.url=tcp://broker-jakarta:61616, java.naming.security.credentials=*****}, connectionFactoryName=ConnectionFactory, destinationName=logQueue, userName=jms-user, immediateFail=false, retry=true, reconnectIntervalMillis=5000]]
+	at org.apache.logging.log4j.core.appender.AbstractManager.getManager(AbstractManager.java:149)
+	at org.apache.logging.log4j.core.appender.mom.jakarta.JmsAppender$Builder.build(JmsAppender.java:107)
+	at org.apache.logging.log4j.core.appender.mom.jakarta.JmsAppender$Builder.build(JmsAppender.java:45)
+	at org.apache.logging.log4j.core.config.plugins.util.PluginBuilder.build(PluginBuilder.java:124)
+	at org.apache.logging.log4j.core.config.AbstractConfiguration.createPluginObject(AbstractConfiguration.java:1250)
+	at org.apache.logging.log4j.core.config.AbstractConfiguration.createConfiguration(AbstractConfiguration.java:1169)
+	at org.apache.logging.log4j.core.config.AbstractConfiguration.createConfiguration(AbstractConfiguration.java:1161)
+	at org.apache.logging.log4j.core.config.AbstractConfiguration.doConfigure(AbstractConfiguration.java:734)
+	at org.apache.logging.log4j.core.config.AbstractConfiguration.initialize(AbstractConfiguration.java:271)
+	at org.apache.logging.log4j.core.config.AbstractConfiguration.start(AbstractConfiguration.java:324)
+	at org.apache.logging.log4j.core.LoggerContext.setConfiguration(LoggerContext.java:705)
+	at org.apache.logging.log4j.core.LoggerContext.reconfigure(LoggerContext.java:794)
+	at org.apache.logging.log4j.core.LoggerContext.reconfigure(LoggerContext.java:816)
+	at org.apache.logging.log4j.core.LoggerContext.start(LoggerContext.java:315)
+	at org.apache.logging.log4j.core.impl.Log4jContextFactory.getContext(Log4jContextFactory.java:272)
+	at org.apache.logging.log4j.core.impl.Log4jContextFactory.getContext(Log4jContextFactory.java:48)
+	at org.apache.logging.log4j.LogManager.getContext(LogManager.java:119)
+	at Repro.main(Repro.java:18)
+
+2026-11-16T12:58:36.620722Z main ERROR Unable to invoke factory method in class org.apache.logging.log4j.core.appender.mom.jakarta.JmsAppender for element JMS-Jakarta: java.lang.IllegalStateException: No factory method found for class org.apache.logging.log4j.core.appender.mom.jakarta.JmsAppender
+java.lang.IllegalStateException: No factory method found for class org.apache.logging.log4j.core.appender.mom.jakarta.JmsAppender
+	at org.apache.logging.log4j.core.config.plugins.util.PluginBuilder.findFactoryMethod(PluginBuilder.java:268)
+	at org.apache.logging.log4j.core.config.plugins.util.PluginBuilder.build(PluginBuilder.java:140)
+	at org.apache.logging.log4j.core.config.AbstractConfiguration.createPluginObject(AbstractConfiguration.java:1250)
+	at org.apache.logging.log4j.core.config.AbstractConfiguration.createConfiguration(AbstractConfiguration.java:1169)
+	at org.apache.logging.log4j.core.config.AbstractConfiguration.createConfiguration(AbstractConfiguration.java:1161)
+	at org.apache.logging.log4j.core.config.AbstractConfiguration.doConfigure(AbstractConfiguration.java:734)
+	at org.apache.logging.log4j.core.config.AbstractConfiguration.initialize(AbstractConfiguration.java:271)
+	at org.apache.logging.log4j.core.config.AbstractConfiguration.start(AbstractConfiguration.java:324)
+	at org.apache.logging.log4j.core.LoggerContext.setConfiguration(LoggerContext.java:705)
+	at org.apache.logging.log4j.core.LoggerContext.reconfigure(LoggerContext.java:794)
+	at org.apache.logging.log4j.core.LoggerContext.reconfigure(LoggerContext.java:816)
+	at org.apache.logging.log4j.core.LoggerContext.start(LoggerContext.java:315)
+	at org.apache.logging.log4j.core.impl.Log4jContextFactory.getContext(Log4jContextFactory.java:272)
+	at org.apache.logging.log4j.core.impl.Log4jContextFactory.getContext(Log4jContextFactory.java:48)
+	at org.apache.logging.log4j.LogManager.getContext(LogManager.java:119)
+	at Repro.main(Repro.java:18)
+
+2026-11-16T12:58:36.622429Z main ERROR Null object returned for JMS-Javax in Appenders.
+2026-11-16T12:58:36.622558Z main ERROR Null object returned for JMS-Jakarta in Appenders.
+2026-11-16T12:58:36.633464Z main ERROR Unable to locate appender "JmsJavax" for logger config "root"
+2026-11-16T12:58:36.633645Z main ERROR Unable to locate appender "JmsJakarta" for logger config "root"

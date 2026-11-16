@@ -1,0 +1,11 @@
+version=2.26.0
+classpath-core=/Users/ramanathan/.m2/repository/org/apache/logging/log4j/log4j-core/2.26.0/log4j-core-2.26.0.jar
+FAIL maxCompressionDelaySeconds=2 rollover-to-gz latencies ms=[30, 17, 18, 21, 18] max=30
+FAIL successor #4165 RollingFile maxRandomDelay=2 latencies ms=[12, 13, 2, 1, 1] max=13
+PASS control no delay attribute latencies ms=[11, 25, 17, 8, 3] max=25
+PASS archives=5 valid=5 delayed archives decompress
+PASS archives=5 valid=5 successor archives decompress
+PASS archives=5 valid=5 control archives decompress
+status-logger:
+  2026-11-16T12:48:23.396601Z main ERROR DefaultRolloverStrategy contains an invalid element or attribute "maxCompressionDelaySeconds"
+  2026-11-16T12:48:23.503780Z main ERROR RollingFile contains an invalid element or attribute "maxRandomDelay"

@@ -1,0 +1,3 @@
+FAIL underline expected=ESC[4mUESC[m observed=ESC[3mUESC[m
+FAIL italic expected=ESC[3mIESC[m observed=ESC[mIESC[m
+PASS bold-control expected=ESC[1mBESC[m observed=ESC[1mBESC[m

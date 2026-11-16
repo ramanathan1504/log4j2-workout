@@ -1,0 +1,5 @@
+version=2.x-HEAD classpath: log4j2.json + log4j2.xml, no jackson-databind
+PASS fell back to log4j2.xml (configuration name=FromXml)
+PASS INFO event written by the XML File appender (app.log lines=1)
+PASS inactive-factory diagnostic for log4j2.json still reported (count=1)
+INFO CONFIG_CLASS=XmlConfiguration

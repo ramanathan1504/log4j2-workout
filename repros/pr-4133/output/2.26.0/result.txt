@@ -1,0 +1,4 @@
+FAIL json-colliding-chain levels-rendered=outer,middle
+PASS json-plain-chain-control levels-rendered=outer,middle,inner
+FAIL pattern-xEx-colliding-chain levels-rendered=outer,middle
+classpath-log4j: log4j-core-2.26.0.jar

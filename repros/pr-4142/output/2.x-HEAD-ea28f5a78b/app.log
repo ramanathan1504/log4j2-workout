@@ -1,0 +1,2 @@
+app.db|db-event|subsystem=Database|region=
+app.web|root-event|subsystem=|region=eu-west

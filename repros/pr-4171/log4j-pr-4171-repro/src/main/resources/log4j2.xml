@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Configuration status="WARN">
+  <Appenders>
+    <File name="file" fileName="${sys:logfile}" append="false">
+      <PatternLayout pattern="%m trace=%traceId span=%spanId flags=%traceFlags%n"/>
+    </File>
+  </Appenders>
+  <Loggers>
+    <AsyncLogger name="async" level="INFO" additivity="false">
+      <AppenderRef ref="file"/>
+    </AsyncLogger>
+    <Root level="INFO">
+      <AppenderRef ref="file"/>
+    </Root>
+  </Loggers>
+</Configuration>

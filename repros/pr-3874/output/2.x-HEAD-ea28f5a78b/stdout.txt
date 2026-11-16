@@ -1,0 +1,3 @@
+PASS config-substitution ${jvmrunargs:0} -> ${jvmrunargs:0} (first JVM arg -Dprobe=jvmrunargs-probe)
+PASS runtime-layout $${jvmrunargs:0} -> arg0=${jvmrunargs:0} msg=hello
+PASS control event-written -> arg0=${jvmrunargs:0} msg=hello

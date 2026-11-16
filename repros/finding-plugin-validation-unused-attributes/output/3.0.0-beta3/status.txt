@@ -1,0 +1,75 @@
+2026-11-16T13:55:29.136855Z main ERROR The parameter is null or empty: fileName
+2026-11-16T13:55:29.141587Z main ERROR Could not configure plugin element File: org.apache.logging.log4j.plugins.validation.ConstraintValidationException: Validation failed for fileName (source: private java.lang.String org.apache.logging.log4j.core.appender.FileAppender$Builder.fileName) and value null org.apache.logging.log4j.plugins.validation.ConstraintValidationException: Validation failed for fileName (source: private java.lang.String org.apache.logging.log4j.core.appender.FileAppender$Builder.fileName) and value null
+	at org.apache.logging.log4j.plugins.di.ConfigurableInstanceFactory.validate(ConfigurableInstanceFactory.java:176)
+	at org.apache.logging.log4j.plugins.di.DefaultInstanceFactory.injectField(DefaultInstanceFactory.java:410)
+	at org.apache.logging.log4j.plugins.di.DefaultInstanceFactory.injectMembers(DefaultInstanceFactory.java:377)
+	at org.apache.logging.log4j.plugins.di.DefaultInstanceFactory.lambda$createDefaultFactory$6(DefaultInstanceFactory.java:154)
+	at org.apache.logging.log4j.plugins.di.InstanceFactory.getInstance(InstanceFactory.java:104)
+	at org.apache.logging.log4j.core.config.ConfigurationProcessor.instantiate(ConfigurationProcessor.java:110)
+	at org.apache.logging.log4j.core.config.ConfigurationProcessor.withNode(ConfigurationProcessor.java:85)
+	at org.apache.logging.log4j.core.config.ConfigurationProcessor.processNodeTree(ConfigurationProcessor.java:74)
+	at org.apache.logging.log4j.core.config.ConfigurationProcessor.withNode(ConfigurationProcessor.java:85)
+	at org.apache.logging.log4j.core.config.ConfigurationProcessor.lambda$processNodeTree$0(ConfigurationProcessor.java:67)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1511)
+	at org.apache.logging.log4j.core.config.ConfigurationProcessor.processNodeTree(ConfigurationProcessor.java:67)
+	at org.apache.logging.log4j.core.config.AbstractConfiguration.createConfiguration(AbstractConfiguration.java:1153)
+	at org.apache.logging.log4j.core.config.AbstractConfiguration.doConfigure(AbstractConfiguration.java:721)
+	at org.apache.logging.log4j.core.config.AbstractConfiguration.initialize(AbstractConfiguration.java:300)
+	at org.apache.logging.log4j.core.config.AbstractConfiguration.start(AbstractConfiguration.java:370)
+	at org.apache.logging.log4j.core.LoggerContext.setConfiguration(LoggerContext.java:711)
+	at org.apache.logging.log4j.core.LoggerContext.start(LoggerContext.java:357)
+	at org.apache.logging.log4j.core.impl.Log4jContextFactory.startContext(Log4jContextFactory.java:365)
+	at org.apache.logging.log4j.core.impl.Log4jContextFactory.getContext(Log4jContextFactory.java:156)
+	at org.apache.logging.log4j.core.impl.Log4jContextFactory.getContext(Log4jContextFactory.java:49)
+	at org.apache.logging.log4j.LogManager.getContext(LogManager.java:138)
+	at org.apache.logging.log4j.LogManager.getLogger(LogManager.java:555)
+	at Repro.main(Repro.java:24)
+
+2026-11-16T13:55:29.142049Z main ERROR File contains invalid attributes "name", "append", "immediateFlush"
+2026-11-16T13:55:29.142318Z main ERROR appender File has no field or parameter that matches element PatternLayout
+2026-11-16T13:55:29.153542Z main ERROR Console contains an invalid element or attribute "bogusAttr"
+2026-11-16T13:55:29.154253Z main ERROR Skipping null child object with name File in element Appenders
+2026-11-16T13:55:29.155936Z main ERROR Appenders has no field or parameter that matches element File
+2026-11-16T13:55:29.156774Z main ERROR Appender references must contain a reference: ref
+2026-11-16T13:55:29.156876Z main ERROR Could not configure plugin element AppenderRef: org.apache.logging.log4j.plugins.validation.ConstraintValidationException: Validation failed for ref (source: final java.lang.String ref) and value null org.apache.logging.log4j.plugins.validation.ConstraintValidationException: Validation failed for ref (source: final java.lang.String ref) and value null
+	at org.apache.logging.log4j.plugins.di.ConfigurableInstanceFactory.validate(ConfigurableInstanceFactory.java:176)
+	at org.apache.logging.log4j.plugins.di.DefaultInstanceFactory.lambda$getArgumentFactory$9(DefaultInstanceFactory.java:224)
+	at org.apache.logging.log4j.plugins.di.DefaultInstanceFactory.lambda$getInjectableInstance$7(DefaultInstanceFactory.java:171)
+	at java.base/java.util.stream.ReferencePipeline$3$1.accept(ReferencePipeline.java:197)
+	at java.base/java.util.ArrayList$ArrayListSpliterator.forEachRemaining(ArrayList.java:1625)
+	at java.base/java.util.stream.AbstractPipeline.copyInto(AbstractPipeline.java:509)
+	at java.base/java.util.stream.AbstractPipeline.wrapAndCopyInto(AbstractPipeline.java:499)
+	at java.base/java.util.stream.AbstractPipeline.evaluate(AbstractPipeline.java:575)
+	at java.base/java.util.stream.AbstractPipeline.evaluateToArrayNode(AbstractPipeline.java:260)
+	at java.base/java.util.stream.ReferencePipeline.toArray(ReferencePipeline.java:616)
+	at java.base/java.util.stream.ReferencePipeline.toArray(ReferencePipeline.java:622)
+	at org.apache.logging.log4j.plugins.di.DefaultInstanceFactory.getInjectableInstance(DefaultInstanceFactory.java:172)
+	at org.apache.logging.log4j.plugins.di.DefaultInstanceFactory.lambda$createDefaultFactory$6(DefaultInstanceFactory.java:148)
+	at org.apache.logging.log4j.plugins.di.InstanceFactory.getInstance(InstanceFactory.java:104)
+	at org.apache.logging.log4j.core.config.ConfigurationProcessor.instantiate(ConfigurationProcessor.java:110)
+	at org.apache.logging.log4j.core.config.ConfigurationProcessor.withNode(ConfigurationProcessor.java:85)
+	at org.apache.logging.log4j.core.config.ConfigurationProcessor.processNodeTree(ConfigurationProcessor.java:74)
+	at org.apache.logging.log4j.core.config.ConfigurationProcessor.withNode(ConfigurationProcessor.java:85)
+	at org.apache.logging.log4j.core.config.ConfigurationProcessor.lambda$processNodeTree$0(ConfigurationProcessor.java:67)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1511)
+	at org.apache.logging.log4j.core.config.ConfigurationProcessor.processNodeTree(ConfigurationProcessor.java:67)
+	at org.apache.logging.log4j.core.config.ConfigurationProcessor.withNode(ConfigurationProcessor.java:85)
+	at org.apache.logging.log4j.core.config.ConfigurationProcessor.lambda$processNodeTree$0(ConfigurationProcessor.java:67)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1511)
+	at org.apache.logging.log4j.core.config.ConfigurationProcessor.processNodeTree(ConfigurationProcessor.java:67)
+	at org.apache.logging.log4j.core.config.AbstractConfiguration.createConfiguration(AbstractConfiguration.java:1153)
+	at org.apache.logging.log4j.core.config.AbstractConfiguration.doConfigure(AbstractConfiguration.java:721)
+	at org.apache.logging.log4j.core.config.AbstractConfiguration.initialize(AbstractConfiguration.java:300)
+	at org.apache.logging.log4j.core.config.AbstractConfiguration.start(AbstractConfiguration.java:370)
+	at org.apache.logging.log4j.core.LoggerContext.setConfiguration(LoggerContext.java:711)
+	at org.apache.logging.log4j.core.LoggerContext.start(LoggerContext.java:357)
+	at org.apache.logging.log4j.core.impl.Log4jContextFactory.startContext(Log4jContextFactory.java:365)
+	at org.apache.logging.log4j.core.impl.Log4jContextFactory.getContext(Log4jContextFactory.java:156)
+	at org.apache.logging.log4j.core.impl.Log4jContextFactory.getContext(Log4jContextFactory.java:49)
+	at org.apache.logging.log4j.LogManager.getContext(LogManager.java:138)
+	at org.apache.logging.log4j.LogManager.getLogger(LogManager.java:555)
+	at Repro.main(Repro.java:24)
+
+2026-11-16T13:55:29.157240Z main ERROR AppenderRef contains an invalid element or attribute "level"
+2026-11-16T13:55:29.158080Z main ERROR Skipping null child object with name AppenderRef in element Logger
+2026-11-16T13:55:29.159299Z main ERROR Logger has no field or parameter that matches element AppenderRef

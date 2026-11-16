@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Configuration status="WARN">
+  <Appenders>
+    <File name="Html" fileName="${sys:repro.dir}/html.log" append="false">
+      <PatternLayout pattern="[%p] %m{html}%n"/>
+    </File>
+    <File name="Plain" fileName="${sys:repro.dir}/plain.log" append="false">
+      <PatternLayout pattern="[%p] %m%n"/>
+    </File>
+  </Appenders>
+  <Loggers>
+    <Root level="INFO">
+      <AppenderRef ref="Html"/>
+      <AppenderRef ref="Plain"/>
+    </Root>
+  </Loggers>
+</Configuration>

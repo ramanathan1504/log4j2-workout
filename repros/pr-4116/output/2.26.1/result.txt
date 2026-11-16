@@ -1,0 +1,5 @@
+PASS filter-type observed=MarkerFilter
+PASS onMatch=DENY observed=DENY
+PASS onMisMatch=ACCEPT observed=ACCEPT
+PASS file-content (marked denied, unmarked kept) observed=[unmarked-event]
+FAIL 'invalid element or attribute' status messages observed=1: 2026-11-16T12:41:12.462327Z main ERROR MarkerFilter contains an invalid element or attribute "onMismatch"

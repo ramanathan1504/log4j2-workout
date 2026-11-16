@@ -1,0 +1,7 @@
+version=2.26.1
+log4j-jars=log4j-api-2.26.1.jar log4j-core-2.26.1.jar 
+FAIL backslash-n.log mdcKey expected=A\\nB observed=A\nB
+FAIL backslash-n.log sdKey expected=C\\nD observed=C\nD
+FAIL bracket.log mdcKey expected=A\]B observed=A]B
+PASS octal.log mdcKey expected=A#012B observed=A#012B (control)
+status-logger:

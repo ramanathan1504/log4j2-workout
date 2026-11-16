@@ -1,0 +1,8 @@
+PASS xml-StringMatchFilter-without-text-not-built lines=[public-message, secret-message]
+PASS builder-without-text-build() returned=null
+PASS xml-StringMatchFilter-with-text-control lines=[public-message]
+status-logger-StringMatchFilter-lines: 4
+2026-11-16T12:48:01.087724Z main ERROR No text provided for StringMatchFilter: text
+2026-11-16T12:48:01.210735Z main ERROR Could not configure plugin element StringMatchFilter: org.apache.logging.log4j.plugins.validation.ConstraintValidationException: Validation failed for text (source: private java.lang.String org.apache.logging.log4j.core.filter.StringMatchFilter$Builder.text) and value null org.apache.logging.log4j.plugins.validation.ConstraintValidationException: Validation failed for text (source: private java.lang.String org.apache.logging.log4j.core.filter.StringMatchFilter$Builder.text) and value null
+2026-11-16T12:48:01.218658Z main ERROR StringMatchFilter contains invalid attributes "onMatch", "onMismatch"
+classpath-log4j: log4j-api-2.24.3.jar log4j-core-3.0.0-SNAPSHOT.jar log4j-kit-3.0.0-SNAPSHOT.jar log4j-plugins-3.0.0-SNAPSHOT.jar 

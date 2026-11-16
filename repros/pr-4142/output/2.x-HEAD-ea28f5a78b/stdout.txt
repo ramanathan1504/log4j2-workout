@@ -1,0 +1,2 @@
+PASS logger.db.property expected=subsystem=Database line=app.db|db-event|subsystem=Database|region=
+PASS rootLogger.property expected=region=eu-west line=app.web|root-event|subsystem=|region=eu-west

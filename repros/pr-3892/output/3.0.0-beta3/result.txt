@@ -1,0 +1,6 @@
+version=3.0.0-beta3
+classpath-core=/Users/ramanathan/.m2/repository/org/apache/logging/log4j/log4j-core/3.0.0-beta3/log4j-core-3.0.0-beta3.jar /Users/ramanathan/.m2/repository/org/apache/logging/log4j/log4j-kit/3.0.0-beta3/log4j-kit-3.0.0-beta3.jar /Users/ramanathan/.m2/repository/org/apache/logging/log4j/log4j-plugins/3.0.0-beta3/log4j-plugins-3.0.0-beta3.jar 
+FAIL config-substitution ${jvmrunargs:0} -> -Dprobe=jvmrunargs-probe (first JVM arg -Dprobe=jvmrunargs-probe)
+FAIL runtime-layout $${jvmrunargs:0} -> arg0=-Dprobe=jvmrunargs-probe msg=hello
+PASS control event-written -> arg0=-Dprobe=jvmrunargs-probe msg=hello
+status-logger:

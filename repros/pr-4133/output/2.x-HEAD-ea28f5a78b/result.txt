@@ -1,0 +1,4 @@
+PASS json-colliding-chain levels-rendered=outer,middle,inner
+PASS json-plain-chain-control levels-rendered=outer,middle,inner
+PASS pattern-xEx-colliding-chain levels-rendered=outer,middle,inner
+classpath-log4j: log4j-core-2.27.0-SNAPSHOT.jar

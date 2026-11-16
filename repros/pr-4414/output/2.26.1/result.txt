@@ -1,0 +1,6 @@
+version=2.26.1
+PASS control logger=com.foo expected=WARN observed=WARN
+PASS control logger=com.foo.Service expected=WARN observed=WARN
+FAIL sibling logger=com.foobar.Service expected=INFO observed=WARN
+FAIL sibling logger=com.food expected=INFO observed=WARN
+status-logger:

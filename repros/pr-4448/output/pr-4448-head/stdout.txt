@@ -1,0 +1,9 @@
+2026-11-16T13:15:43.378889Z main WARN Unsupported gz compression level '42' (invalid compression level); using the default level.
+PASS default-gz-level0 archive=app-1.log.gz expected=ratio>=0.9 (level 0, stored) observed=compressed:41028 raw:41000 ratio:1.001
+PASS default-gz-level0-temp archive=app-1.log.gz expected=ratio>=0.9 (level 0, stored) observed=compressed:41028 raw:41000 ratio:1.001
+PASS default-zip-level0 archive=app-1.log.zip expected=ratio>=0.9 (level 0, stored) observed=compressed:41142 raw:41000 ratio:1.003
+PASS direct-gz-level0 archive=app-1.log.gz expected=ratio>=0.9 (level 0, stored) observed=compressed:41028 raw:41000 ratio:1.001
+PASS direct-gz-level0-temp archive=app-1.log.gz expected=ratio>=0.9 (level 0, stored) observed=compressed:41028 raw:41000 ratio:1.001
+PASS default-gz-level9 archive=app-1.log.gz expected=ratio<0.5 observed=compressed:1192 raw:41000 ratio:0.029 (control)
+PASS default-gz-unset archive=app-1.log.gz expected=ratio<0.5 observed=compressed:1191 raw:41000 ratio:0.029 (control)
+PASS default-gz-level42 archive=app-1.log.gz expected=ratio<0.5 observed=compressed:1191 raw:41000 ratio:0.029 (control)

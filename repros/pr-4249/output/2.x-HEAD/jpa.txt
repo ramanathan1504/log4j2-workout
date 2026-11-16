@@ -1,0 +1,1 @@
+PASS jpa ThrowableAttributeConverter on A<->B cycle: length=276 'Caused by' count=1

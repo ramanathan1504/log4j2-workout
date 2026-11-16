@@ -1,0 +1,3 @@
+<134>1 2026-11-16T18:30:31.096+05:30 localhost repro 60261 Audit [control@32473] plain
+<134>1 2026-11-16T18:30:31.171+05:30 localhost repro 60261 Audit [mdc@32473 request="r1" user="alice"] mdc-merge
+<134>1 2026-11-16T18:30:31.188+05:30 localhost repro 60261 - [Transfer@18060 from="A" to="B"] first, second

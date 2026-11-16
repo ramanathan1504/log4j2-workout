@@ -1,0 +1,5 @@
+commons-compress 1.27.1
+PASS gz       recovered=150/150 lost=0 nonEmptyArchives=2/2 uncompressedLeftovers=0 files: app-1.log.gz=135B app-2.log.gz=136B app.log=650B
+PASS zst      recovered=150/150 lost=0 nonEmptyArchives=2/2 uncompressedLeftovers=0 files: app-1.log.zstd=140B app-2.log.zstd=140B app.log=700B
+PASS bz2      recovered=150/150 lost=0 nonEmptyArchives=2/2 uncompressedLeftovers=0 files: app-1.log.bzip2=122B app-2.log.bzip2=117B app.log=700B
+PASS xz       recovered=150/150 lost=0 nonEmptyArchives=2/2 uncompressedLeftovers=0 files: app-1.log.xz=160B app-2.log.xz=164B app.log=650B

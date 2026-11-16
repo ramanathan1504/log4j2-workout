@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Configuration status="WARN">
+  <Appenders>
+    <RandomAccessFile name="rafNever" fileName="${sys:outdir}/logs/raf-never/app.log" createOnDemand="true">
+      <PatternLayout pattern="%m%n"/>
+    </RandomAccessFile>
+    <RandomAccessFile name="rafUsed" fileName="${sys:outdir}/logs/raf-used/app.log" createOnDemand="true">
+      <PatternLayout pattern="%m%n"/>
+    </RandomAccessFile>
+    <MemoryMappedFile name="mmfNever" fileName="${sys:outdir}/logs/mmf-never/app.log" createOnDemand="true" regionLength="4096">
+      <PatternLayout pattern="%m%n"/>
+    </MemoryMappedFile>
+    <MemoryMappedFile name="mmfUsed" fileName="${sys:outdir}/logs/mmf-used/app.log" createOnDemand="true" regionLength="4096">
+      <PatternLayout pattern="%m%n"/>
+    </MemoryMappedFile>
+    <RollingRandomAccessFile name="rrafNever" fileName="${sys:outdir}/logs/rraf-never/app.log"
+                             filePattern="${sys:outdir}/logs/rraf-never/app-%i.log" createOnDemand="true">
+      <PatternLayout pattern="%m%n"/>
+      <SizeBasedTriggeringPolicy size="10MB"/>
+    </RollingRandomAccessFile>
+    <RollingRandomAccessFile name="rrafUsed" fileName="${sys:outdir}/logs/rraf-used/app.log"
+                             filePattern="${sys:outdir}/logs/rraf-used/app-%i.log" createOnDemand="true">
+      <PatternLayout pattern="%m%n"/>
+      <SizeBasedTriggeringPolicy size="10MB"/>
+    </RollingRandomAccessFile>
+    <File name="fileNever" fileName="${sys:outdir}/logs/file-never/app.log" createOnDemand="true">
+      <PatternLayout pattern="%m%n"/>
+    </File>
+    <File name="fileUsed" fileName="${sys:outdir}/logs/file-used/app.log" createOnDemand="true">
+      <PatternLayout pattern="%m%n"/>
+    </File>
+  </Appenders>
+  <Loggers>
+    <Logger name="never" level="INFO" additivity="false">
+      <AppenderRef ref="rafNever"/>
+      <AppenderRef ref="mmfNever"/>
+      <AppenderRef ref="rrafNever"/>
+      <AppenderRef ref="fileNever"/>
+    </Logger>
+    <Logger name="used" level="INFO" additivity="false">
+      <AppenderRef ref="rafUsed"/>
+      <AppenderRef ref="mmfUsed"/>
+      <AppenderRef ref="rrafUsed"/>
+      <AppenderRef ref="fileUsed"/>
+    </Logger>
+    <Root level="OFF"/>
+  </Loggers>
+</Configuration>

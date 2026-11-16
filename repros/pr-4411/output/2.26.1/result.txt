@@ -1,0 +1,7 @@
+FAIL both-events-stored expected=2 observed=1 users=[u1]
+FAIL reserved-_id-not-copied expected=ObjectId observed=[String:fixed-id]
+PASS non-reserved-_rev-kept-control expected=r1 present observed=[r1]
+status: WARNING: SLF4J not found on the classpath.  Logging is disabled for the 'org.mongodb.driver' component
+status: 2026-11-16T13:11:35.706449Z main WARN The MongoDb4 Appender is deprecated, use the MongoDb Appender instead.
+status: 2026-11-16T13:11:36.256484Z main ERROR Unable to write to database [noSqlManager{ description=mongo, bufferSize=0, provider=MongoDb4Provider [connectionString=`mongodb://127.0.0.1:27017/log4j.pr4411_2_26_1`, collectionSize=536870912, isCapped=false, databaseNa
+status: 2026-11-16T13:11:36.258428Z main ERROR An exception occurred processing Appender mongo

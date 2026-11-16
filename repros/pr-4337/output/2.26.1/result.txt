@@ -1,0 +1,5 @@
+FAIL missingTrustStore expected-received=0 received=3 serverErrors=[]
+FAIL missingKeyStore expected-received=0 received=3 serverErrors=[]
+PASS validTrustStore expected-received=3 received=3 serverErrors=[]
+status: 2026-11-16T13:04:49.342610Z main ERROR Unable to invoke factory method in class org.apache.logging.log4j.core.net.ssl.TrustStoreConfiguration for element TrustStore: org.apache.logging.log4j.core.net.ssl.StoreConfigurationException: Could n
+status: 2026-11-16T13:04:49.686622Z main ERROR Unable to invoke factory method in class org.apache.logging.log4j.core.net.ssl.KeyStoreConfiguration for element KeyStore: org.apache.logging.log4j.core.net.ssl.StoreConfigurationException: Could not c

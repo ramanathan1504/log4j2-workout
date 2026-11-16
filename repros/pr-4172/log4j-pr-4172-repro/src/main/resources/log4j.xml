@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE log4j:configuration SYSTEM "log4j.dtd">
+<log4j:configuration xmlns:log4j="http://jakarta.apache.org/log4j/">
+  <appender name="broken" class="com.example.DoesNotExistAppender"/>
+  <appender name="good" class="org.apache.log4j.FileAppender">
+    <param name="File" value="${logfile}"/>
+    <param name="Append" value="false"/>
+    <layout class="org.apache.log4j.PatternLayout">
+      <param name="ConversionPattern" value="%m%n"/>
+    </layout>
+  </appender>
+  <root>
+    <priority value="info"/>
+    <appender-ref ref="good"/>
+  </root>
+</log4j:configuration>

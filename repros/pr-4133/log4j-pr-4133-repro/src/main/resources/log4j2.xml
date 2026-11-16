@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Configuration status="WARN">
+  <Appenders>
+    <File name="Json" fileName="${sys:outdir}/events.json" append="false">
+      <JsonLayout compact="true" eventEol="true" properties="false"/>
+    </File>
+    <File name="Text" fileName="${sys:outdir}/events.txt" append="false">
+      <PatternLayout pattern="%m%n%xEx"/>
+    </File>
+  </Appenders>
+  <Loggers>
+    <Root level="INFO">
+      <AppenderRef ref="Json"/>
+      <AppenderRef ref="Text"/>
+    </Root>
+  </Loggers>
+</Configuration>

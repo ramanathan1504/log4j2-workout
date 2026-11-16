@@ -1,0 +1,6 @@
+PASS message with LF: expected=message=line one\nline two observed=message=line one\nline two
+PASS message with CRLF: expected=message=line one\r\nline two observed=message=line one\r\nline two
+PASS message starting with the escape prefix: expected=message=!LOG4J2!:literal observed=message=!LOG4J2!:literal
+PASS control: single-line message with a backslash: expected=message=C:\new observed=message=C:\new
+PASS message naming a non-throwable class in a fake Caused-by line: expected=not initialized observed=not initialized (read)
+PASS legacy row with an unescaped line break: expected=no exception observed=message=line one frames=1

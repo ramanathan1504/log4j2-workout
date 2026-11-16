@@ -1,0 +1,2 @@
+PASS control: first send fails, retry delivers the event once observed: sendAttempts=2 delivered=[retried-event]
+PASS no error reported after a successful retry observed=0 'Unable to write to Kafka' status errors

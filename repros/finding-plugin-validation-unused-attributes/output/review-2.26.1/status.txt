@@ -1,0 +1,47 @@
+2026-11-16T14:29:27.641145Z main ERROR The parameter is null: fileName
+2026-11-16T14:29:27.642153Z main ERROR Could not create plugin of type class org.apache.logging.log4j.core.appender.FileAppender for element File
+org.apache.logging.log4j.core.config.ConfigurationException: Arguments given for element File are invalid: field 'fileName' has invalid value 'null'
+	at org.apache.logging.log4j.core.config.plugins.util.PluginBuilder.injectFields(PluginBuilder.java:208)
+	at org.apache.logging.log4j.core.config.plugins.util.PluginBuilder.build(PluginBuilder.java:123)
+	at org.apache.logging.log4j.core.config.AbstractConfiguration.createPluginObject(AbstractConfiguration.java:1215)
+	at org.apache.logging.log4j.core.config.AbstractConfiguration.createConfiguration(AbstractConfiguration.java:1134)
+	at org.apache.logging.log4j.core.config.AbstractConfiguration.createConfiguration(AbstractConfiguration.java:1126)
+	at org.apache.logging.log4j.core.config.AbstractConfiguration.doConfigure(AbstractConfiguration.java:734)
+	at org.apache.logging.log4j.core.config.AbstractConfiguration.initialize(AbstractConfiguration.java:271)
+	at org.apache.logging.log4j.core.config.AbstractConfiguration.start(AbstractConfiguration.java:324)
+	at org.apache.logging.log4j.core.LoggerContext.setConfiguration(LoggerContext.java:697)
+	at org.apache.logging.log4j.core.LoggerContext.reconfigure(LoggerContext.java:786)
+	at org.apache.logging.log4j.core.LoggerContext.reconfigure(LoggerContext.java:808)
+	at org.apache.logging.log4j.core.LoggerContext.start(LoggerContext.java:311)
+	at org.apache.logging.log4j.core.impl.Log4jContextFactory.getContext(Log4jContextFactory.java:160)
+	at org.apache.logging.log4j.core.impl.Log4jContextFactory.getContext(Log4jContextFactory.java:48)
+	at org.apache.logging.log4j.LogManager.getContext(LogManager.java:139)
+	at org.apache.logging.log4j.LogManager.getLogger(LogManager.java:557)
+	at Repro.main(Repro.java:24)
+
+2026-11-16T14:29:27.643661Z main ERROR No text provided for StringMatchFilter
+2026-11-16T14:29:27.643849Z main ERROR Could not create plugin of type class org.apache.logging.log4j.core.filter.StringMatchFilter for element StringMatchFilter
+org.apache.logging.log4j.core.config.ConfigurationException: Arguments given for element StringMatchFilter are invalid: field 'text' has invalid value 'null'
+	at org.apache.logging.log4j.core.config.plugins.util.PluginBuilder.injectFields(PluginBuilder.java:208)
+	at org.apache.logging.log4j.core.config.plugins.util.PluginBuilder.build(PluginBuilder.java:123)
+	at org.apache.logging.log4j.core.config.AbstractConfiguration.createPluginObject(AbstractConfiguration.java:1215)
+	at org.apache.logging.log4j.core.config.AbstractConfiguration.createConfiguration(AbstractConfiguration.java:1134)
+	at org.apache.logging.log4j.core.config.AbstractConfiguration.createConfiguration(AbstractConfiguration.java:1126)
+	at org.apache.logging.log4j.core.config.AbstractConfiguration.createConfiguration(AbstractConfiguration.java:1126)
+	at org.apache.logging.log4j.core.config.AbstractConfiguration.doConfigure(AbstractConfiguration.java:734)
+	at org.apache.logging.log4j.core.config.AbstractConfiguration.initialize(AbstractConfiguration.java:271)
+	at org.apache.logging.log4j.core.config.AbstractConfiguration.start(AbstractConfiguration.java:324)
+	at org.apache.logging.log4j.core.LoggerContext.setConfiguration(LoggerContext.java:697)
+	at org.apache.logging.log4j.core.LoggerContext.reconfigure(LoggerContext.java:786)
+	at org.apache.logging.log4j.core.LoggerContext.reconfigure(LoggerContext.java:808)
+	at org.apache.logging.log4j.core.LoggerContext.start(LoggerContext.java:311)
+	at org.apache.logging.log4j.core.impl.Log4jContextFactory.getContext(Log4jContextFactory.java:160)
+	at org.apache.logging.log4j.core.impl.Log4jContextFactory.getContext(Log4jContextFactory.java:48)
+	at org.apache.logging.log4j.LogManager.getContext(LogManager.java:139)
+	at org.apache.logging.log4j.LogManager.getLogger(LogManager.java:557)
+	at Repro.main(Repro.java:24)
+
+2026-11-16T14:29:27.647041Z main ERROR Console contains an invalid element or attribute "bogusAttr"
+2026-11-16T14:29:27.648515Z main ERROR Null object returned for File in Appenders.
+2026-11-16T14:29:27.649959Z main ERROR Appender references must contain a reference
+2026-11-16T14:29:27.650599Z main ERROR Null object returned for AppenderRef in Logger.

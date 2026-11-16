@@ -1,0 +1,5 @@
+version=2.x-HEAD
+PASS pattern %xEx cause frame of colliding exception: at Repro.create(Repro.java:1) [classes/:?]
+PASS rootcause Throwables.getRootCause(r -> r_c -> r_c_c, colliding equals) = r_c_c
+PASS jpa ThrowableAttributeConverter on A<->B cycle: length=276 'Caused by' count=1
+PASS nosql NoSqlAppender on A<->B cycle: inserted=1 thrown-chain depth=2

@@ -1,0 +1,4 @@
+file bytes=3458, events read=[event-1, event-3], reader error=none (clean EOF)
+PASS control event-1 readable: true
+PASS event-3 readable after failed event-2: true, reader error=none (clean EOF)
+status: 'Serialization of LogEvent failed' lines=1

@@ -1,0 +1,1 @@
+PASS nosql NoSqlAppender on A<->B cycle: inserted=1 thrown-chain depth=2

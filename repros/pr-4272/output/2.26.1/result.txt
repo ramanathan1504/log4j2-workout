@@ -1,0 +1,6 @@
+classpath log4j jars: log4j-api-2.26.1.jar 
+INFO forged legacy stream bytes=146 capacity=16777216 mappings=1
+FAIL forged-legacy-capacity observed=accepted size=1 keys.length=16777216 from 146 bytes
+FAIL non-serializable-value observed=object=null
+PASS control-serializable-value observed=plain=text keys.length=4
+INFO serialVersionUID SortedArrayStringMap=-5748905872274478116

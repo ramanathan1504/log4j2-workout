@@ -1,0 +1,6 @@
+version=2.x-HEAD-ea28f5a78b
+lines-written=3 of 3 events
+PASS control single SDM observed=[control@32473] plain
+PASS SDM id=mdc merged with ThreadContext observed=[mdc@32473 request="r1" user="alice"] mdc-merge
+PASS two SDMs id=Transfer@18060 in a collection observed=[Transfer@18060 from="A" to="B"] first, second
+status-logger (exception lines):

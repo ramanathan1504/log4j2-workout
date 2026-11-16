@@ -1,0 +1,5 @@
+FAIL xml-StringMatchFilter-without-text-not-built lines=[]
+FAIL builder-without-text-build() returned=filter text=''
+PASS xml-StringMatchFilter-with-text-control lines=[public-message]
+status-logger-StringMatchFilter-lines: 0
+classpath-log4j: log4j-api-2.24.3.jar log4j-core-3.0.0-beta3.jar log4j-kit-3.0.0-beta3.jar log4j-plugins-3.0.0-beta3.jar 

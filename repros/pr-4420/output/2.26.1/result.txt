@@ -1,0 +1,10 @@
+version=2.26.1
+lines-written=1 of 3 events
+PASS control single SDM observed=[control@32473] plain
+FAIL SDM id=mdc merged with ThreadContext observed=no line written
+FAIL two SDMs id=Transfer@18060 in a collection observed=no line written
+status-logger (exception lines):
+  2026-11-16T13:00:24.662048Z main ERROR An exception occurred processing Appender FILE
+  java.lang.NullPointerException: Cannot invoke "org.apache.logging.log4j.core.layout.Rfc5424Layout$StructuredDataElement.union(java.util.Map)" because "union" is null
+  2026-11-16T13:00:24.677655Z main ERROR An exception occurred processing Appender FILE
+  java.lang.UnsupportedOperationException

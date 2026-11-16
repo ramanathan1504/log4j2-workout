@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Configuration status="WARN">
+  <Appenders>
+    <Console name="CONSOLE">
+      <PatternLayout pattern="%p %c %m%n"/>
+    </Console>
+  </Appenders>
+  <Loggers>
+    <Logger name="com.foo" level="INFO"/>
+    <Logger name="com.foo.child" level="ERROR"/>
+    <Logger name="com.foobar" level="WARN"/>
+    <Logger name="com.foobar.child" level="ERROR"/>
+    <Root level="INFO">
+      <AppenderRef ref="CONSOLE"/>
+    </Root>
+  </Loggers>
+</Configuration>

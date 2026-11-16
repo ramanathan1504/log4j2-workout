@@ -1,0 +1,26 @@
+2026-11-16T12:57:45.558578Z main ERROR Unable to send HTTP in appender [Http]
+java.lang.IllegalArgumentException: Illegal character(s) in message header value: evil
+X-Injected: 1
+	at java.base/sun.net.www.protocol.http.HttpURLConnection.checkMessageHeader(HttpURLConnection.java:600)
+	at java.base/sun.net.www.protocol.http.HttpURLConnection.isExternalMessageHeaderAllowed(HttpURLConnection.java:530)
+	at java.base/sun.net.www.protocol.http.HttpURLConnection.setRequestProperty(HttpURLConnection.java:3370)
+	at org.apache.logging.log4j.core.appender.HttpURLConnectionManager.send(HttpURLConnectionManager.java:101)
+	at org.apache.logging.log4j.core.appender.HttpAppender.append(HttpAppender.java:193)
+	at org.apache.logging.log4j.core.config.AppenderControl.tryCallAppender(AppenderControl.java:160)
+	at org.apache.logging.log4j.core.config.AppenderControl.callAppender0(AppenderControl.java:133)
+	at org.apache.logging.log4j.core.config.AppenderControl.callAppenderPreventRecursion(AppenderControl.java:124)
+	at org.apache.logging.log4j.core.config.AppenderControl.callAppender(AppenderControl.java:88)
+	at org.apache.logging.log4j.core.config.LoggerConfig.callAppenders(LoggerConfig.java:807)
+	at org.apache.logging.log4j.core.config.LoggerConfig.processLogEvent(LoggerConfig.java:765)
+	at org.apache.logging.log4j.core.config.LoggerConfig.log(LoggerConfig.java:741)
+	at org.apache.logging.log4j.core.config.LoggerConfig.log(LoggerConfig.java:685)
+	at org.apache.logging.log4j.core.config.AwaitCompletionReliabilityStrategy.log(AwaitCompletionReliabilityStrategy.java:92)
+	at org.apache.logging.log4j.core.Logger.log(Logger.java:187)
+	at org.apache.logging.log4j.spi.AbstractLogger.tryLogMessage(AbstractLogger.java:2970)
+	at org.apache.logging.log4j.spi.AbstractLogger.logMessageTrackRecursion(AbstractLogger.java:2922)
+	at org.apache.logging.log4j.spi.AbstractLogger.logMessageSafely(AbstractLogger.java:2904)
+	at org.apache.logging.log4j.spi.AbstractLogger.logMessage(AbstractLogger.java:2648)
+	at org.apache.logging.log4j.spi.AbstractLogger.logIfEnabled(AbstractLogger.java:2587)
+	at org.apache.logging.log4j.spi.AbstractLogger.info(AbstractLogger.java:1590)
+	at Repro.main(Repro.java:36)
+

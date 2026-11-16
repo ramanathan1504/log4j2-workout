@@ -1,0 +1,5 @@
+/Users/ramanathan/.m2/repository/org/apache/logging/log4j/log4j-api/2.24.3/log4j-api-2.24.3.jar
+/private/tmp/claude-501/-Users-ramanathan-apache-log4j2-workout/7180a8bd-7341-4eed-92c9-cb3b625c5257/scratchpad/wt/jars-main/log4j-core-3.0.0-SNAPSHOT.jar
+/private/tmp/claude-501/-Users-ramanathan-apache-log4j2-workout/7180a8bd-7341-4eed-92c9-cb3b625c5257/scratchpad/wt/jars-main/log4j-kit-3.0.0-SNAPSHOT.jar
+/private/tmp/claude-501/-Users-ramanathan-apache-log4j2-workout/7180a8bd-7341-4eed-92c9-cb3b625c5257/scratchpad/wt/jars-main/log4j-plugins-3.0.0-SNAPSHOT.jar
+/private/tmp/claude-501/-Users-ramanathan-apache-log4j2-workout/7180a8bd-7341-4eed-92c9-cb3b625c5257/scratchpad/wt/jars-main/log4j-layout-template-json-3.0.0-SNAPSHOT.jar

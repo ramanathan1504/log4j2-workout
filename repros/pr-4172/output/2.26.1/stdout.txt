@@ -1,0 +1,2 @@
+FAIL valid-appender-configured configuration=XmlConfiguration appenders=[]
+FAIL valid-appender-received-event file=<no file>

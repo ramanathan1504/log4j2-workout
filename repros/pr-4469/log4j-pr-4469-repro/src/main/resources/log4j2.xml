@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Configuration status="warn">
+  <Appenders>
+    <File name="file" fileName="${sys:logdir}/file.log" append="false">
+      <PatternLayout pattern="%m%n" header="HEADER%n" footer="FOOTER%n"/>
+    </File>
+    <RandomAccessFile name="raf" fileName="${sys:logdir}/raf.log" append="false">
+      <PatternLayout pattern="%m%n" header="HEADER%n" footer="FOOTER%n"/>
+    </RandomAccessFile>
+    <MemoryMappedFile name="mmf" fileName="${sys:logdir}/mmf.log" append="false" regionLength="65536">
+      <PatternLayout pattern="%m%n" header="HEADER%n" footer="FOOTER%n"/>
+    </MemoryMappedFile>
+  </Appenders>
+  <Loggers>
+    <Root level="info">
+      <AppenderRef ref="file"/>
+      <AppenderRef ref="raf"/>
+      <AppenderRef ref="mmf"/>
+    </Root>
+  </Loggers>
+</Configuration>

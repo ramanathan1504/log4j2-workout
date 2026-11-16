@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Configuration status="WARN" name="base">
+  <Appenders>
+    <File name="FILE" fileName="${sys:outdir}/app.log" append="true">
+      <PatternLayout pattern="mode=${sys:mode} ctx=$${web:servletContextName} %m%n"/>
+    </File>
+  </Appenders>
+  <Loggers>
+    <Root level="INFO">
+      <AppenderRef ref="FILE"/>
+    </Root>
+  </Loggers>
+</Configuration>

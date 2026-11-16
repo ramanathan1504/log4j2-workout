@@ -1,0 +1,9 @@
+version=2.26.1
+classpath-core=/Users/ramanathan/.m2/repository/org/apache/logging/log4j/log4j-core/2.26.1/log4j-core-2.26.1.jar
+PASS createOnDemand=true parent dir before first event exists=false
+PASS createOnDemand=true file before first event exists=false
+FAIL createOnDemand=true direct-write parent dir before first event exists=true
+PASS createOnDemand=true file after first event written=true bytes=21
+PASS createOnDemand=true direct-write file after first event written=true
+PASS control createOnDemand=false file at startup exists=true
+status-logger:

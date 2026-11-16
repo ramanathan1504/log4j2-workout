@@ -1,0 +1,36 @@
+2026-11-16T12:48:01.087724Z main ERROR No text provided for StringMatchFilter: text
+2026-11-16T12:48:01.210735Z main ERROR Could not configure plugin element StringMatchFilter: org.apache.logging.log4j.plugins.validation.ConstraintValidationException: Validation failed for text (source: private java.lang.String org.apache.logging.log4j.core.filter.StringMatchFilter$Builder.text) and value null org.apache.logging.log4j.plugins.validation.ConstraintValidationException: Validation failed for text (source: private java.lang.String org.apache.logging.log4j.core.filter.StringMatchFilter$Builder.text) and value null
+	at org.apache.logging.log4j.plugins.di.ConfigurableInstanceFactory.validate(ConfigurableInstanceFactory.java:176)
+	at org.apache.logging.log4j.plugins.di.DefaultInstanceFactory.injectField(DefaultInstanceFactory.java:410)
+	at org.apache.logging.log4j.plugins.di.DefaultInstanceFactory.injectMembers(DefaultInstanceFactory.java:377)
+	at org.apache.logging.log4j.plugins.di.DefaultInstanceFactory.lambda$createDefaultFactory$6(DefaultInstanceFactory.java:154)
+	at org.apache.logging.log4j.plugins.di.InstanceFactory.getInstance(InstanceFactory.java:104)
+	at org.apache.logging.log4j.core.config.ConfigurationProcessor.instantiate(ConfigurationProcessor.java:110)
+	at org.apache.logging.log4j.core.config.ConfigurationProcessor.withNode(ConfigurationProcessor.java:85)
+	at org.apache.logging.log4j.core.config.ConfigurationProcessor.processNodeTree(ConfigurationProcessor.java:74)
+	at org.apache.logging.log4j.core.config.ConfigurationProcessor.withNode(ConfigurationProcessor.java:85)
+	at org.apache.logging.log4j.core.config.ConfigurationProcessor.lambda$processNodeTree$0(ConfigurationProcessor.java:67)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1511)
+	at org.apache.logging.log4j.core.config.ConfigurationProcessor.processNodeTree(ConfigurationProcessor.java:67)
+	at org.apache.logging.log4j.core.config.ConfigurationProcessor.withNode(ConfigurationProcessor.java:85)
+	at org.apache.logging.log4j.core.config.ConfigurationProcessor.lambda$processNodeTree$0(ConfigurationProcessor.java:67)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1511)
+	at org.apache.logging.log4j.core.config.ConfigurationProcessor.processNodeTree(ConfigurationProcessor.java:67)
+	at org.apache.logging.log4j.core.config.AbstractConfiguration.createConfiguration(AbstractConfiguration.java:1147)
+	at org.apache.logging.log4j.core.config.AbstractConfiguration.doConfigure(AbstractConfiguration.java:719)
+	at org.apache.logging.log4j.core.config.AbstractConfiguration.initialize(AbstractConfiguration.java:298)
+	at org.apache.logging.log4j.core.config.AbstractConfiguration.start(AbstractConfiguration.java:368)
+	at org.apache.logging.log4j.core.LoggerContext.setConfiguration(LoggerContext.java:682)
+	at org.apache.logging.log4j.core.LoggerContext.start(LoggerContext.java:337)
+	at org.apache.logging.log4j.core.impl.Log4jContextFactory.startContext(Log4jContextFactory.java:365)
+	at org.apache.logging.log4j.core.impl.Log4jContextFactory.getContext(Log4jContextFactory.java:156)
+	at org.apache.logging.log4j.core.impl.Log4jContextFactory.getContext(Log4jContextFactory.java:49)
+	at org.apache.logging.log4j.LogManager.getContext(LogManager.java:138)
+	at org.apache.logging.log4j.LogManager.getLogger(LogManager.java:555)
+	at Repro.main(Repro.java:14)
+
+2026-11-16T12:48:01.218658Z main ERROR StringMatchFilter contains invalid attributes "onMatch", "onMismatch"
+2026-11-16T12:48:01.292209Z main ERROR Unable to create StringMatchFilter: The 'text' attribute must be configured.
+PASS xml-StringMatchFilter-without-text-not-built lines=[public-message, secret-message]
+PASS builder-without-text-build() returned=null
+PASS xml-StringMatchFilter-with-text-control lines=[public-message]

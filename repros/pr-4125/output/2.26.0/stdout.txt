@@ -1,0 +1,26 @@
+2026-11-16T12:48:47.348469Z main ERROR Unable to write to Kafka in appender [KafkaWithRetry]
+java.lang.RuntimeException: transient failure on first send
+	at Repro$1.send(Repro.java:27)
+	at org.apache.kafka.clients.producer.MockProducer.send(MockProducer.java:308)
+	at org.apache.logging.log4j.core.appender.mom.kafka.KafkaManager.send(KafkaManager.java:158)
+	at org.apache.logging.log4j.core.appender.mom.kafka.KafkaAppender.tryAppend(KafkaAppender.java:269)
+	at org.apache.logging.log4j.core.appender.mom.kafka.KafkaAppender.append(KafkaAppender.java:217)
+	at org.apache.logging.log4j.core.config.AppenderControl.tryCallAppender(AppenderControl.java:160)
+	at org.apache.logging.log4j.core.config.AppenderControl.callAppender0(AppenderControl.java:133)
+	at org.apache.logging.log4j.core.config.AppenderControl.callAppenderPreventRecursion(AppenderControl.java:124)
+	at org.apache.logging.log4j.core.config.AppenderControl.callAppender(AppenderControl.java:88)
+	at org.apache.logging.log4j.core.config.LoggerConfig.callAppenders(LoggerConfig.java:807)
+	at org.apache.logging.log4j.core.config.LoggerConfig.processLogEvent(LoggerConfig.java:765)
+	at org.apache.logging.log4j.core.config.LoggerConfig.log(LoggerConfig.java:741)
+	at org.apache.logging.log4j.core.config.LoggerConfig.log(LoggerConfig.java:685)
+	at org.apache.logging.log4j.core.config.AwaitCompletionReliabilityStrategy.log(AwaitCompletionReliabilityStrategy.java:92)
+	at org.apache.logging.log4j.core.Logger.log(Logger.java:187)
+	at org.apache.logging.log4j.spi.AbstractLogger.tryLogMessage(AbstractLogger.java:2970)
+	at org.apache.logging.log4j.spi.AbstractLogger.logMessageTrackRecursion(AbstractLogger.java:2922)
+	at org.apache.logging.log4j.spi.AbstractLogger.logMessageSafely(AbstractLogger.java:2904)
+	at org.apache.logging.log4j.spi.AbstractLogger.logMessage(AbstractLogger.java:2648)
+	at org.apache.logging.log4j.spi.AbstractLogger.logIfEnabled(AbstractLogger.java:2587)
+	at org.apache.logging.log4j.spi.AbstractLogger.info(AbstractLogger.java:1590)
+	at Repro.main(Repro.java:38)
+
+RESULT sendAttempts=2 delivered=[retried-event]

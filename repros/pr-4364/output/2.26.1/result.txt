@@ -1,0 +1,7 @@
+FAIL level=WARN secret=JndiSecretJavax occurrences=4, lines with credentials=***** : 0
+FAIL level=WARN secret=JndiSecretJakarta occurrences=4, lines with credentials=***** : 0
+FAIL level=DEBUG secret=JndiSecretJavax occurrences=4, lines with credentials=***** : 0
+FAIL level=DEBUG secret=JndiSecretJakarta occurrences=4, lines with credentials=***** : 0
+control: 'Error creating JmsManager' ERROR lines at WARN=2 (expected 2, one per appender)
+  2026-11-16T12:58:25.533015Z main ERROR Error creating JmsManager using JmsManagerConfiguration [JmsManagerConfiguration [jndiProperties={java.naming.security.principal=jndi-user, java.naming.factory.initial=Repro$UnreachableNamingServerFactory, java.naming.provider.url=tcp://broker-javax:61616, java.naming.security.credentials=JndiSecretJavax}, connectionFactoryName=ConnectionFactory, destinationN
+  2026-11-16T12:58:25.550112Z main ERROR Error creating JmsManager using JmsManagerConfiguration [JmsManagerConfiguration [jndiProperties={java.naming.security.principal=jndi-user, java.naming.factory.initial=Repro$UnreachableNamingServerFactory, java.naming.provider.url=tcp://broker-jakarta:61616, java.naming.security.credentials=JndiSecretJakarta}, connectionFactoryName=ConnectionFactory, destinat

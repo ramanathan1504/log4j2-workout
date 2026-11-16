@@ -1,0 +1,3 @@
+FAIL createFilter-with-null-useRawMsg observed=threw java.lang.NullPointerException: Cannot invoke "java.lang.Boolean.booleanValue()" because "useRawMsg" is null
+PASS xml-RegexFilter-without-useRawMsg-control lines=[public-message]
+classpath-log4j: log4j-api-2.24.3.jar log4j-core-3.0.0-beta3.jar log4j-kit-3.0.0-beta3.jar log4j-plugins-3.0.0-beta3.jar 

@@ -1,0 +1,16 @@
+version=2.26.1
+log4j-jars=log4j-api-2.26.1.jar log4j-core-2.26.1.jar 
+translator: threadlocals=true
+  info logger=org.apache.logging.log4j.core.async.AsyncLogger threadlocals=true
+  PASS case-classic expected=Repro.main:65 thread=main observed=Repro.main:65 thread=main
+  PASS case-builder expected=Repro.main:67 thread=main observed=Repro.main:67 thread=main
+  FAIL case-explicit expected=com.example.Caller.explicitMethod:4242 thread=main observed=Repro.main:68 thread=main
+  status-logger (lines, first):
+    0 
+translator: threadlocals=false
+  info logger=org.apache.logging.log4j.core.async.AsyncLogger threadlocals=false
+  PASS case-classic expected=Repro.main:65 thread=main observed=Repro.main:65 thread=main
+  PASS case-builder expected=Repro.main:67 thread=main observed=Repro.main:67 thread=main
+  FAIL case-explicit expected=com.example.Caller.explicitMethod:4242 thread=main observed=Repro.main:68 thread=main
+  status-logger (lines, first):
+    0 

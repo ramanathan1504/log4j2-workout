@@ -1,0 +1,10 @@
+src/provider/FixedTraceContextProvider.java:1: error: cannot find symbol
+import org.apache.logging.log4j.spi.TraceContextProvider;
+                                   ^
+  symbol:   class TraceContextProvider
+  location: package org.apache.logging.log4j.spi
+src/provider/FixedTraceContextProvider.java:3: error: cannot find symbol
+public final class FixedTraceContextProvider implements TraceContextProvider {
+                                                        ^
+  symbol: class TraceContextProvider
+2 errors

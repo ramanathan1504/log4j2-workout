@@ -1,0 +1,6 @@
+version=2.25.1
+classpath-core=/Users/ramanathan/.m2/repository/org/apache/logging/log4j/log4j-core/2.25.1/log4j-core-2.25.1.jar
+FAIL config-substitution ${jvmrunargs:0} -> -Dprobe=jvmrunargs-probe (first JVM arg -Dprobe=jvmrunargs-probe)
+FAIL runtime-layout $${jvmrunargs:0} -> arg0=-Dprobe=jvmrunargs-probe msg=hello
+PASS control event-written -> arg0=-Dprobe=jvmrunargs-probe msg=hello
+status-logger:

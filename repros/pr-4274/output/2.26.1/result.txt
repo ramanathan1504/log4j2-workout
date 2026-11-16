@@ -1,0 +1,5 @@
+classpath log4j jars: log4j-api-2.26.1.jar 
+FAIL parameterized-null-args observed=NullPointerException: Cannot read the array length because "this.args" is null
+FAIL object-array-non-serializable-element observed=NotSerializableException: Repro$NonSerializable
+PASS control-object-array-serializable observed=[A, 1, C]
+INFO serialVersionUID ObjectArrayMessage=-5903272448334166185 ParameterizedMessage=-665975803997290697

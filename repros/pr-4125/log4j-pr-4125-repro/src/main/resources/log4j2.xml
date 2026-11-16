@@ -1,0 +1,12 @@
+<Configuration status="WARN">
+  <Appenders>
+    <Kafka name="KafkaWithRetry" topic="logs" retryCount="2" syncSend="true" ignoreExceptions="true">
+      <PatternLayout pattern="%m"/>
+      <Property name="bootstrap.servers">localhost:9</Property>
+    </Kafka>
+  </Appenders>
+  <Loggers>
+    <Root level="INFO"><AppenderRef ref="KafkaWithRetry"/></Root>
+    <Logger name="org.apache.kafka" level="OFF" additivity="false"/>
+  </Loggers>
+</Configuration>

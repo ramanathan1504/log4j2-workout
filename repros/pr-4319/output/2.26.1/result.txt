@@ -1,0 +1,2 @@
+FAIL A persistent commit failure, buffer must not grow past bufferSize=5, largest flush=20: logged=20 stored=0 distinct=0 duplicated=0 rowsSentPerFlush=[5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 20] stop=DbAppenderLoggingException; no discard warning
+FAIL B commit reached the database then threw once, no duplicate rows: logged=10 stored=15 distinct=10 duplicated=5 rowsSentPerFlush=[5, 6, 4] stop=clean; no discard warning

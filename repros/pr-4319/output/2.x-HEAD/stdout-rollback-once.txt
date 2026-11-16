@@ -1,0 +1,1 @@
+logged=10 stored=5 distinct=5 duplicated=0 rowsSentPerFlush=[5, 5, 0] stop=clean

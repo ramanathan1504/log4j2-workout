@@ -1,0 +1,2 @@
+PASS DOMConfigurator-warning-links-production-site observed=https://logging.apache.org/log4j/2.x/migrate-from-log4j1.html#log4j1.compatibility
+PASS PropertyConfigurator-warning-links-production-site observed=https://logging.apache.org/log4j/2.x/migrate-from-log4j1.html#log4j1.compatibility

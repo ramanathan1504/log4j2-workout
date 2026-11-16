@@ -1,0 +1,6 @@
+version=2.x-HEAD-ea28f5a78b
+classpath-core=/private/tmp/claude-501/-Users-ramanathan-apache-log4j2-workout/7180a8bd-7341-4eed-92c9-cb3b625c5257/scratchpad/wt/jars-2x/log4j-core-2.27.0-SNAPSHOT.jar
+PASS config-substitution ${jvmrunargs:0} -> ${jvmrunargs:0} (first JVM arg -Dprobe=jvmrunargs-probe)
+PASS runtime-layout $${jvmrunargs:0} -> arg0=${jvmrunargs:0} msg=hello
+PASS control event-written -> arg0=${jvmrunargs:0} msg=hello
+status-logger:

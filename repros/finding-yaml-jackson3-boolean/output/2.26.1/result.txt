@@ -1,0 +1,86 @@
+version=2.26.1 java=openjdk version "17.0.14" 2025-01-21
+[jackson2-only] jars: log4j-core-2.26.1.jar jackson-dataformat-yaml-2.20.0.jar jackson-databind-2.20.0.jar snakeyaml-2.4.jar jackson-core-2.20.0.jar 
+PASS jackson2-only config loaded expected=YamlBooleanRepro observed=YamlBooleanRepro (YamlConfiguration)
+PASS jackson2-only additivity: yes expected=true (2 copies) observed=true (2 copies)
+PASS jackson2-only additivity: Yes expected=true (2 copies) observed=true (2 copies)
+PASS jackson2-only additivity: YES expected=true (2 copies) observed=true (2 copies)
+PASS jackson2-only additivity: on expected=true (2 copies) observed=true (2 copies)
+PASS jackson2-only additivity: On expected=true (2 copies) observed=true (2 copies)
+PASS jackson2-only additivity: ON expected=true (2 copies) observed=true (2 copies)
+PASS jackson2-only additivity: true [control] expected=true (2 copies) observed=true (2 copies)
+PASS jackson2-only additivity: True [control] expected=true (2 copies) observed=true (2 copies)
+PASS jackson2-only additivity: TRUE [control] expected=true (2 copies) observed=true (2 copies)
+PASS jackson2-only additivity: y expected=false (1 copies) observed=false (1 copies)
+PASS jackson2-only additivity: Y expected=false (1 copies) observed=false (1 copies)
+PASS jackson2-only additivity: no expected=false (1 copies) observed=false (1 copies)
+PASS jackson2-only additivity: off expected=false (1 copies) observed=false (1 copies)
+PASS jackson2-only additivity: n expected=false (1 copies) observed=false (1 copies)
+PASS jackson2-only additivity: false [control] expected=false (1 copies) observed=false (1 copies)
+PASS jackson2-only additivity: FALSE [control] expected=false (1 copies) observed=false (1 copies)
+PASS jackson2-only additivity: 'yes' [control] expected=false (1 copies) observed=false (1 copies)
+FAIL jackson2-only level: off expected=0 lines observed=1
+PASS jackson2-only File append: yes expected=[seed, appended] observed=[seed, appended]
+PASS jackson2-only Logger includeLocation: yes expected=main|loc observed=main|loc
+[jackson2-only] status-logger:
+  2026-11-16T13:55:29.850435Z main WARN Error while converting string [false] to type [class org.apache.logging.log4j.Level]. Using default value [null].
+  java.lang.IllegalArgumentException: Unknown level constant [FALSE].
+  	at org.apache.logging.log4j.Level.valueOf(Level.java:348)
+  	at org.apache.logging.log4j.core.config.plugins.convert.TypeConverters$LevelConverter.convert(TypeConverters.java:301)
+  	at org.apache.logging.log4j.core.config.plugins.convert.TypeConverters$LevelConverter.convert(TypeConverters.java:290)
+[jackson3-only] jars: log4j-core-2.26.1.jar jackson-dataformat-yaml-3.2.3.jar jackson-core-3.2.3.jar jackson-databind-3.2.3.jar snakeyaml-engine-3.0.1.jar 
+2026-11-16T13:55:30.143335Z main ERROR m
+FAIL jackson3-only config loaded expected=YamlBooleanRepro observed=/Users/ramanathan/apache/log4j2-workout/repros/finding-yaml-jackson3-boolean/log4j-finding-yaml-jackson3-boolean-repro/target/classes/log4j2.yaml (XmlConfiguration)
+FAIL jackson3-only additivity: yes expected=true (2 copies) observed=? (0 copies)
+FAIL jackson3-only additivity: Yes expected=true (2 copies) observed=? (0 copies)
+FAIL jackson3-only additivity: YES expected=true (2 copies) observed=? (0 copies)
+FAIL jackson3-only additivity: on expected=true (2 copies) observed=? (0 copies)
+FAIL jackson3-only additivity: On expected=true (2 copies) observed=? (0 copies)
+FAIL jackson3-only additivity: ON expected=true (2 copies) observed=? (0 copies)
+FAIL jackson3-only additivity: true [control] expected=true (2 copies) observed=? (0 copies)
+FAIL jackson3-only additivity: True [control] expected=true (2 copies) observed=? (0 copies)
+FAIL jackson3-only additivity: TRUE [control] expected=true (2 copies) observed=? (0 copies)
+FAIL jackson3-only additivity: y expected=false (1 copies) observed=? (0 copies)
+FAIL jackson3-only additivity: Y expected=false (1 copies) observed=? (0 copies)
+FAIL jackson3-only additivity: no expected=false (1 copies) observed=? (0 copies)
+FAIL jackson3-only additivity: off expected=false (1 copies) observed=? (0 copies)
+FAIL jackson3-only additivity: n expected=false (1 copies) observed=? (0 copies)
+FAIL jackson3-only additivity: false [control] expected=false (1 copies) observed=? (0 copies)
+FAIL jackson3-only additivity: FALSE [control] expected=false (1 copies) observed=? (0 copies)
+FAIL jackson3-only additivity: 'yes' [control] expected=false (1 copies) observed=? (0 copies)
+PASS jackson3-only level: off expected=0 lines observed=0
+FAIL jackson3-only File append: yes expected=[seed, appended] observed=[seed]
+FAIL jackson3-only Logger includeLocation: yes expected=main|loc observed=
+[jackson3-only] status-logger:
+  [Fatal Error] log4j2.yaml:1:1: Content is not allowed in prolog.
+  2026-11-16T13:55:30.122273Z main ERROR Error parsing /Users/ramanathan/apache/log4j2-workout/repros/finding-yaml-jackson3-boolean/log4j-finding-yaml-jackson3-boolean-repro/target/classes/log4j2.yaml
+  org.xml.sax.SAXParseException; systemId: file:///Users/ramanathan/apache/log4j2-workout/repros/finding-yaml-jackson3-boolean/log4j-finding-yaml-jackson3-boolean-repro/target/classes/log4j2.yaml; lineNumber: 1; columnNumber: 1; Content is no
+  	at java.xml/com.sun.org.apache.xerces.internal.parsers.DOMParser.parse(DOMParser.java:262)
+  	at java.xml/com.sun.org.apache.xerces.internal.jaxp.DocumentBuilderImpl.parse(DocumentBuilderImpl.java:342)
+[jackson2+jackson3] jars: log4j-core-2.26.1.jar jackson-dataformat-yaml-3.2.3.jar jackson-core-3.2.3.jar jackson-databind-3.2.3.jar snakeyaml-engine-3.0.1.jar jackson-dataformat-yaml-2.20.0.jar jackson-databind-2.20.0.jar snakeyaml-2.4.jar jackson-core-2.20.0.jar 
+PASS jackson2+jackson3 config loaded expected=YamlBooleanRepro observed=YamlBooleanRepro (YamlConfiguration)
+PASS jackson2+jackson3 additivity: yes expected=true (2 copies) observed=true (2 copies)
+PASS jackson2+jackson3 additivity: Yes expected=true (2 copies) observed=true (2 copies)
+PASS jackson2+jackson3 additivity: YES expected=true (2 copies) observed=true (2 copies)
+PASS jackson2+jackson3 additivity: on expected=true (2 copies) observed=true (2 copies)
+PASS jackson2+jackson3 additivity: On expected=true (2 copies) observed=true (2 copies)
+PASS jackson2+jackson3 additivity: ON expected=true (2 copies) observed=true (2 copies)
+PASS jackson2+jackson3 additivity: true [control] expected=true (2 copies) observed=true (2 copies)
+PASS jackson2+jackson3 additivity: True [control] expected=true (2 copies) observed=true (2 copies)
+PASS jackson2+jackson3 additivity: TRUE [control] expected=true (2 copies) observed=true (2 copies)
+PASS jackson2+jackson3 additivity: y expected=false (1 copies) observed=false (1 copies)
+PASS jackson2+jackson3 additivity: Y expected=false (1 copies) observed=false (1 copies)
+PASS jackson2+jackson3 additivity: no expected=false (1 copies) observed=false (1 copies)
+PASS jackson2+jackson3 additivity: off expected=false (1 copies) observed=false (1 copies)
+PASS jackson2+jackson3 additivity: n expected=false (1 copies) observed=false (1 copies)
+PASS jackson2+jackson3 additivity: false [control] expected=false (1 copies) observed=false (1 copies)
+PASS jackson2+jackson3 additivity: FALSE [control] expected=false (1 copies) observed=false (1 copies)
+PASS jackson2+jackson3 additivity: 'yes' [control] expected=false (1 copies) observed=false (1 copies)
+FAIL jackson2+jackson3 level: off expected=0 lines observed=1
+PASS jackson2+jackson3 File append: yes expected=[seed, appended] observed=[seed, appended]
+PASS jackson2+jackson3 Logger includeLocation: yes expected=main|loc observed=main|loc
+[jackson2+jackson3] status-logger:
+  2026-11-16T13:55:30.537884Z main WARN Error while converting string [false] to type [class org.apache.logging.log4j.Level]. Using default value [null].
+  java.lang.IllegalArgumentException: Unknown level constant [FALSE].
+  	at org.apache.logging.log4j.Level.valueOf(Level.java:348)
+  	at org.apache.logging.log4j.core.config.plugins.convert.TypeConverters$LevelConverter.convert(TypeConverters.java:301)
+  	at org.apache.logging.log4j.core.config.plugins.convert.TypeConverters$LevelConverter.convert(TypeConverters.java:290)

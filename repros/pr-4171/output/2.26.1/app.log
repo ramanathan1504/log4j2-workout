@@ -1,0 +1,4 @@
+sync-event trace=mainraceId span=%spanId flags=mainraceFlags
+async-event trace=mainraceId span=%spanId flags=mainraceFlags
+no-span-event trace=mainraceId span=%spanId flags=mainraceFlags
+async-event-2 trace=mainraceId span=%spanId flags=mainraceFlags
