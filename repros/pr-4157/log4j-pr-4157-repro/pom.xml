@@ -8,7 +8,7 @@
   <version>1</version>
   <properties>
     <log4j.version>3.0.0-beta3</log4j.version>
-    <log4j.api.version>2.24.3</log4j.api.version>
+    <log4j.api.version>2.25.5</log4j.api.version>
     <maven.compiler.source>17</maven.compiler.source>
     <maven.compiler.target>17</maven.compiler.target>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
