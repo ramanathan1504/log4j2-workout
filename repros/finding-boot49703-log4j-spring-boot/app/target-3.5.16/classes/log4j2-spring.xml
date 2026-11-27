@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Configuration status="WARN">
+  <Appenders>
+    <Console name="Plain" target="SYSTEM_OUT">
+      <PatternLayout pattern="RESULT log line: app=${spring:spring.application.name} profile=none %m%n"/>
+    </Console>
+    <SpringProfile name="dev">
+      <Console name="Dev" target="SYSTEM_OUT">
+        <PatternLayout pattern="RESULT log line: app=${spring:spring.application.name} profile=dev %m%n"/>
+      </Console>
+    </SpringProfile>
+  </Appenders>
+  <Loggers>
+    <Logger name="repro" level="INFO" additivity="false">
+      <SpringProfile name="dev">
+        <AppenderRef ref="Dev"/>
+      </SpringProfile>
+      <SpringProfile name="!dev">
+        <AppenderRef ref="Plain"/>
+      </SpringProfile>
+    </Logger>
+    <Root level="WARN">
+      <AppenderRef ref="Plain"/>
+    </Root>
+  </Loggers>
+</Configuration>

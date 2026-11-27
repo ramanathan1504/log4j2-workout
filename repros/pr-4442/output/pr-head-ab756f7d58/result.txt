@@ -1,0 +1,5 @@
+PASS builder (Builder extends AtomicInteger: filter built, drop event denied) observed: keep=true drop=false status=[]
+INFO metadata builder fields registered: 356
+INFO metadata org.apache.logging.log4j.core.appender.SocketAppender$Builder []
+INFO metadata org.apache.logging.log4j.core.net.ssl.SslConfiguration []
+INFO metadata org.apache.logging.log4j.core.appender.SyslogAppender$Builder ['appName', 'charsetName', 'enterpriseNumber', 'escapeNL', 'eventPrefix', 'exceptionPattern', 'excludes', 'facility', 'format', 'id', 'includeMdc', 'includes', 'loggerFields', 'mdcId', 'mdcPrefix', 'msgId', 'newLine', 'required']

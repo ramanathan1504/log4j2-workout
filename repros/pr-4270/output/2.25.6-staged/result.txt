@@ -1,0 +1,4 @@
+classpath log4j jars: log4j-api-test-2.25.6.jar log4j-api-2.25.6.jar 
+INFO java.version=17.0.14 jdk.serialFilter=null
+PASS non-allowlisted-class-rejected observed=rejected InvalidObjectException: Class is not allowed for deserialization: java.io.File
+PASS control-allowlisted-class-accepted observed=accepted java.util.HashMap

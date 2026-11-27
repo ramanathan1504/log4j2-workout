@@ -1,0 +1,9 @@
+S1 #4439 restart in the same period version=pr-suggestion logged=317 found=317 lost=0
+  app.log       59 lines, first: 11:29:00.030 run=S1B seq=181
+  app.log.2026-11-14-11-27       38 lines, first: 11:27:50.254 run=S1A seq=0
+  app.log.2026-11-14-11-28      220 lines, first: 11:28:00.040 run=S1A seq=38
+S2 #4449 missed fire, file created by a scheduled roll version=pr-suggestion logged=318 found=318 lost=0
+  app.log       40 lines, first: 11:32:00.132 run=S2B seq=201
+  app.log.2026-11-14-11-29       38 lines, first: 11:29:50.442 run=S2A seq=0
+  app.log.2026-11-14-11-30       39 lines, first: 11:30:00.211 run=S2A seq=38
+  app.log.2026-11-14-11-31      201 lines, first: 11:31:08.448 run=S2B seq=0

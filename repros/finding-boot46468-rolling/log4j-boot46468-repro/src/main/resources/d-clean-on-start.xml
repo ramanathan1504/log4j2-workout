@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Configuration status="WARN">
+	<Appenders>
+		<RollingFile name="File" fileName="${sys:LOG_FILE}" filePattern="${sys:LOG_FILE}.%d{yyyy-MM-dd-HH-mm-ss}.%i.gz">
+			<PatternLayout pattern="%m%n"/>
+			<Policies>
+				<SystemPropertyArbiter propertyName="LOG4J2_ROLLINGPOLICY_CLEAN_HISTORY_ON_START" propertyValue="true">
+					<OnStartupTriggeringPolicy />
+				</SystemPropertyArbiter>
+				<SizeBasedTriggeringPolicy size="10MB"/>
+			</Policies>
+			<DefaultRolloverStrategy max="7"/>
+		</RollingFile>
+	</Appenders>
+	<Loggers><Root level="INFO"><AppenderRef ref="File"/></Root></Loggers>
+</Configuration>

@@ -1,0 +1,16 @@
+== case a-max-history, log4j 2.26.1
+DIR <work>/logs gz=12 bytes=519 [app.log.2026-11-25-21-54-01.1.gz, app.log.2026-11-25-21-54-01.2.gz, app.log.2026-11-25-21-54-02.1.gz, app.log.2026-11-25-21-54-02.2.gz, app.log.2026-11-25-21-54-03.1.gz, app.log.2026-11-25-21-54-03.2.gz, app.log.2026-11-25-21-54-04.1.gz, app.log.2026-11-25-21-54-04.2.gz, app.log.2026-11-25-21-54-05.1.gz, app.log.2026-11-25-21-54-05.2.gz, app.log.2026-11-25-21-54-06.1.gz, app.log.2026-11-25-21-54-06.2.gz]
+DIR <work>/logs per-period={2026-11-25-21-54-01=2, 2026-11-25-21-54-02=2, 2026-11-25-21-54-03=2, 2026-11-25-21-54-04=2, 2026-11-25-21-54-05=2, 2026-11-25-21-54-06=2}
+== case b-stashed-cap, log4j 2.26.1
+DIR <work> gz=1 bytes=3000 [other-2.gz]
+DIR <work> per-period={other-2.gz=1}
+DIR <work>/logs gz=12 bytes=543 [app.log.2026-11-25-21-54-07.1.gz, app.log.2026-11-25-21-54-07.2.gz, app.log.2026-11-25-21-54-08.1.gz, app.log.2026-11-25-21-54-08.2.gz, app.log.2026-11-25-21-54-09.1.gz, app.log.2026-11-25-21-54-09.2.gz, app.log.2026-11-25-21-54-10.1.gz, app.log.2026-11-25-21-54-10.2.gz, app.log.2026-11-25-21-54-11.1.gz, app.log.2026-11-25-21-54-11.2.gz, app.log.2026-11-25-21-54-12.1.gz, app.log.2026-11-25-21-54-12.2.gz]
+DIR <work>/logs per-period={2026-11-25-21-54-07=2, 2026-11-25-21-54-08=2, 2026-11-25-21-54-09=2, 2026-11-25-21-54-10=2, 2026-11-25-21-54-11=2, 2026-11-25-21-54-12=2}
+== case c-fixed-cap, log4j 2.26.1
+DIR <work> gz=2 bytes=6000 [other-1.gz, other-2.gz]
+DIR <work> per-period={other-1.gz=1, other-2.gz=1}
+DIR <work>/logs gz=4 bytes=190 [app.log.2026-11-25-21-54-16.1.gz, app.log.2026-11-25-21-54-16.2.gz, app.log.2026-11-25-21-54-17.1.gz, app.log.2026-11-25-21-54-17.2.gz]
+DIR <work>/logs per-period={2026-11-25-21-54-16=2, 2026-11-25-21-54-17=2}
+== case d-clean-on-start, log4j 2.26.1
+DIR <work>/logs gz=1 bytes=47 [app.log.2026-01-01-00-00-00.1.gz]
+DIR <work>/logs per-period={2026-01-01-00-00-00=1}

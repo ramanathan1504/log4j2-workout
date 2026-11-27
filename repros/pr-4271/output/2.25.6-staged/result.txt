@@ -1,0 +1,4 @@
+classpath log4j jars: log4j-core-2.25.6.jar log4j-api-2.25.6.jar 
+PASS non-allowlisted-message-class observed=GadgetMessage.readObject calls=0 rejected InvalidObjectException: Class is not allowed for deserialization: Repro$GadgetMessage
+PASS stream-free-of-MarshalledObject observed=contains java.rmi.MarshalledObject=false bytes=1234
+PASS control-simple-message observed=SimpleMessage=hello

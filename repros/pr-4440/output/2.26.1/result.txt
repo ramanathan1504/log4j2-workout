@@ -1,0 +1,8 @@
+S1 #4439 restart in the same period version=2.26.1 logged=319 found=279 lost=40
+  app.log       60 lines, first: 11:19:00.212 run=S1B seq=181
+  app.log.2026-11-14-11-17       38 lines, first: 11:17:50.482 run=S1A seq=0
+  app.log.2026-11-14-11-18      181 lines, first: 11:18:13.793 run=S1B seq=0
+S2 #4449 missed fire, file created by a scheduled roll version=2.26.1 logged=319 found=279 lost=40
+  app.log       39 lines, first: 11:22:00.180 run=S2B seq=202
+  app.log.2026-11-14-11-19       38 lines, first: 11:19:50.416 run=S2A seq=0
+  app.log.2026-11-14-11-21      202 lines, first: 11:21:08.376 run=S2B seq=0

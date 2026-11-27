@@ -1,0 +1,9 @@
+classpath log4j jars: log4j-core-2.25.5.jar log4j-api-2.25.5.jar 
+INFO java.version=17.0.14
+FAIL filtered-stream-outer-filter-reaches-nested-message observed=accepted java.util.ArrayList=[a, b]
+FAIL filtered-stream-outer-filter-reaches-nested-event-message observed=accepted null
+PASS control-filtered-stream-no-filter-allowlisted-payload observed=accepted java.util.ArrayList=[a, b]
+PASS plain-stream-allow-all-filter-keeps-non-allowlisted-message-payload observed=accepted java.net.URI=https://example.org/
+PASS plain-stream-allow-all-filter-keeps-non-allowlisted-event-payload observed=accepted java.net.URI=https://example.org/
+FAIL plain-stream-no-filter-keeps-non-allowlisted-event-payload observed=accepted null
+FAIL control-plain-stream-own-filter-still-applies observed=accepted null

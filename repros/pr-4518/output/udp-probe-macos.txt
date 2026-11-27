@@ -1,0 +1,18 @@
+java=1.8.0_504 size=9216 rcvbuf=65507 sndbuf=65507 -> sent, received 9216
+java=1.8.0_504 size=9216 rcvbuf=262144 sndbuf=65507 -> sent, received 9216
+java=1.8.0_504 size=16384 rcvbuf=65507 sndbuf=65507 -> sent, received 16384
+java=1.8.0_504 size=16384 rcvbuf=262144 sndbuf=65507 -> sent, received 16384
+java=1.8.0_504 size=65507 rcvbuf=65507 sndbuf=65507 -> sent, receive timed out
+java=1.8.0_504 size=65507 rcvbuf=262144 sndbuf=65507 -> sent, received 65507
+java=17.0.14 size=9216 rcvbuf=786896 sndbuf=65527 -> sent, received 9216
+java=17.0.14 size=9216 rcvbuf=262144 sndbuf=65527 -> sent, received 9216
+java=17.0.14 size=16384 rcvbuf=786896 sndbuf=65527 -> sent, received 16384
+java=17.0.14 size=16384 rcvbuf=262144 sndbuf=65527 -> sent, received 16384
+java=17.0.14 size=65507 rcvbuf=786896 sndbuf=65527 -> sent, received 65507
+java=17.0.14 size=65507 rcvbuf=262144 sndbuf=65527 -> sent, received 65507
+java=21.0.12.1 size=9216 rcvbuf=786896 sndbuf=65527 -> sent, received 9216
+java=21.0.12.1 size=9216 rcvbuf=262144 sndbuf=65527 -> sent, received 9216
+java=21.0.12.1 size=16384 rcvbuf=786896 sndbuf=65527 -> sent, received 16384
+java=21.0.12.1 size=16384 rcvbuf=262144 sndbuf=65527 -> sent, received 16384
+java=21.0.12.1 size=65507 rcvbuf=786896 sndbuf=65527 -> sent, received 65507
+java=21.0.12.1 size=65507 rcvbuf=262144 sndbuf=65527 -> sent, received 65507

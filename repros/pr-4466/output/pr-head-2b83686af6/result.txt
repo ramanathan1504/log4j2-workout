@@ -1,0 +1,10 @@
+classpath: target/classes:/Users/ramanathan/apache/logging-log4j2/log4j-api/target/log4j-api-2.25.6-SNAPSHOT.jar:/Users/ramanathan/apache/logging-log4j2/log4j-core/target/log4j-core-2.25.6-SNAPSHOT.jar
+== S1
+plain ObjectInputStream -> ParameterizedMessage | user not-serializable id 42 | parameters [not-serializable, 42]
+== S2
+FilteredObjectInputStream -> ParameterizedMessage | user alice id 42 | parameters [alice, 42]
+== S3
+THROWN java.io.InvalidObjectException: Class is not allowed for deserialization: java.net.URI
+== S4
+wrote ../output/pr-head-2b83686af6/event.ser
+THROWN java.io.InvalidClassException: org.apache.logging.log4j.util.SortedArrayStringMap; local class incompatible: stream classdesc serialVersionUID = -5748905872274478116, local class serialVersionUID = -3516174557123823846
