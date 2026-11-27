@@ -9,7 +9,7 @@ https://github.com/apache/logging-log4j2/pull/4456
 ```bash
 cd log4j-pr-4456-repro
 ./run.sh 2.26.1 2.26.1
-./run.sh /private/tmp/claude-501/-Users-ramanathan-apache-log4j2-workout/7180a8bd-7341-4eed-92c9-cb3b625c5257/scratchpad/wt/jars-2x 2.x-HEAD-ea28f5a78b
+./run.sh <dir with log4j-api and log4j-core jars built from 2.x> 2.x-HEAD-ea28f5a78b
 ```
 
 The second run resolves third-party dependencies at 2.26.1 and replaces every `log4j-*` jar with the `2.27.0-SNAPSHOT` jar built from `2.x` HEAD `ea28f5a78b`, which contains this change.
@@ -22,3 +22,5 @@ The second run resolves third-party dependencies at 2.26.1 and replaces every `l
 | 2.26.1 | UTF-8 (control) | MSG-LEN = payload bytes | 87 / 87 | PASS |
 | 2.x HEAD ea28f5a78b | ISO-8859-1 | MSG-LEN = payload bytes | 84 / 84 | PASS |
 | 2.x HEAD ea28f5a78b | UTF-8 (control) | MSG-LEN = payload bytes | 87 / 87 | PASS |
+
+Rerun 2026-11-17 after the merge (`c058e9baab`), jars built with `-pl log4j-core-test -am package` in a worktree at `origin/2.x` `ea28f5a78b`: same results, 2.26.1 FAIL 87/84, 2.x PASS 84/84.

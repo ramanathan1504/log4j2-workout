@@ -1,0 +1,503 @@
+
+== L1 Boot default log4j2-file.xml, max-history=2, old days present (log4j2, Boot 4.2.0)
+   args: -Drepro.millis=4000 --logging.file.name=logs/app.log --logging.log4j2.rollingpolicy.max-file-size=1KB --logging.log4j2.rollingpolicy.max-history=2
+   before:
+     logs/    3 app.log.2026-11-20.<i>.gz
+     logs/    3 app.log.2026-11-21.<i>.gz
+     logs/    3 app.log.2026-11-22.<i>.gz
+LOG_PATH=null LOG_FILE=logs/app.log
+-- logs
+   | app.log  files=1 bytes=1188
+   | app.log.2026-11-20.<i>.gz  files=3 bytes=1200
+   | app.log.2026-11-21.<i>.gz  files=3 bytes=1200
+   | app.log.2026-11-22.<i>.gz  files=3 bytes=1200
+   | app.log.2026-11-26.<i>.gz  files=2 bytes=225
+   | total .gz bytes: 3825
+
+== B1 Boot default Logback, max-history=2, old days present (logback, Boot 4.2.0)
+   args: -Drepro.millis=4000 --logging.file.name=logs/app.log --logging.logback.rollingpolicy.max-file-size=1KB --logging.logback.rollingpolicy.max-history=2
+   before:
+     logs/    3 app.log.2026-11-20.<i>.gz
+     logs/    3 app.log.2026-11-21.<i>.gz
+     logs/    3 app.log.2026-11-22.<i>.gz
+LOG_PATH=null LOG_FILE=logs/app.log
+-- logs
+   | app.log  files=1 bytes=297
+   | app.log.2026-11-26.<i>.gz  files=306 bytes=35865
+   | total .gz bytes: 35865
+
+== L2a stashed 283b523 XML, logging.file.name=logs/app.log, cap 2048 (log4j2, Boot 4.2.0)
+   args: -Drepro.millis=4000 -DLOG4J2_ROLLINGPOLICY_TOTAL_SIZE_CAP=2048 --logging.config=file:<app>/configs/stashed-283b523.xml --logging.file.name=logs/app.log --logging.log4j2.rollingpolicy.max-file-size=1KB --logging.log4j2.rollingpolicy.max-history=2
+   before:
+     ./    1 logs
+     ./    1 other-1.gz
+     ./    1 other-2.gz
+     logs/    3 app.log.2026-11-20.<i>.gz
+     logs/    3 app.log.2026-11-21.<i>.gz
+     logs/    3 app.log.2026-11-22.<i>.gz
+LOG_PATH=null LOG_FILE=logs/app.log
+-- .
+   | total .gz bytes: 0
+-- logs
+   | app.log  files=1 bytes=1188
+   | app.log.2026-11-20.<i>.gz  files=3 bytes=1200
+   | app.log.2026-11-21.<i>.gz  files=3 bytes=1200
+   | app.log.2026-11-22.<i>.gz  files=3 bytes=1200
+   | app.log.2026-11-26.<i>.gz  files=2 bytes=225
+   | total .gz bytes: 3825
+
+== L2b stashed 283b523 XML, logging.file.name=app.log (working dir), cap 2048 (log4j2, Boot 4.2.0)
+   args: -Drepro.millis=4000 -DLOG4J2_ROLLINGPOLICY_TOTAL_SIZE_CAP=2048 --logging.config=file:<app>/configs/stashed-283b523.xml --logging.file.name=app.log --logging.log4j2.rollingpolicy.max-file-size=1KB --logging.log4j2.rollingpolicy.max-history=2
+   before:
+     ./    3 app.log.2026-11-20.<i>.gz
+     ./    3 app.log.2026-11-21.<i>.gz
+     ./    3 app.log.2026-11-22.<i>.gz
+     ./    1 logs
+     ./    1 other-1.gz
+LOG_PATH=null LOG_FILE=app.log
+-- .
+   | app.log  files=1 bytes=891
+   | app.log.2026-11-21.<i>.gz  files=1 bytes=400
+   | app.log.2026-11-22.<i>.gz  files=3 bytes=1200
+   | app.log.2026-11-26.<i>.gz  files=2 bytes=225
+   | total .gz bytes: 1825
+
+== L2c stashed 283b523 XML, logging.file.path=logs, cap 2048 (log4j2, Boot 4.2.0)
+   args: -Drepro.millis=4000 -DLOG4J2_ROLLINGPOLICY_TOTAL_SIZE_CAP=2048 --logging.config=file:<app>/configs/stashed-283b523.xml --logging.file.path=logs --logging.log4j2.rollingpolicy.max-file-size=1KB --logging.log4j2.rollingpolicy.max-history=2
+   before:
+     ./    1 logs
+     ./    1 other-1.gz
+     logs/    1 other-app.log.<i>.gz
+     logs/    3 spring.log.2026-11-20.<i>.gz
+     logs/    3 spring.log.2026-11-21.<i>.gz
+     logs/    3 spring.log.2026-11-22.<i>.gz
+LOG_PATH=logs LOG_FILE=logs/spring.log
+-- .
+   | other-1.gz  files=1 bytes=3000
+   | total .gz bytes: 3000
+-- logs
+   | spring.log  files=1 bytes=594
+   | spring.log.2026-11-21.<i>.gz  files=1 bytes=400
+   | spring.log.2026-11-22.<i>.gz  files=3 bytes=1200
+   | spring.log.2026-11-26.<i>.gz  files=2 bytes=228
+   | total .gz bytes: 1828
+
+== L3 cap with basePath=archive folder, glob=app.log.*.gz, cap 2048 (log4j2, Boot 4.2.0)
+   args: -Drepro.millis=4000 -DLOG4J2_ROLLINGPOLICY_TOTAL_SIZE_CAP=2048 -DARCHIVE_DIR=logs -DARCHIVE_GLOB=app.log.*.gz --logging.config=file:<app>/configs/fixed-cap.xml --logging.file.name=logs/app.log --logging.log4j2.rollingpolicy.max-file-size=1KB --logging.log4j2.rollingpolicy.max-history=2
+   before:
+     ./    1 logs
+     ./    1 other-1.gz
+     logs/    3 app.log.2026-11-20.<i>.gz
+     logs/    3 app.log.2026-11-21.<i>.gz
+     logs/    3 app.log.2026-11-22.<i>.gz
+     logs/    1 other-app.log.<i>.gz
+LOG_PATH=null LOG_FILE=logs/app.log
+-- .
+   | other-1.gz  files=1 bytes=3000
+   | total .gz bytes: 3000
+-- logs
+   | app.log  files=1 bytes=891
+   | app.log.2026-11-21.<i>.gz  files=1 bytes=400
+   | app.log.2026-11-22.<i>.gz  files=3 bytes=1200
+   | app.log.2026-11-26.<i>.gz  files=2 bytes=225
+   | other-app.log.<i>.gz  files=1 bytes=3000
+   | total .gz bytes: 4825
+
+== L4 XML-only folder: basePath=${sys:LOG_FILE}/.., cap 2048 (log4j2, Boot 4.2.0)
+   args: -Drepro.millis=4000 -DLOG4J2_ROLLINGPOLICY_TOTAL_SIZE_CAP=2048 --logging.config=file:<app>/configs/xml-only-parent.xml --logging.file.name=logs/app.log --logging.log4j2.rollingpolicy.max-file-size=1KB --logging.log4j2.rollingpolicy.max-history=2
+   before:
+     logs/    3 app.log.2026-11-20.<i>.gz
+     logs/    3 app.log.2026-11-21.<i>.gz
+     logs/    3 app.log.2026-11-22.<i>.gz
+LOG_PATH=null LOG_FILE=logs/app.log
+2026-11-26T02:15:04.571901Z Log4j2-TF-1-RollingFileManager-1 WARN Exception reported by action 'class org.apache.logging.log4j.core.appender.rolling.RollingFileManager$AsyncAction'
+java.nio.file.FileSystemException: logs/app.log/..: Not a directory
+2026-11-26T02:15:04.583423Z Log4j2-TF-1-RollingFileManager-2 WARN Exception reported by action 'class org.apache.logging.log4j.core.appender.rolling.RollingFileManager$AsyncAction'
+2026-11-26T02:15:04.596813Z Log4j2-TF-1-RollingFileManager-3 WARN Exception reported by action 'class org.apache.logging.log4j.core.appender.rolling.RollingFileManager$AsyncAction'
+2026-11-26T02:15:04.610004Z Log4j2-TF-1-RollingFileManager-4 WARN Exception reported by action 'class org.apache.logging.log4j.core.appender.rolling.RollingFileManager$AsyncAction'
+2026-11-26T02:15:04.623169Z Log4j2-TF-1-RollingFileManager-5 WARN Exception reported by action 'class org.apache.logging.log4j.core.appender.rolling.RollingFileManager$AsyncAction'
+2026-11-26T02:15:04.636596Z Log4j2-TF-1-RollingFileManager-6 WARN Exception reported by action 'class org.apache.logging.log4j.core.appender.rolling.RollingFileManager$AsyncAction'
+2026-11-26T02:15:04.649834Z Log4j2-TF-1-RollingFileManager-7 WARN Exception reported by action 'class org.apache.logging.log4j.core.appender.rolling.RollingFileManager$AsyncAction'
+2026-11-26T02:15:04.662991Z Log4j2-TF-1-RollingFileManager-8 WARN Exception reported by action 'class org.apache.logging.log4j.core.appender.rolling.RollingFileManager$AsyncAction'
+2026-11-26T02:15:04.676285Z Log4j2-TF-1-RollingFileManager-9 WARN Exception reported by action 'class org.apache.logging.log4j.core.appender.rolling.RollingFileManager$AsyncAction'
+2026-11-26T02:15:04.689506Z Log4j2-TF-1-RollingFileManager-10 WARN Exception reported by action 'class org.apache.logging.log4j.core.appender.rolling.RollingFileManager$AsyncAction'
+2026-11-26T02:15:04.702901Z Log4j2-TF-1-RollingFileManager-11 WARN Exception reported by action 'class org.apache.logging.log4j.core.appender.rolling.RollingFileManager$AsyncAction'
+2026-11-26T02:15:04.716093Z Log4j2-TF-1-RollingFileManager-12 WARN Exception reported by action 'class org.apache.logging.log4j.core.appender.rolling.RollingFileManager$AsyncAction'
+2026-11-26T02:15:04.729443Z Log4j2-TF-1-RollingFileManager-13 WARN Exception reported by action 'class org.apache.logging.log4j.core.appender.rolling.RollingFileManager$AsyncAction'
+2026-11-26T02:15:04.742818Z Log4j2-TF-1-RollingFileManager-14 WARN Exception reported by action 'class org.apache.logging.log4j.core.appender.rolling.RollingFileManager$AsyncAction'
+2026-11-26T02:15:04.756268Z Log4j2-TF-1-RollingFileManager-15 WARN Exception reported by action 'class org.apache.logging.log4j.core.appender.rolling.RollingFileManager$AsyncAction'
+2026-11-26T02:15:04.769613Z Log4j2-TF-1-RollingFileManager-16 WARN Exception reported by action 'class org.apache.logging.log4j.core.appender.rolling.RollingFileManager$AsyncAction'
+2026-11-26T02:15:04.782903Z Log4j2-TF-1-RollingFileManager-17 WARN Exception reported by action 'class org.apache.logging.log4j.core.appender.rolling.RollingFileManager$AsyncAction'
+2026-11-26T02:15:04.796538Z Log4j2-TF-1-RollingFileManager-18 WARN Exception reported by action 'class org.apache.logging.log4j.core.appender.rolling.RollingFileManager$AsyncAction'
+2026-11-26T02:15:04.810107Z Log4j2-TF-1-RollingFileManager-19 WARN Exception reported by action 'class org.apache.logging.log4j.core.appender.rolling.RollingFileManager$AsyncAction'
+2026-11-26T02:15:04.823764Z Log4j2-TF-1-RollingFileManager-20 WARN Exception reported by action 'class org.apache.logging.log4j.core.appender.rolling.RollingFileManager$AsyncAction'
+2026-11-26T02:15:04.837355Z Log4j2-TF-1-RollingFileManager-21 WARN Exception reported by action 'class org.apache.logging.log4j.core.appender.rolling.RollingFileManager$AsyncAction'
+2026-11-26T02:15:04.851414Z Log4j2-TF-1-RollingFileManager-22 WARN Exception reported by action 'class org.apache.logging.log4j.core.appender.rolling.RollingFileManager$AsyncAction'
+2026-11-26T02:15:04.864558Z Log4j2-TF-1-RollingFileManager-23 WARN Exception reported by action 'class org.apache.logging.log4j.core.appender.rolling.RollingFileManager$AsyncAction'
+2026-11-26T02:15:04.878766Z Log4j2-TF-1-RollingFileManager-24 WARN Exception reported by action 'class org.apache.logging.log4j.core.appender.rolling.RollingFileManager$AsyncAction'
+2026-11-26T02:15:04.893833Z Log4j2-TF-1-RollingFileManager-25 WARN Exception reported by action 'class org.apache.logging.log4j.core.appender.rolling.RollingFileManager$AsyncAction'
+2026-11-26T02:15:04.907305Z Log4j2-TF-1-RollingFileManager-26 WARN Exception reported by action 'class org.apache.logging.log4j.core.appender.rolling.RollingFileManager$AsyncAction'
+2026-11-26T02:15:04.921549Z Log4j2-TF-1-RollingFileManager-27 WARN Exception reported by action 'class org.apache.logging.log4j.core.appender.rolling.RollingFileManager$AsyncAction'
+2026-11-26T02:15:04.936002Z Log4j2-TF-1-RollingFileManager-28 WARN Exception reported by action 'class org.apache.logging.log4j.core.appender.rolling.RollingFileManager$AsyncAction'
+2026-11-26T02:15:04.952089Z Log4j2-TF-1-RollingFileManager-29 WARN Exception reported by action 'class org.apache.logging.log4j.core.appender.rolling.RollingFileManager$AsyncAction'
+2026-11-26T02:15:04.966966Z Log4j2-TF-1-RollingFileManager-30 WARN Exception reported by action 'class org.apache.logging.log4j.core.appender.rolling.RollingFileManager$AsyncAction'
+2026-11-26T02:15:04.981077Z Log4j2-TF-1-RollingFileManager-31 WARN Exception reported by action 'class org.apache.logging.log4j.core.appender.rolling.RollingFileManager$AsyncAction'
+2026-11-26T02:15:04.995624Z Log4j2-TF-1-RollingFileManager-32 WARN Exception reported by action 'class org.apache.logging.log4j.core.appender.rolling.RollingFileManager$AsyncAction'
+2026-11-26T02:15:05.010097Z Log4j2-TF-1-RollingFileManager-33 WARN Exception reported by action 'class org.apache.logging.log4j.core.appender.rolling.RollingFileManager$AsyncAction'
+2026-11-26T02:15:05.023682Z Log4j2-TF-1-RollingFileManager-34 WARN Exception reported by action 'class org.apache.logging.log4j.core.appender.rolling.RollingFileManager$AsyncAction'
+2026-11-26T02:15:05.037542Z Log4j2-TF-1-RollingFileManager-35 WARN Exception reported by action 'class org.apache.logging.log4j.core.appender.rolling.RollingFileManager$AsyncAction'
+2026-11-26T02:15:05.050697Z Log4j2-TF-1-RollingFileManager-36 WARN Exception reported by action 'class org.apache.logging.log4j.core.appender.rolling.RollingFileManager$AsyncAction'
+2026-11-26T02:15:05.065945Z Log4j2-TF-1-RollingFileManager-37 WARN Exception reported by action 'class org.apache.logging.log4j.core.appender.rolling.RollingFileManager$AsyncAction'
+2026-11-26T02:15:05.080828Z Log4j2-TF-1-RollingFileManager-38 WARN Exception reported by action 'class org.apache.logging.log4j.core.appender.rolling.RollingFileManager$AsyncAction'
+2026-11-26T02:15:05.094649Z Log4j2-TF-1-RollingFileManager-39 WARN Exception reported by action 'class org.apache.logging.log4j.core.appender.rolling.RollingFileManager$AsyncAction'
+2026-11-26T02:15:05.110144Z Log4j2-TF-1-RollingFileManager-40 WARN Exception reported by action 'class org.apache.logging.log4j.core.appender.rolling.RollingFileManager$AsyncAction'
+2026-11-26T02:15:05.124119Z Log4j2-TF-1-RollingFileManager-41 WARN Exception reported by action 'class org.apache.logging.log4j.core.appender.rolling.RollingFileManager$AsyncAction'
+2026-11-26T02:15:05.140149Z Log4j2-TF-1-RollingFileManager-42 WARN Exception reported by action 'class org.apache.logging.log4j.core.appender.rolling.RollingFileManager$AsyncAction'
+2026-11-26T02:15:05.154785Z Log4j2-TF-1-RollingFileManager-43 WARN Exception reported by action 'class org.apache.logging.log4j.core.appender.rolling.RollingFileManager$AsyncAction'
+2026-11-26T02:15:05.168775Z Log4j2-TF-1-RollingFileManager-44 WARN Exception reported by action 'class org.apache.logging.log4j.core.appender.rolling.RollingFileManager$AsyncAction'
+2026-11-26T02:15:05.183470Z Log4j2-TF-1-RollingFileManager-45 WARN Exception reported by action 'class org.apache.logging.log4j.core.appender.rolling.RollingFileManager$AsyncAction'
+2026-11-26T02:15:05.198732Z Log4j2-TF-1-RollingFileManager-46 WARN Exception reported by action 'class org.apache.logging.log4j.core.appender.rolling.RollingFileManager$AsyncAction'
+2026-11-26T02:15:05.212955Z Log4j2-TF-1-RollingFileManager-47 WARN Exception reported by action 'class org.apache.logging.log4j.core.appender.rolling.RollingFileManager$AsyncAction'
+2026-11-26T02:15:05.226676Z Log4j2-TF-1-RollingFileManager-48 WARN Exception reported by action 'class org.apache.logging.log4j.core.appender.rolling.RollingFileManager$AsyncAction'
+2026-11-26T02:15:05.240238Z Log4j2-TF-1-RollingFileManager-49 WARN Exception reported by action 'class org.apache.logging.log4j.core.appender.rolling.RollingFileManager$AsyncAction'
+2026-11-26T02:15:05.254111Z Log4j2-TF-1-RollingFileManager-50 WARN Exception reported by action 'class org.apache.logging.log4j.core.appender.rolling.RollingFileManager$AsyncAction'
+2026-11-26T02:15:05.269848Z Log4j2-TF-1-RollingFileManager-51 WARN Exception reported by action 'class org.apache.logging.log4j.core.appender.rolling.RollingFileManager$AsyncAction'
+2026-11-26T02:15:05.283340Z Log4j2-TF-1-RollingFileManager-52 WARN Exception reported by action 'class org.apache.logging.log4j.core.appender.rolling.RollingFileManager$AsyncAction'
+2026-11-26T02:15:05.298543Z Log4j2-TF-1-RollingFileManager-53 WARN Exception reported by action 'class org.apache.logging.log4j.core.appender.rolling.RollingFileManager$AsyncAction'
+2026-11-26T02:15:05.313427Z Log4j2-TF-1-RollingFileManager-54 WARN Exception reported by action 'class org.apache.logging.log4j.core.appender.rolling.RollingFileManager$AsyncAction'
+2026-11-26T02:15:05.326825Z Log4j2-TF-1-RollingFileManager-55 WARN Exception reported by action 'class org.apache.logging.log4j.core.appender.rolling.RollingFileManager$AsyncAction'
+2026-11-26T02:15:05.340636Z Log4j2-TF-1-RollingFileManager-56 WARN Exception reported by action 'class org.apache.logging.log4j.core.appender.rolling.RollingFileManager$AsyncAction'
+2026-11-26T02:15:05.355187Z Log4j2-TF-1-RollingFileManager-57 WARN Exception reported by action 'class org.apache.logging.log4j.core.appender.rolling.RollingFileManager$AsyncAction'
+2026-11-26T02:15:05.370100Z Log4j2-TF-1-RollingFileManager-58 WARN Exception reported by action 'class org.apache.logging.log4j.core.appender.rolling.RollingFileManager$AsyncAction'
+2026-11-26T02:15:05.385288Z Log4j2-TF-1-RollingFileManager-59 WARN Exception reported by action 'class org.apache.logging.log4j.core.appender.rolling.RollingFileManager$AsyncAction'
+2026-11-26T02:15:05.399363Z Log4j2-TF-1-RollingFileManager-60 WARN Exception reported by action 'class org.apache.logging.log4j.core.appender.rolling.RollingFileManager$AsyncAction'
+2026-11-26T02:15:05.412660Z Log4j2-TF-1-RollingFileManager-61 WARN Exception reported by action 'class org.apache.logging.log4j.core.appender.rolling.RollingFileManager$AsyncAction'
+2026-11-26T02:15:05.426070Z Log4j2-TF-1-RollingFileManager-62 WARN Exception reported by action 'class org.apache.logging.log4j.core.appender.rolling.RollingFileManager$AsyncAction'
+2026-11-26T02:15:05.439169Z Log4j2-TF-1-RollingFileManager-63 WARN Exception reported by action 'class org.apache.logging.log4j.core.appender.rolling.RollingFileManager$AsyncAction'
+2026-11-26T02:15:05.453089Z Log4j2-TF-1-RollingFileManager-64 WARN Exception reported by action 'class org.apache.logging.log4j.core.appender.rolling.RollingFileManager$AsyncAction'
+2026-11-26T02:15:05.466773Z Log4j2-TF-1-RollingFileManager-65 WARN Exception reported by action 'class org.apache.logging.log4j.core.appender.rolling.RollingFileManager$AsyncAction'
+2026-11-26T02:15:05.480268Z Log4j2-TF-1-RollingFileManager-66 WARN Exception reported by action 'class org.apache.logging.log4j.core.appender.rolling.RollingFileManager$AsyncAction'
+2026-11-26T02:15:05.493960Z Log4j2-TF-1-RollingFileManager-67 WARN Exception reported by action 'class org.apache.logging.log4j.core.appender.rolling.RollingFileManager$AsyncAction'
+2026-11-26T02:15:05.507408Z Log4j2-TF-1-RollingFileManager-68 WARN Exception reported by action 'class org.apache.logging.log4j.core.appender.rolling.RollingFileManager$AsyncAction'
+2026-11-26T02:15:05.521370Z Log4j2-TF-1-RollingFileManager-69 WARN Exception reported by action 'class org.apache.logging.log4j.core.appender.rolling.RollingFileManager$AsyncAction'
+2026-11-26T02:15:05.535045Z Log4j2-TF-1-RollingFileManager-70 WARN Exception reported by action 'class org.apache.logging.log4j.core.appender.rolling.RollingFileManager$AsyncAction'
+2026-11-26T02:15:05.548381Z Log4j2-TF-1-RollingFileManager-71 WARN Exception reported by action 'class org.apache.logging.log4j.core.appender.rolling.RollingFileManager$AsyncAction'
+2026-11-26T02:15:05.560922Z Log4j2-TF-1-RollingFileManager-72 WARN Exception reported by action 'class org.apache.logging.log4j.core.appender.rolling.RollingFileManager$AsyncAction'
+2026-11-26T02:15:05.578823Z Log4j2-TF-1-RollingFileManager-73 WARN Exception reported by action 'class org.apache.logging.log4j.core.appender.rolling.RollingFileManager$AsyncAction'
+2026-11-26T02:15:05.592473Z Log4j2-TF-1-RollingFileManager-74 WARN Exception reported by action 'class org.apache.logging.log4j.core.appender.rolling.RollingFileManager$AsyncAction'
+2026-11-26T02:15:05.607121Z Log4j2-TF-1-RollingFileManager-75 WARN Exception reported by action 'class org.apache.logging.log4j.core.appender.rolling.RollingFileManager$AsyncAction'
+2026-11-26T02:15:05.622599Z Log4j2-TF-1-RollingFileManager-76 WARN Exception reported by action 'class org.apache.logging.log4j.core.appender.rolling.RollingFileManager$AsyncAction'
+2026-11-26T02:15:05.637968Z Log4j2-TF-1-RollingFileManager-77 WARN Exception reported by action 'class org.apache.logging.log4j.core.appender.rolling.RollingFileManager$AsyncAction'
+2026-11-26T02:15:05.651515Z Log4j2-TF-1-RollingFileManager-78 WARN Exception reported by action 'class org.apache.logging.log4j.core.appender.rolling.RollingFileManager$AsyncAction'
+2026-11-26T02:15:05.665123Z Log4j2-TF-1-RollingFileManager-79 WARN Exception reported by action 'class org.apache.logging.log4j.core.appender.rolling.RollingFileManager$AsyncAction'
+2026-11-26T02:15:05.678737Z Log4j2-TF-1-RollingFileManager-80 WARN Exception reported by action 'class org.apache.logging.log4j.core.appender.rolling.RollingFileManager$AsyncAction'
+2026-11-26T02:15:05.692252Z Log4j2-TF-1-RollingFileManager-81 WARN Exception reported by action 'class org.apache.logging.log4j.core.appender.rolling.RollingFileManager$AsyncAction'
+2026-11-26T02:15:05.709412Z Log4j2-TF-1-RollingFileManager-82 WARN Exception reported by action 'class org.apache.logging.log4j.core.appender.rolling.RollingFileManager$AsyncAction'
+2026-11-26T02:15:05.730517Z Log4j2-TF-1-RollingFileManager-83 WARN Exception reported by action 'class org.apache.logging.log4j.core.appender.rolling.RollingFileManager$AsyncAction'
+2026-11-26T02:15:05.743875Z Log4j2-TF-1-RollingFileManager-84 WARN Exception reported by action 'class org.apache.logging.log4j.core.appender.rolling.RollingFileManager$AsyncAction'
+2026-11-26T02:15:05.757432Z Log4j2-TF-1-RollingFileManager-85 WARN Exception reported by action 'class org.apache.logging.log4j.core.appender.rolling.RollingFileManager$AsyncAction'
+2026-11-26T02:15:05.770898Z Log4j2-TF-1-RollingFileManager-86 WARN Exception reported by action 'class org.apache.logging.log4j.core.appender.rolling.RollingFileManager$AsyncAction'
+2026-11-26T02:15:05.784333Z Log4j2-TF-1-RollingFileManager-87 WARN Exception reported by action 'class org.apache.logging.log4j.core.appender.rolling.RollingFileManager$AsyncAction'
+2026-11-26T02:15:05.797976Z Log4j2-TF-1-RollingFileManager-88 WARN Exception reported by action 'class org.apache.logging.log4j.core.appender.rolling.RollingFileManager$AsyncAction'
+2026-11-26T02:15:05.811402Z Log4j2-TF-1-RollingFileManager-89 WARN Exception reported by action 'class org.apache.logging.log4j.core.appender.rolling.RollingFileManager$AsyncAction'
+2026-11-26T02:15:05.824767Z Log4j2-TF-1-RollingFileManager-90 WARN Exception reported by action 'class org.apache.logging.log4j.core.appender.rolling.RollingFileManager$AsyncAction'
+2026-11-26T02:15:05.838112Z Log4j2-TF-1-RollingFileManager-91 WARN Exception reported by action 'class org.apache.logging.log4j.core.appender.rolling.RollingFileManager$AsyncAction'
+2026-11-26T02:15:05.851468Z Log4j2-TF-1-RollingFileManager-92 WARN Exception reported by action 'class org.apache.logging.log4j.core.appender.rolling.RollingFileManager$AsyncAction'
+2026-11-26T02:15:05.864747Z Log4j2-TF-1-RollingFileManager-93 WARN Exception reported by action 'class org.apache.logging.log4j.core.appender.rolling.RollingFileManager$AsyncAction'
+2026-11-26T02:15:05.878521Z Log4j2-TF-1-RollingFileManager-94 WARN Exception reported by action 'class org.apache.logging.log4j.core.appender.rolling.RollingFileManager$AsyncAction'
+2026-11-26T02:15:05.892495Z Log4j2-TF-1-RollingFileManager-95 WARN Exception reported by action 'class org.apache.logging.log4j.core.appender.rolling.RollingFileManager$AsyncAction'
+2026-11-26T02:15:05.905577Z Log4j2-TF-1-RollingFileManager-96 WARN Exception reported by action 'class org.apache.logging.log4j.core.appender.rolling.RollingFileManager$AsyncAction'
+2026-11-26T02:15:05.919134Z Log4j2-TF-1-RollingFileManager-97 WARN Exception reported by action 'class org.apache.logging.log4j.core.appender.rolling.RollingFileManager$AsyncAction'
+2026-11-26T02:15:05.932678Z Log4j2-TF-1-RollingFileManager-98 WARN Exception reported by action 'class org.apache.logging.log4j.core.appender.rolling.RollingFileManager$AsyncAction'
+2026-11-26T02:15:05.947934Z Log4j2-TF-1-RollingFileManager-99 WARN Exception reported by action 'class org.apache.logging.log4j.core.appender.rolling.RollingFileManager$AsyncAction'
+2026-11-26T02:15:05.962129Z Log4j2-TF-1-RollingFileManager-100 WARN Exception reported by action 'class org.apache.logging.log4j.core.appender.rolling.RollingFileManager$AsyncAction'
+2026-11-26T02:15:05.975823Z Log4j2-TF-1-RollingFileManager-101 WARN Exception reported by action 'class org.apache.logging.log4j.core.appender.rolling.RollingFileManager$AsyncAction'
+2026-11-26T02:15:05.989193Z Log4j2-TF-1-RollingFileManager-102 WARN Exception reported by action 'class org.apache.logging.log4j.core.appender.rolling.RollingFileManager$AsyncAction'
+2026-11-26T02:15:06.002692Z Log4j2-TF-1-RollingFileManager-103 WARN Exception reported by action 'class org.apache.logging.log4j.core.appender.rolling.RollingFileManager$AsyncAction'
+2026-11-26T02:15:06.016351Z Log4j2-TF-1-RollingFileManager-104 WARN Exception reported by action 'class org.apache.logging.log4j.core.appender.rolling.RollingFileManager$AsyncAction'
+2026-11-26T02:15:06.029940Z Log4j2-TF-1-RollingFileManager-105 WARN Exception reported by action 'class org.apache.logging.log4j.core.appender.rolling.RollingFileManager$AsyncAction'
+2026-11-26T02:15:06.043744Z Log4j2-TF-1-RollingFileManager-106 WARN Exception reported by action 'class org.apache.logging.log4j.core.appender.rolling.RollingFileManager$AsyncAction'
+2026-11-26T02:15:06.057355Z Log4j2-TF-1-RollingFileManager-107 WARN Exception reported by action 'class org.apache.logging.log4j.core.appender.rolling.RollingFileManager$AsyncAction'
+2026-11-26T02:15:06.072055Z Log4j2-TF-1-RollingFileManager-108 WARN Exception reported by action 'class org.apache.logging.log4j.core.appender.rolling.RollingFileManager$AsyncAction'
+2026-11-26T02:15:06.095022Z Log4j2-TF-1-RollingFileManager-109 WARN Exception reported by action 'class org.apache.logging.log4j.core.appender.rolling.RollingFileManager$AsyncAction'
+2026-11-26T02:15:06.108302Z Log4j2-TF-1-RollingFileManager-110 WARN Exception reported by action 'class org.apache.logging.log4j.core.appender.rolling.RollingFileManager$AsyncAction'
+2026-11-26T02:15:06.122031Z Log4j2-TF-1-RollingFileManager-111 WARN Exception reported by action 'class org.apache.logging.log4j.core.appender.rolling.RollingFileManager$AsyncAction'
+2026-11-26T02:15:06.135538Z Log4j2-TF-1-RollingFileManager-112 WARN Exception reported by action 'class org.apache.logging.log4j.core.appender.rolling.RollingFileManager$AsyncAction'
+2026-11-26T02:15:06.148705Z Log4j2-TF-1-RollingFileManager-113 WARN Exception reported by action 'class org.apache.logging.log4j.core.appender.rolling.RollingFileManager$AsyncAction'
+2026-11-26T02:15:06.162101Z Log4j2-TF-1-RollingFileManager-114 WARN Exception reported by action 'class org.apache.logging.log4j.core.appender.rolling.RollingFileManager$AsyncAction'
+2026-11-26T02:15:06.175464Z Log4j2-TF-1-RollingFileManager-115 WARN Exception reported by action 'class org.apache.logging.log4j.core.appender.rolling.RollingFileManager$AsyncAction'
+2026-11-26T02:15:06.190687Z Log4j2-TF-1-RollingFileManager-116 WARN Exception reported by action 'class org.apache.logging.log4j.core.appender.rolling.RollingFileManager$AsyncAction'
+2026-11-26T02:15:06.205575Z Log4j2-TF-1-RollingFileManager-117 WARN Exception reported by action 'class org.apache.logging.log4j.core.appender.rolling.RollingFileManager$AsyncAction'
+2026-11-26T02:15:06.219034Z Log4j2-TF-1-RollingFileManager-118 WARN Exception reported by action 'class org.apache.logging.log4j.core.appender.rolling.RollingFileManager$AsyncAction'
+2026-11-26T02:15:06.232546Z Log4j2-TF-1-RollingFileManager-119 WARN Exception reported by action 'class org.apache.logging.log4j.core.appender.rolling.RollingFileManager$AsyncAction'
+2026-11-26T02:15:06.246521Z Log4j2-TF-1-RollingFileManager-120 WARN Exception reported by action 'class org.apache.logging.log4j.core.appender.rolling.RollingFileManager$AsyncAction'
+2026-11-26T02:15:06.259904Z Log4j2-TF-1-RollingFileManager-121 WARN Exception reported by action 'class org.apache.logging.log4j.core.appender.rolling.RollingFileManager$AsyncAction'
+2026-11-26T02:15:06.273281Z Log4j2-TF-1-RollingFileManager-122 WARN Exception reported by action 'class org.apache.logging.log4j.core.appender.rolling.RollingFileManager$AsyncAction'
+2026-11-26T02:15:06.288039Z Log4j2-TF-1-RollingFileManager-123 WARN Exception reported by action 'class org.apache.logging.log4j.core.appender.rolling.RollingFileManager$AsyncAction'
+2026-11-26T02:15:06.302601Z Log4j2-TF-1-RollingFileManager-124 WARN Exception reported by action 'class org.apache.logging.log4j.core.appender.rolling.RollingFileManager$AsyncAction'
+2026-11-26T02:15:06.317873Z Log4j2-TF-1-RollingFileManager-125 WARN Exception reported by action 'class org.apache.logging.log4j.core.appender.rolling.RollingFileManager$AsyncAction'
+2026-11-26T02:15:06.331524Z Log4j2-TF-1-RollingFileManager-126 WARN Exception reported by action 'class org.apache.logging.log4j.core.appender.rolling.RollingFileManager$AsyncAction'
+2026-11-26T02:15:06.345189Z Log4j2-TF-1-RollingFileManager-127 WARN Exception reported by action 'class org.apache.logging.log4j.core.appender.rolling.RollingFileManager$AsyncAction'
+2026-11-26T02:15:06.359110Z Log4j2-TF-1-RollingFileManager-128 WARN Exception reported by action 'class org.apache.logging.log4j.core.appender.rolling.RollingFileManager$AsyncAction'
+2026-11-26T02:15:06.372243Z Log4j2-TF-1-RollingFileManager-129 WARN Exception reported by action 'class org.apache.logging.log4j.core.appender.rolling.RollingFileManager$AsyncAction'
+2026-11-26T02:15:06.385404Z Log4j2-TF-1-RollingFileManager-130 WARN Exception reported by action 'class org.apache.logging.log4j.core.appender.rolling.RollingFileManager$AsyncAction'
+2026-11-26T02:15:06.398708Z Log4j2-TF-1-RollingFileManager-131 WARN Exception reported by action 'class org.apache.logging.log4j.core.appender.rolling.RollingFileManager$AsyncAction'
+2026-11-26T02:15:06.412095Z Log4j2-TF-1-RollingFileManager-132 WARN Exception reported by action 'class org.apache.logging.log4j.core.appender.rolling.RollingFileManager$AsyncAction'
+2026-11-26T02:15:06.425371Z Log4j2-TF-1-RollingFileManager-133 WARN Exception reported by action 'class org.apache.logging.log4j.core.appender.rolling.RollingFileManager$AsyncAction'
+2026-11-26T02:15:06.437765Z Log4j2-TF-1-RollingFileManager-134 WARN Exception reported by action 'class org.apache.logging.log4j.core.appender.rolling.RollingFileManager$AsyncAction'
+2026-11-26T02:15:06.450473Z Log4j2-TF-1-RollingFileManager-135 WARN Exception reported by action 'class org.apache.logging.log4j.core.appender.rolling.RollingFileManager$AsyncAction'
+2026-11-26T02:15:06.463035Z Log4j2-TF-1-RollingFileManager-136 WARN Exception reported by action 'class org.apache.logging.log4j.core.appender.rolling.RollingFileManager$AsyncAction'
+2026-11-26T02:15:06.475893Z Log4j2-TF-1-RollingFileManager-137 WARN Exception reported by action 'class org.apache.logging.log4j.core.appender.rolling.RollingFileManager$AsyncAction'
+2026-11-26T02:15:06.488643Z Log4j2-TF-1-RollingFileManager-138 WARN Exception reported by action 'class org.apache.logging.log4j.core.appender.rolling.RollingFileManager$AsyncAction'
+2026-11-26T02:15:06.501479Z Log4j2-TF-1-RollingFileManager-139 WARN Exception reported by action 'class org.apache.logging.log4j.core.appender.rolling.RollingFileManager$AsyncAction'
+2026-11-26T02:15:06.514396Z Log4j2-TF-1-RollingFileManager-140 WARN Exception reported by action 'class org.apache.logging.log4j.core.appender.rolling.RollingFileManager$AsyncAction'
+2026-11-26T02:15:06.527213Z Log4j2-TF-1-RollingFileManager-141 WARN Exception reported by action 'class org.apache.logging.log4j.core.appender.rolling.RollingFileManager$AsyncAction'
+2026-11-26T02:15:06.540135Z Log4j2-TF-1-RollingFileManager-142 WARN Exception reported by action 'class org.apache.logging.log4j.core.appender.rolling.RollingFileManager$AsyncAction'
+2026-11-26T02:15:06.553261Z Log4j2-TF-1-RollingFileManager-143 WARN Exception reported by action 'class org.apache.logging.log4j.core.appender.rolling.RollingFileManager$AsyncAction'
+2026-11-26T02:15:06.566348Z Log4j2-TF-1-RollingFileManager-144 WARN Exception reported by action 'class org.apache.logging.log4j.core.appender.rolling.RollingFileManager$AsyncAction'
+2026-11-26T02:15:06.579634Z Log4j2-TF-1-RollingFileManager-145 WARN Exception reported by action 'class org.apache.logging.log4j.core.appender.rolling.RollingFileManager$AsyncAction'
+2026-11-26T02:15:06.593Z Log4j2-TF-1-RollingFileManager-146 WARN Exception reported by action 'class org.apache.logging.log4j.core.appender.rolling.RollingFileManager$AsyncAction'
+2026-11-26T02:15:06.606434Z Log4j2-TF-1-RollingFileManager-147 WARN Exception reported by action 'class org.apache.logging.log4j.core.appender.rolling.RollingFileManager$AsyncAction'
+2026-11-26T02:15:06.619788Z Log4j2-TF-1-RollingFileManager-148 WARN Exception reported by action 'class org.apache.logging.log4j.core.appender.rolling.RollingFileManager$AsyncAction'
+2026-11-26T02:15:06.633185Z Log4j2-TF-1-RollingFileManager-149 WARN Exception reported by action 'class org.apache.logging.log4j.core.appender.rolling.RollingFileManager$AsyncAction'
+2026-11-26T02:15:06.645708Z Log4j2-TF-1-RollingFileManager-150 WARN Exception reported by action 'class org.apache.logging.log4j.core.appender.rolling.RollingFileManager$AsyncAction'
+2026-11-26T02:15:06.658963Z Log4j2-TF-1-RollingFileManager-151 WARN Exception reported by action 'class org.apache.logging.log4j.core.appender.rolling.RollingFileManager$AsyncAction'
+2026-11-26T02:15:06.672278Z Log4j2-TF-1-RollingFileManager-152 WARN Exception reported by action 'class org.apache.logging.log4j.core.appender.rolling.RollingFileManager$AsyncAction'
+2026-11-26T02:15:06.684591Z Log4j2-TF-1-RollingFileManager-153 WARN Exception reported by action 'class org.apache.logging.log4j.core.appender.rolling.RollingFileManager$AsyncAction'
+2026-11-26T02:15:06.698031Z Log4j2-TF-1-RollingFileManager-154 WARN Exception reported by action 'class org.apache.logging.log4j.core.appender.rolling.RollingFileManager$AsyncAction'
+2026-11-26T02:15:06.711411Z Log4j2-TF-1-RollingFileManager-155 WARN Exception reported by action 'class org.apache.logging.log4j.core.appender.rolling.RollingFileManager$AsyncAction'
+2026-11-26T02:15:06.725905Z Log4j2-TF-1-RollingFileManager-156 WARN Exception reported by action 'class org.apache.logging.log4j.core.appender.rolling.RollingFileManager$AsyncAction'
+2026-11-26T02:15:06.739955Z Log4j2-TF-1-RollingFileManager-157 WARN Exception reported by action 'class org.apache.logging.log4j.core.appender.rolling.RollingFileManager$AsyncAction'
+2026-11-26T02:15:06.754012Z Log4j2-TF-1-RollingFileManager-158 WARN Exception reported by action 'class org.apache.logging.log4j.core.appender.rolling.RollingFileManager$AsyncAction'
+2026-11-26T02:15:06.768903Z Log4j2-TF-1-RollingFileManager-159 WARN Exception reported by action 'class org.apache.logging.log4j.core.appender.rolling.RollingFileManager$AsyncAction'
+2026-11-26T02:15:06.783520Z Log4j2-TF-1-RollingFileManager-160 WARN Exception reported by action 'class org.apache.logging.log4j.core.appender.rolling.RollingFileManager$AsyncAction'
+2026-11-26T02:15:06.797871Z Log4j2-TF-1-RollingFileManager-161 WARN Exception reported by action 'class org.apache.logging.log4j.core.appender.rolling.RollingFileManager$AsyncAction'
+2026-11-26T02:15:06.811864Z Log4j2-TF-1-RollingFileManager-162 WARN Exception reported by action 'class org.apache.logging.log4j.core.appender.rolling.RollingFileManager$AsyncAction'
+2026-11-26T02:15:06.826376Z Log4j2-TF-1-RollingFileManager-163 WARN Exception reported by action 'class org.apache.logging.log4j.core.appender.rolling.RollingFileManager$AsyncAction'
+2026-11-26T02:15:06.840314Z Log4j2-TF-1-RollingFileManager-164 WARN Exception reported by action 'class org.apache.logging.log4j.core.appender.rolling.RollingFileManager$AsyncAction'
+2026-11-26T02:15:06.855354Z Log4j2-TF-1-RollingFileManager-165 WARN Exception reported by action 'class org.apache.logging.log4j.core.appender.rolling.RollingFileManager$AsyncAction'
+2026-11-26T02:15:06.870524Z Log4j2-TF-1-RollingFileManager-166 WARN Exception reported by action 'class org.apache.logging.log4j.core.appender.rolling.RollingFileManager$AsyncAction'
+2026-11-26T02:15:06.884168Z Log4j2-TF-1-RollingFileManager-167 WARN Exception reported by action 'class org.apache.logging.log4j.core.appender.rolling.RollingFileManager$AsyncAction'
+2026-11-26T02:15:06.899082Z Log4j2-TF-1-RollingFileManager-168 WARN Exception reported by action 'class org.apache.logging.log4j.core.appender.rolling.RollingFileManager$AsyncAction'
+2026-11-26T02:15:06.913964Z Log4j2-TF-1-RollingFileManager-169 WARN Exception reported by action 'class org.apache.logging.log4j.core.appender.rolling.RollingFileManager$AsyncAction'
+2026-11-26T02:15:06.926977Z Log4j2-TF-1-RollingFileManager-170 WARN Exception reported by action 'class org.apache.logging.log4j.core.appender.rolling.RollingFileManager$AsyncAction'
+2026-11-26T02:15:06.941175Z Log4j2-TF-1-RollingFileManager-171 WARN Exception reported by action 'class org.apache.logging.log4j.core.appender.rolling.RollingFileManager$AsyncAction'
+2026-11-26T02:15:06.954552Z Log4j2-TF-1-RollingFileManager-172 WARN Exception reported by action 'class org.apache.logging.log4j.core.appender.rolling.RollingFileManager$AsyncAction'
+2026-11-26T02:15:06.968006Z Log4j2-TF-1-RollingFileManager-173 WARN Exception reported by action 'class org.apache.logging.log4j.core.appender.rolling.RollingFileManager$AsyncAction'
+2026-11-26T02:15:06.981852Z Log4j2-TF-1-RollingFileManager-174 WARN Exception reported by action 'class org.apache.logging.log4j.core.appender.rolling.RollingFileManager$AsyncAction'
+2026-11-26T02:15:06.995154Z Log4j2-TF-1-RollingFileManager-175 WARN Exception reported by action 'class org.apache.logging.log4j.core.appender.rolling.RollingFileManager$AsyncAction'
+2026-11-26T02:15:07.009400Z Log4j2-TF-1-RollingFileManager-176 WARN Exception reported by action 'class org.apache.logging.log4j.core.appender.rolling.RollingFileManager$AsyncAction'
+2026-11-26T02:15:07.022615Z Log4j2-TF-1-RollingFileManager-177 WARN Exception reported by action 'class org.apache.logging.log4j.core.appender.rolling.RollingFileManager$AsyncAction'
+2026-11-26T02:15:07.035959Z Log4j2-TF-1-RollingFileManager-178 WARN Exception reported by action 'class org.apache.logging.log4j.core.appender.rolling.RollingFileManager$AsyncAction'
+2026-11-26T02:15:07.049462Z Log4j2-TF-1-RollingFileManager-179 WARN Exception reported by action 'class org.apache.logging.log4j.core.appender.rolling.RollingFileManager$AsyncAction'
+2026-11-26T02:15:07.062799Z Log4j2-TF-1-RollingFileManager-180 WARN Exception reported by action 'class org.apache.logging.log4j.core.appender.rolling.RollingFileManager$AsyncAction'
+2026-11-26T02:15:07.076088Z Log4j2-TF-1-RollingFileManager-181 WARN Exception reported by action 'class org.apache.logging.log4j.core.appender.rolling.RollingFileManager$AsyncAction'
+2026-11-26T02:15:07.089346Z Log4j2-TF-1-RollingFileManager-182 WARN Exception reported by action 'class org.apache.logging.log4j.core.appender.rolling.RollingFileManager$AsyncAction'
+2026-11-26T02:15:07.101562Z Log4j2-TF-1-RollingFileManager-183 WARN Exception reported by action 'class org.apache.logging.log4j.core.appender.rolling.RollingFileManager$AsyncAction'
+2026-11-26T02:15:07.114056Z Log4j2-TF-1-RollingFileManager-184 WARN Exception reported by action 'class org.apache.logging.log4j.core.appender.rolling.RollingFileManager$AsyncAction'
+2026-11-26T02:15:07.127349Z Log4j2-TF-1-RollingFileManager-185 WARN Exception reported by action 'class org.apache.logging.log4j.core.appender.rolling.RollingFileManager$AsyncAction'
+2026-11-26T02:15:07.140678Z Log4j2-TF-1-RollingFileManager-186 WARN Exception reported by action 'class org.apache.logging.log4j.core.appender.rolling.RollingFileManager$AsyncAction'
+2026-11-26T02:15:07.153943Z Log4j2-TF-1-RollingFileManager-187 WARN Exception reported by action 'class org.apache.logging.log4j.core.appender.rolling.RollingFileManager$AsyncAction'
+2026-11-26T02:15:07.167052Z Log4j2-TF-1-RollingFileManager-188 WARN Exception reported by action 'class org.apache.logging.log4j.core.appender.rolling.RollingFileManager$AsyncAction'
+2026-11-26T02:15:07.180450Z Log4j2-TF-1-RollingFileManager-189 WARN Exception reported by action 'class org.apache.logging.log4j.core.appender.rolling.RollingFileManager$AsyncAction'
+2026-11-26T02:15:07.193777Z Log4j2-TF-1-RollingFileManager-190 WARN Exception reported by action 'class org.apache.logging.log4j.core.appender.rolling.RollingFileManager$AsyncAction'
+2026-11-26T02:15:07.207072Z Log4j2-TF-1-RollingFileManager-191 WARN Exception reported by action 'class org.apache.logging.log4j.core.appender.rolling.RollingFileManager$AsyncAction'
+2026-11-26T02:15:07.220693Z Log4j2-TF-1-RollingFileManager-192 WARN Exception reported by action 'class org.apache.logging.log4j.core.appender.rolling.RollingFileManager$AsyncAction'
+2026-11-26T02:15:07.234278Z Log4j2-TF-1-RollingFileManager-193 WARN Exception reported by action 'class org.apache.logging.log4j.core.appender.rolling.RollingFileManager$AsyncAction'
+2026-11-26T02:15:07.247424Z Log4j2-TF-1-RollingFileManager-194 WARN Exception reported by action 'class org.apache.logging.log4j.core.appender.rolling.RollingFileManager$AsyncAction'
+2026-11-26T02:15:07.260856Z Log4j2-TF-1-RollingFileManager-195 WARN Exception reported by action 'class org.apache.logging.log4j.core.appender.rolling.RollingFileManager$AsyncAction'
+2026-11-26T02:15:07.274109Z Log4j2-TF-1-RollingFileManager-196 WARN Exception reported by action 'class org.apache.logging.log4j.core.appender.rolling.RollingFileManager$AsyncAction'
+2026-11-26T02:15:07.288835Z Log4j2-TF-1-RollingFileManager-197 WARN Exception reported by action 'class org.apache.logging.log4j.core.appender.rolling.RollingFileManager$AsyncAction'
+2026-11-26T02:15:07.302432Z Log4j2-TF-1-RollingFileManager-198 WARN Exception reported by action 'class org.apache.logging.log4j.core.appender.rolling.RollingFileManager$AsyncAction'
+2026-11-26T02:15:07.316170Z Log4j2-TF-1-RollingFileManager-199 WARN Exception reported by action 'class org.apache.logging.log4j.core.appender.rolling.RollingFileManager$AsyncAction'
+2026-11-26T02:15:07.330003Z Log4j2-TF-1-RollingFileManager-200 WARN Exception reported by action 'class org.apache.logging.log4j.core.appender.rolling.RollingFileManager$AsyncAction'
+2026-11-26T02:15:07.343940Z Log4j2-TF-1-RollingFileManager-201 WARN Exception reported by action 'class org.apache.logging.log4j.core.appender.rolling.RollingFileManager$AsyncAction'
+2026-11-26T02:15:07.357346Z Log4j2-TF-1-RollingFileManager-202 WARN Exception reported by action 'class org.apache.logging.log4j.core.appender.rolling.RollingFileManager$AsyncAction'
+2026-11-26T02:15:07.371757Z Log4j2-TF-1-RollingFileManager-203 WARN Exception reported by action 'class org.apache.logging.log4j.core.appender.rolling.RollingFileManager$AsyncAction'
+2026-11-26T02:15:07.386287Z Log4j2-TF-1-RollingFileManager-204 WARN Exception reported by action 'class org.apache.logging.log4j.core.appender.rolling.RollingFileManager$AsyncAction'
+2026-11-26T02:15:07.397845Z Log4j2-TF-1-RollingFileManager-205 WARN Exception reported by action 'class org.apache.logging.log4j.core.appender.rolling.RollingFileManager$AsyncAction'
+2026-11-26T02:15:07.411065Z Log4j2-TF-1-RollingFileManager-206 WARN Exception reported by action 'class org.apache.logging.log4j.core.appender.rolling.RollingFileManager$AsyncAction'
+2026-11-26T02:15:07.424506Z Log4j2-TF-1-RollingFileManager-207 WARN Exception reported by action 'class org.apache.logging.log4j.core.appender.rolling.RollingFileManager$AsyncAction'
+2026-11-26T02:15:07.437622Z Log4j2-TF-1-RollingFileManager-208 WARN Exception reported by action 'class org.apache.logging.log4j.core.appender.rolling.RollingFileManager$AsyncAction'
+2026-11-26T02:15:07.451117Z Log4j2-TF-1-RollingFileManager-209 WARN Exception reported by action 'class org.apache.logging.log4j.core.appender.rolling.RollingFileManager$AsyncAction'
+2026-11-26T02:15:07.464479Z Log4j2-TF-1-RollingFileManager-210 WARN Exception reported by action 'class org.apache.logging.log4j.core.appender.rolling.RollingFileManager$AsyncAction'
+2026-11-26T02:15:07.477967Z Log4j2-TF-1-RollingFileManager-211 WARN Exception reported by action 'class org.apache.logging.log4j.core.appender.rolling.RollingFileManager$AsyncAction'
+2026-11-26T02:15:07.491284Z Log4j2-TF-1-RollingFileManager-212 WARN Exception reported by action 'class org.apache.logging.log4j.core.appender.rolling.RollingFileManager$AsyncAction'
+2026-11-26T02:15:07.504659Z Log4j2-TF-1-RollingFileManager-213 WARN Exception reported by action 'class org.apache.logging.log4j.core.appender.rolling.RollingFileManager$AsyncAction'
+2026-11-26T02:15:07.518445Z Log4j2-TF-1-RollingFileManager-214 WARN Exception reported by action 'class org.apache.logging.log4j.core.appender.rolling.RollingFileManager$AsyncAction'
+2026-11-26T02:15:07.531644Z Log4j2-TF-1-RollingFileManager-215 WARN Exception reported by action 'class org.apache.logging.log4j.core.appender.rolling.RollingFileManager$AsyncAction'
+2026-11-26T02:15:07.545561Z Log4j2-TF-1-RollingFileManager-216 WARN Exception reported by action 'class org.apache.logging.log4j.core.appender.rolling.RollingFileManager$AsyncAction'
+2026-11-26T02:15:07.558263Z Log4j2-TF-1-RollingFileManager-217 WARN Exception reported by action 'class org.apache.logging.log4j.core.appender.rolling.RollingFileManager$AsyncAction'
+2026-11-26T02:15:07.571812Z Log4j2-TF-1-RollingFileManager-218 WARN Exception reported by action 'class org.apache.logging.log4j.core.appender.rolling.RollingFileManager$AsyncAction'
+2026-11-26T02:15:07.585174Z Log4j2-TF-1-RollingFileManager-219 WARN Exception reported by action 'class org.apache.logging.log4j.core.appender.rolling.RollingFileManager$AsyncAction'
+2026-11-26T02:15:07.598841Z Log4j2-TF-1-RollingFileManager-220 WARN Exception reported by action 'class org.apache.logging.log4j.core.appender.rolling.RollingFileManager$AsyncAction'
+2026-11-26T02:15:07.613322Z Log4j2-TF-1-RollingFileManager-221 WARN Exception reported by action 'class org.apache.logging.log4j.core.appender.rolling.RollingFileManager$AsyncAction'
+2026-11-26T02:15:07.627289Z Log4j2-TF-1-RollingFileManager-222 WARN Exception reported by action 'class org.apache.logging.log4j.core.appender.rolling.RollingFileManager$AsyncAction'
+2026-11-26T02:15:07.641548Z Log4j2-TF-1-RollingFileManager-223 WARN Exception reported by action 'class org.apache.logging.log4j.core.appender.rolling.RollingFileManager$AsyncAction'
+2026-11-26T02:15:07.655811Z Log4j2-TF-1-RollingFileManager-224 WARN Exception reported by action 'class org.apache.logging.log4j.core.appender.rolling.RollingFileManager$AsyncAction'
+2026-11-26T02:15:07.669475Z Log4j2-TF-1-RollingFileManager-225 WARN Exception reported by action 'class org.apache.logging.log4j.core.appender.rolling.RollingFileManager$AsyncAction'
+2026-11-26T02:15:07.682392Z Log4j2-TF-1-RollingFileManager-226 WARN Exception reported by action 'class org.apache.logging.log4j.core.appender.rolling.RollingFileManager$AsyncAction'
+2026-11-26T02:15:07.695115Z Log4j2-TF-1-RollingFileManager-227 WARN Exception reported by action 'class org.apache.logging.log4j.core.appender.rolling.RollingFileManager$AsyncAction'
+2026-11-26T02:15:07.707216Z Log4j2-TF-1-RollingFileManager-228 WARN Exception reported by action 'class org.apache.logging.log4j.core.appender.rolling.RollingFileManager$AsyncAction'
+2026-11-26T02:15:07.719858Z Log4j2-TF-1-RollingFileManager-229 WARN Exception reported by action 'class org.apache.logging.log4j.core.appender.rolling.RollingFileManager$AsyncAction'
+2026-11-26T02:15:07.732722Z Log4j2-TF-1-RollingFileManager-230 WARN Exception reported by action 'class org.apache.logging.log4j.core.appender.rolling.RollingFileManager$AsyncAction'
+2026-11-26T02:15:07.745471Z Log4j2-TF-1-RollingFileManager-231 WARN Exception reported by action 'class org.apache.logging.log4j.core.appender.rolling.RollingFileManager$AsyncAction'
+2026-11-26T02:15:07.758282Z Log4j2-TF-1-RollingFileManager-232 WARN Exception reported by action 'class org.apache.logging.log4j.core.appender.rolling.RollingFileManager$AsyncAction'
+2026-11-26T02:15:07.771258Z Log4j2-TF-1-RollingFileManager-233 WARN Exception reported by action 'class org.apache.logging.log4j.core.appender.rolling.RollingFileManager$AsyncAction'
+2026-11-26T02:15:07.784132Z Log4j2-TF-1-RollingFileManager-234 WARN Exception reported by action 'class org.apache.logging.log4j.core.appender.rolling.RollingFileManager$AsyncAction'
+2026-11-26T02:15:07.796867Z Log4j2-TF-1-RollingFileManager-235 WARN Exception reported by action 'class org.apache.logging.log4j.core.appender.rolling.RollingFileManager$AsyncAction'
+2026-11-26T02:15:07.809691Z Log4j2-TF-1-RollingFileManager-236 WARN Exception reported by action 'class org.apache.logging.log4j.core.appender.rolling.RollingFileManager$AsyncAction'
+2026-11-26T02:15:07.821981Z Log4j2-TF-1-RollingFileManager-237 WARN Exception reported by action 'class org.apache.logging.log4j.core.appender.rolling.RollingFileManager$AsyncAction'
+2026-11-26T02:15:07.837332Z Log4j2-TF-1-RollingFileManager-238 WARN Exception reported by action 'class org.apache.logging.log4j.core.appender.rolling.RollingFileManager$AsyncAction'
+2026-11-26T02:15:07.849233Z Log4j2-TF-1-RollingFileManager-239 WARN Exception reported by action 'class org.apache.logging.log4j.core.appender.rolling.RollingFileManager$AsyncAction'
+2026-11-26T02:15:07.862266Z Log4j2-TF-1-RollingFileManager-240 WARN Exception reported by action 'class org.apache.logging.log4j.core.appender.rolling.RollingFileManager$AsyncAction'
+2026-11-26T02:15:07.874420Z Log4j2-TF-1-RollingFileManager-241 WARN Exception reported by action 'class org.apache.logging.log4j.core.appender.rolling.RollingFileManager$AsyncAction'
+2026-11-26T02:15:07.886755Z Log4j2-TF-1-RollingFileManager-242 WARN Exception reported by action 'class org.apache.logging.log4j.core.appender.rolling.RollingFileManager$AsyncAction'
+2026-11-26T02:15:07.900034Z Log4j2-TF-1-RollingFileManager-243 WARN Exception reported by action 'class org.apache.logging.log4j.core.appender.rolling.RollingFileManager$AsyncAction'
+2026-11-26T02:15:07.913042Z Log4j2-TF-1-RollingFileManager-244 WARN Exception reported by action 'class org.apache.logging.log4j.core.appender.rolling.RollingFileManager$AsyncAction'
+2026-11-26T02:15:07.926179Z Log4j2-TF-1-RollingFileManager-245 WARN Exception reported by action 'class org.apache.logging.log4j.core.appender.rolling.RollingFileManager$AsyncAction'
+2026-11-26T02:15:07.939307Z Log4j2-TF-1-RollingFileManager-246 WARN Exception reported by action 'class org.apache.logging.log4j.core.appender.rolling.RollingFileManager$AsyncAction'
+2026-11-26T02:15:07.952665Z Log4j2-TF-1-RollingFileManager-247 WARN Exception reported by action 'class org.apache.logging.log4j.core.appender.rolling.RollingFileManager$AsyncAction'
+2026-11-26T02:15:07.966151Z Log4j2-TF-1-RollingFileManager-248 WARN Exception reported by action 'class org.apache.logging.log4j.core.appender.rolling.RollingFileManager$AsyncAction'
+2026-11-26T02:15:07.979529Z Log4j2-TF-1-RollingFileManager-249 WARN Exception reported by action 'class org.apache.logging.log4j.core.appender.rolling.RollingFileManager$AsyncAction'
+2026-11-26T02:15:07.993485Z Log4j2-TF-1-RollingFileManager-250 WARN Exception reported by action 'class org.apache.logging.log4j.core.appender.rolling.RollingFileManager$AsyncAction'
+2026-11-26T02:15:08.007233Z Log4j2-TF-1-RollingFileManager-251 WARN Exception reported by action 'class org.apache.logging.log4j.core.appender.rolling.RollingFileManager$AsyncAction'
+2026-11-26T02:15:08.020455Z Log4j2-TF-1-RollingFileManager-252 WARN Exception reported by action 'class org.apache.logging.log4j.core.appender.rolling.RollingFileManager$AsyncAction'
+2026-11-26T02:15:08.034239Z Log4j2-TF-1-RollingFileManager-253 WARN Exception reported by action 'class org.apache.logging.log4j.core.appender.rolling.RollingFileManager$AsyncAction'
+2026-11-26T02:15:08.046819Z Log4j2-TF-1-RollingFileManager-254 WARN Exception reported by action 'class org.apache.logging.log4j.core.appender.rolling.RollingFileManager$AsyncAction'
+2026-11-26T02:15:08.060186Z Log4j2-TF-1-RollingFileManager-255 WARN Exception reported by action 'class org.apache.logging.log4j.core.appender.rolling.RollingFileManager$AsyncAction'
+2026-11-26T02:15:08.073539Z Log4j2-TF-1-RollingFileManager-256 WARN Exception reported by action 'class org.apache.logging.log4j.core.appender.rolling.RollingFileManager$AsyncAction'
+2026-11-26T02:15:08.086659Z Log4j2-TF-1-RollingFileManager-257 WARN Exception reported by action 'class org.apache.logging.log4j.core.appender.rolling.RollingFileManager$AsyncAction'
+2026-11-26T02:15:08.099513Z Log4j2-TF-1-RollingFileManager-258 WARN Exception reported by action 'class org.apache.logging.log4j.core.appender.rolling.RollingFileManager$AsyncAction'
+2026-11-26T02:15:08.112227Z Log4j2-TF-1-RollingFileManager-259 WARN Exception reported by action 'class org.apache.logging.log4j.core.appender.rolling.RollingFileManager$AsyncAction'
+2026-11-26T02:15:08.125098Z Log4j2-TF-1-RollingFileManager-260 WARN Exception reported by action 'class org.apache.logging.log4j.core.appender.rolling.RollingFileManager$AsyncAction'
+2026-11-26T02:15:08.138015Z Log4j2-TF-1-RollingFileManager-261 WARN Exception reported by action 'class org.apache.logging.log4j.core.appender.rolling.RollingFileManager$AsyncAction'
+2026-11-26T02:15:08.151090Z Log4j2-TF-1-RollingFileManager-262 WARN Exception reported by action 'class org.apache.logging.log4j.core.appender.rolling.RollingFileManager$AsyncAction'
+2026-11-26T02:15:08.164016Z Log4j2-TF-1-RollingFileManager-263 WARN Exception reported by action 'class org.apache.logging.log4j.core.appender.rolling.RollingFileManager$AsyncAction'
+2026-11-26T02:15:08.177054Z Log4j2-TF-1-RollingFileManager-264 WARN Exception reported by action 'class org.apache.logging.log4j.core.appender.rolling.RollingFileManager$AsyncAction'
+2026-11-26T02:15:08.190072Z Log4j2-TF-1-RollingFileManager-265 WARN Exception reported by action 'class org.apache.logging.log4j.core.appender.rolling.RollingFileManager$AsyncAction'
+2026-11-26T02:15:08.203114Z Log4j2-TF-1-RollingFileManager-266 WARN Exception reported by action 'class org.apache.logging.log4j.core.appender.rolling.RollingFileManager$AsyncAction'
+2026-11-26T02:15:08.216465Z Log4j2-TF-1-RollingFileManager-267 WARN Exception reported by action 'class org.apache.logging.log4j.core.appender.rolling.RollingFileManager$AsyncAction'
+2026-11-26T02:15:08.229526Z Log4j2-TF-1-RollingFileManager-268 WARN Exception reported by action 'class org.apache.logging.log4j.core.appender.rolling.RollingFileManager$AsyncAction'
+2026-11-26T02:15:08.242888Z Log4j2-TF-1-RollingFileManager-269 WARN Exception reported by action 'class org.apache.logging.log4j.core.appender.rolling.RollingFileManager$AsyncAction'
+2026-11-26T02:15:08.256262Z Log4j2-TF-1-RollingFileManager-270 WARN Exception reported by action 'class org.apache.logging.log4j.core.appender.rolling.RollingFileManager$AsyncAction'
+2026-11-26T02:15:08.269563Z Log4j2-TF-1-RollingFileManager-271 WARN Exception reported by action 'class org.apache.logging.log4j.core.appender.rolling.RollingFileManager$AsyncAction'
+2026-11-26T02:15:08.283714Z Log4j2-TF-1-RollingFileManager-272 WARN Exception reported by action 'class org.apache.logging.log4j.core.appender.rolling.RollingFileManager$AsyncAction'
+2026-11-26T02:15:08.296877Z Log4j2-TF-1-RollingFileManager-273 WARN Exception reported by action 'class org.apache.logging.log4j.core.appender.rolling.RollingFileManager$AsyncAction'
+2026-11-26T02:15:08.311067Z Log4j2-TF-1-RollingFileManager-274 WARN Exception reported by action 'class org.apache.logging.log4j.core.appender.rolling.RollingFileManager$AsyncAction'
+2026-11-26T02:15:08.324285Z Log4j2-TF-1-RollingFileManager-275 WARN Exception reported by action 'class org.apache.logging.log4j.core.appender.rolling.RollingFileManager$AsyncAction'
+2026-11-26T02:15:08.337565Z Log4j2-TF-1-RollingFileManager-276 WARN Exception reported by action 'class org.apache.logging.log4j.core.appender.rolling.RollingFileManager$AsyncAction'
+2026-11-26T02:15:08.350565Z Log4j2-TF-1-RollingFileManager-277 WARN Exception reported by action 'class org.apache.logging.log4j.core.appender.rolling.RollingFileManager$AsyncAction'
+2026-11-26T02:15:08.363528Z Log4j2-TF-1-RollingFileManager-278 WARN Exception reported by action 'class org.apache.logging.log4j.core.appender.rolling.RollingFileManager$AsyncAction'
+2026-11-26T02:15:08.375815Z Log4j2-TF-1-RollingFileManager-279 WARN Exception reported by action 'class org.apache.logging.log4j.core.appender.rolling.RollingFileManager$AsyncAction'
+2026-11-26T02:15:08.388878Z Log4j2-TF-1-RollingFileManager-280 WARN Exception reported by action 'class org.apache.logging.log4j.core.appender.rolling.RollingFileManager$AsyncAction'
+2026-11-26T02:15:08.403036Z Log4j2-TF-1-RollingFileManager-281 WARN Exception reported by action 'class org.apache.logging.log4j.core.appender.rolling.RollingFileManager$AsyncAction'
+2026-11-26T02:15:08.416574Z Log4j2-TF-1-RollingFileManager-282 WARN Exception reported by action 'class org.apache.logging.log4j.core.appender.rolling.RollingFileManager$AsyncAction'
+2026-11-26T02:15:08.430085Z Log4j2-TF-1-RollingFileManager-283 WARN Exception reported by action 'class org.apache.logging.log4j.core.appender.rolling.RollingFileManager$AsyncAction'
+2026-11-26T02:15:08.442978Z Log4j2-TF-1-RollingFileManager-284 WARN Exception reported by action 'class org.apache.logging.log4j.core.appender.rolling.RollingFileManager$AsyncAction'
+2026-11-26T02:15:08.455594Z Log4j2-TF-1-RollingFileManager-285 WARN Exception reported by action 'class org.apache.logging.log4j.core.appender.rolling.RollingFileManager$AsyncAction'
+2026-11-26T02:15:08.468646Z Log4j2-TF-1-RollingFileManager-286 WARN Exception reported by action 'class org.apache.logging.log4j.core.appender.rolling.RollingFileManager$AsyncAction'
+2026-11-26T02:15:08.481742Z Log4j2-TF-1-RollingFileManager-287 WARN Exception reported by action 'class org.apache.logging.log4j.core.appender.rolling.RollingFileManager$AsyncAction'
+2026-11-26T02:15:08.494317Z Log4j2-TF-1-RollingFileManager-288 WARN Exception reported by action 'class org.apache.logging.log4j.core.appender.rolling.RollingFileManager$AsyncAction'
+2026-11-26T02:15:08.507291Z Log4j2-TF-1-RollingFileManager-289 WARN Exception reported by action 'class org.apache.logging.log4j.core.appender.rolling.RollingFileManager$AsyncAction'
+2026-11-26T02:15:08.520419Z Log4j2-TF-1-RollingFileManager-290 WARN Exception reported by action 'class org.apache.logging.log4j.core.appender.rolling.RollingFileManager$AsyncAction'
+2026-11-26T02:15:08.533787Z Log4j2-TF-1-RollingFileManager-291 WARN Exception reported by action 'class org.apache.logging.log4j.core.appender.rolling.RollingFileManager$AsyncAction'
+2026-11-26T02:15:08.547442Z Log4j2-TF-1-RollingFileManager-292 WARN Exception reported by action 'class org.apache.logging.log4j.core.appender.rolling.RollingFileManager$AsyncAction'
+2026-11-26T02:15:08.561104Z Log4j2-TF-1-RollingFileManager-293 WARN Exception reported by action 'class org.apache.logging.log4j.core.appender.rolling.RollingFileManager$AsyncAction'
+-- logs
+   | app.log  files=1 bytes=297
+   | app.log.2026-11-20.<i>.gz  files=3 bytes=1200
+   | app.log.2026-11-21.<i>.gz  files=3 bytes=1200
+   | app.log.2026-11-22.<i>.gz  files=3 bytes=1200
+   | app.log.2026-11-26.<i>.gz  files=2 bytes=225
+   | total .gz bytes: 3825
+   (seen 293 times: java.nio.file.FileSystemException: logs/app.log/..: Not a directory)
+
+== L5 clean-history-on-start via OnStartupTriggeringPolicy + cap 2048, old app.log present, no logging after start (log4j2, Boot 4.2.0)
+   args: -DLOG4J2_ROLLINGPOLICY_CLEAN_HISTORY_ON_START=true -DLOG4J2_ROLLINGPOLICY_TOTAL_SIZE_CAP=2048 -DARCHIVE_DIR=logs -DARCHIVE_GLOB=app.log.*.gz --logging.config=file:<app>/configs/fixed-cap.xml --logging.file.name=logs/app.log --logging.log4j2.rollingpolicy.max-file-size=1KB --logging.log4j2.rollingpolicy.max-history=2
+   before:
+     logs/    1 app.log
+     logs/    3 app.log.2026-11-20.<i>.gz
+     logs/    3 app.log.2026-11-21.<i>.gz
+     logs/    3 app.log.2026-11-22.<i>.gz
+LOG_PATH=null LOG_FILE=logs/app.log
+-- logs
+   | app.log  files=1 bytes=680
+   | app.log.2026-11-21.<i>.gz  files=2 bytes=800
+   | app.log.2026-11-22.<i>.gz  files=3 bytes=1200
+   | app.log.2026-11-25.<i>.gz  files=1 bytes=47
+   | total .gz bytes: 2047
+   first line of logs/app.log: 2026-11-26T07:45:10.612+05:30  INFO 33302 --- [main] r.App  
+
+== L6 same as L5 but no app.log from a previous run (log4j2, Boot 4.2.0)
+   args: -DLOG4J2_ROLLINGPOLICY_CLEAN_HISTORY_ON_START=true -DLOG4J2_ROLLINGPOLICY_TOTAL_SIZE_CAP=2048 -DARCHIVE_DIR=logs -DARCHIVE_GLOB=app.log.*.gz --logging.config=file:<app>/configs/fixed-cap.xml --logging.file.name=logs/app.log --logging.log4j2.rollingpolicy.max-file-size=1KB --logging.log4j2.rollingpolicy.max-history=2
+   before:
+     logs/    3 app.log.2026-11-20.<i>.gz
+     logs/    3 app.log.2026-11-21.<i>.gz
+     logs/    3 app.log.2026-11-22.<i>.gz
+LOG_PATH=null LOG_FILE=logs/app.log
+-- logs
+   | app.log  files=1 bytes=681
+   | app.log.2026-11-20.<i>.gz  files=3 bytes=1200
+   | app.log.2026-11-21.<i>.gz  files=3 bytes=1200
+   | app.log.2026-11-22.<i>.gz  files=3 bytes=1200
+   | total .gz bytes: 3600
+
+== B5 Logback clean-history-on-start=true, max-history=2, old app.log present, no logging after start (logback, Boot 4.2.0)
+   args: --logging.logback.rollingpolicy.clean-history-on-start=true --logging.file.name=logs/app.log --logging.logback.rollingpolicy.max-file-size=1KB --logging.logback.rollingpolicy.max-history=2
+   before:
+     logs/    1 app.log
+     logs/    3 app.log.2026-11-20.<i>.gz
+     logs/    3 app.log.2026-11-21.<i>.gz
+     logs/    3 app.log.2026-11-22.<i>.gz
+LOG_PATH=null LOG_FILE=logs/app.log
+-- logs
+   | app.log  files=1 bytes=681
+   | app.log.2026-11-25.<i>.gz  files=1 bytes=47
+   | total .gz bytes: 47
+   first line of logs/app.log: 2026-11-26T07:45:14.918+05:30  INFO 33452 --- [main] repro.A
+
+== L7 as L5, but app.log from the previous run was written earlier today (log4j2, Boot 4.2.0)
+   args: -DLOG4J2_ROLLINGPOLICY_CLEAN_HISTORY_ON_START=true -DLOG4J2_ROLLINGPOLICY_TOTAL_SIZE_CAP=2048 -DARCHIVE_DIR=logs -DARCHIVE_GLOB=app.log.*.gz --logging.config=file:<app>/configs/fixed-cap.xml --logging.file.name=logs/app.log --logging.log4j2.rollingpolicy.max-file-size=1KB --logging.log4j2.rollingpolicy.max-history=2
+   before:
+     logs/    1 app.log
+     logs/    3 app.log.2026-11-20.<i>.gz
+     logs/    3 app.log.2026-11-21.<i>.gz
+     logs/    3 app.log.2026-11-22.<i>.gz
+LOG_PATH=null LOG_FILE=logs/app.log
+-- logs
+   | app.log  files=1 bytes=681
+   | app.log.2026-11-21.<i>.gz  files=2 bytes=800
+   | app.log.2026-11-22.<i>.gz  files=3 bytes=1200
+   | app.log.2026-11-26.<i>.gz  files=1 bytes=47
+   | total .gz bytes: 2047
+   first line of logs/app.log: 2026-11-26T07:45:17.134+05:30  INFO 33520 --- [main] r.App  
+
+== B7 Logback clean-history-on-start=true, max-history=2, app.log from the previous run written earlier today (logback, Boot 4.2.0)
+   args: --logging.logback.rollingpolicy.clean-history-on-start=true --logging.file.name=logs/app.log --logging.logback.rollingpolicy.max-file-size=1KB --logging.logback.rollingpolicy.max-history=2
+   before:
+     logs/    1 app.log
+     logs/    3 app.log.2026-11-20.<i>.gz
+     logs/    3 app.log.2026-11-21.<i>.gz
+     logs/    3 app.log.2026-11-22.<i>.gz
+LOG_PATH=null LOG_FILE=logs/app.log
+-- logs
+   | app.log  files=1 bytes=708
+   | total .gz bytes: 0
+   first line of logs/app.log: line from the previous run
+
+== B8 control: as B7 with clean-history-on-start=false (logback, Boot 4.2.0)
+   args: --logging.file.name=logs/app.log --logging.logback.rollingpolicy.max-file-size=1KB --logging.logback.rollingpolicy.max-history=2
+   before:
+     logs/    1 app.log
+     logs/    3 app.log.2026-11-20.<i>.gz
+     logs/    3 app.log.2026-11-21.<i>.gz
+     logs/    3 app.log.2026-11-22.<i>.gz
+LOG_PATH=null LOG_FILE=logs/app.log
+-- logs
+   | app.log  files=1 bytes=708
+   | app.log.2026-11-20.<i>.gz  files=3 bytes=1200
+   | app.log.2026-11-21.<i>.gz  files=3 bytes=1200
+   | app.log.2026-11-22.<i>.gz  files=3 bytes=1200
+   | total .gz bytes: 3600
+   first line of logs/app.log: line from the previous run

@@ -1,0 +1,234 @@
+
+== T1 strategy=time, per-second pattern, max-history=2, Boot XML (log4j2, Boot 4.2.0)
+   args: -Drepro.millis=5000 --logging.file.name=logs/app.log --logging.log4j2.rollingpolicy.strategy=time --logging.log4j2.rollingpolicy.file-name-pattern=logs/app.log.%d{yyyy-MM-dd-HH-mm-ss}.%i.gz --logging.log4j2.rollingpolicy.max-history=2
+   before:
+LOG_PATH=null LOG_FILE=logs/app.log
+   sys LOG4J2_ROLLINGPOLICY_FILE_NAME_PATTERN=logs/app.log.%d{yyyy-MM-dd-HH-mm-ss}.%i.gz
+   sys LOG4J2_ROLLINGPOLICY_MAX_HISTORY=2
+   sys LOG4J2_ROLLINGPOLICY_STRATEGY=time
+-- logs
+   | app.log  files=1 bytes=31779
+   | app.log.2026-11-26-09-53-45.<i>.gz  files=1 bytes=1657
+   | app.log.2026-11-26-09-53-46.<i>.gz  files=1 bytes=1796
+   | app.log.2026-11-26-09-53-47.<i>.gz  files=1 bytes=1802
+   | app.log.2026-11-26-09-53-48.<i>.gz  files=1 bytes=1810
+   | app.log.2026-11-26-09-53-49.<i>.gz  files=1 bytes=1819
+   | total .gz bytes: 8884
+
+== T2 strategy=size-and-time, per-second pattern, 1KB, max-history=2, Boot XML (log4j2, Boot 4.2.0)
+   args: -Drepro.millis=5000 --logging.file.name=logs/app.log --logging.log4j2.rollingpolicy.strategy=size-and-time --logging.log4j2.rollingpolicy.file-name-pattern=logs/app.log.%d{yyyy-MM-dd-HH-mm-ss}.%i.gz --logging.log4j2.rollingpolicy.max-file-size=1KB --logging.log4j2.rollingpolicy.max-history=2
+   before:
+LOG_PATH=null LOG_FILE=logs/app.log
+   sys LOG4J2_ROLLINGPOLICY_FILE_NAME_PATTERN=logs/app.log.%d{yyyy-MM-dd-HH-mm-ss}.%i.gz
+   sys LOG4J2_ROLLINGPOLICY_MAX_FILE_SIZE=1024
+   sys LOG4J2_ROLLINGPOLICY_MAX_HISTORY=2
+   sys LOG4J2_ROLLINGPOLICY_STRATEGY=size-and-time
+-- logs
+   | app.log  files=1 bytes=594
+   | app.log.2026-11-26-09-53-52.<i>.gz  files=2 bytes=217
+   | app.log.2026-11-26-09-53-53.<i>.gz  files=2 bytes=215
+   | app.log.2026-11-26-09-53-54.<i>.gz  files=2 bytes=199
+   | app.log.2026-11-26-09-53-55.<i>.gz  files=2 bytes=199
+   | app.log.2026-11-26-09-53-56.<i>.gz  files=2 bytes=210
+   | app.log.2026-11-26-09-53-57.<i>.gz  files=2 bytes=227
+   | total .gz bytes: 1267
+
+== T3 strategy=cron '* * * * * ?', per-second pattern, max-history=2, Boot XML (log4j2, Boot 4.2.0)
+   args: -Drepro.millis=5000 --logging.file.name=logs/app.log --logging.log4j2.rollingpolicy.strategy=cron --logging.log4j2.rollingpolicy.cron=* * * * * ? --logging.log4j2.rollingpolicy.file-name-pattern=logs/app.log.%d{yyyy-MM-dd-HH-mm-ss}.%i.gz --logging.log4j2.rollingpolicy.max-history=2
+   before:
+LOG_PATH=null LOG_FILE=logs/app.log
+   sys LOG4J2_ROLLINGPOLICY_CRON=* * * * * ?
+   sys LOG4J2_ROLLINGPOLICY_FILE_NAME_PATTERN=logs/app.log.%d{yyyy-MM-dd-HH-mm-ss}.%i.gz
+   sys LOG4J2_ROLLINGPOLICY_MAX_HISTORY=2
+   sys LOG4J2_ROLLINGPOLICY_STRATEGY=cron
+-- logs
+   | app.log  files=1 bytes=0
+   | app.log.2026-11-26-09-53-59.<i>.gz  files=1 bytes=1191
+   | app.log.2026-11-26-09-54-00.<i>.gz  files=1 bytes=1796
+   | app.log.2026-11-26-09-54-01.<i>.gz  files=1 bytes=1804
+   | app.log.2026-11-26-09-54-02.<i>.gz  files=1 bytes=1813
+   | app.log.2026-11-26-09-54-03.<i>.gz  files=1 bytes=1808
+   | app.log.2026-11-26-09-54-04.<i>.gz  files=1 bytes=1052
+   | total .gz bytes: 9464
+
+== TB Logback, per-second pattern, max-history=2 (time only: max-file-size 10MB) (logback, Boot 4.2.0)
+   args: -Drepro.millis=5000 --logging.file.name=logs/app.log --logging.logback.rollingpolicy.file-name-pattern=logs/app.log.%d{yyyy-MM-dd-HH-mm-ss}.%i.gz --logging.logback.rollingpolicy.max-history=2
+   before:
+LOG_PATH=null LOG_FILE=logs/app.log
+   sys LOGBACK_ROLLINGPOLICY_FILE_NAME_PATTERN=logs/app.log.%d{yyyy-MM-dd-HH-mm-ss}.%i.gz
+   sys LOGBACK_ROLLINGPOLICY_MAX_HISTORY=2
+-- logs
+   | app.log  files=1 bytes=72765
+   | app.log.2026-11-26-09-54-09.<i>.gz  files=1 bytes=1815
+   | app.log.2026-11-26-09-54-10.<i>.gz  files=1 bytes=1816
+   | total .gz bytes: 3631
+
+== T4 strategy=time + fixed cap 5000 (log4j2, Boot 4.2.0)
+   args: -Drepro.millis=5000 -DLOG4J2_ROLLINGPOLICY_TOTAL_SIZE_CAP=5000 -DARCHIVE_DIR=logs -DARCHIVE_GLOB=app.log.*.gz --logging.config=file:<app>/configs/fixed-cap.xml --logging.file.name=logs/app.log --logging.log4j2.rollingpolicy.strategy=time --logging.log4j2.rollingpolicy.file-name-pattern=logs/app.log.%d{yyyy-MM-dd-HH-mm-ss}.%i.gz --logging.log4j2.rollingpolicy.max-history=2
+   before:
+     ./    1 logs
+LOG_PATH=null LOG_FILE=logs/app.log
+   sys LOG4J2_ROLLINGPOLICY_FILE_NAME_PATTERN=logs/app.log.%d{yyyy-MM-dd-HH-mm-ss}.%i.gz
+   sys LOG4J2_ROLLINGPOLICY_MAX_HISTORY=2
+   sys LOG4J2_ROLLINGPOLICY_STRATEGY=time
+   sys LOG4J2_ROLLINGPOLICY_TOTAL_SIZE_CAP=5000
+-- .
+   | logs/app.log  files=1 bytes=86130
+   | logs/app.log.2026-11-26-09-54-16.<i>.gz  files=1 bytes=1806
+   | logs/app.log.2026-11-26-09-54-17.<i>.gz  files=1 bytes=1807
+   | total .gz bytes: 3613
+-- logs
+   | app.log  files=1 bytes=86130
+   | app.log.2026-11-26-09-54-16.<i>.gz  files=1 bytes=1806
+   | app.log.2026-11-26-09-54-17.<i>.gz  files=1 bytes=1807
+   | total .gz bytes: 3613
+
+== T5 strategy=cron + fixed cap 5000 (log4j2, Boot 4.2.0)
+   args: -Drepro.millis=5000 -DLOG4J2_ROLLINGPOLICY_TOTAL_SIZE_CAP=5000 -DARCHIVE_DIR=logs -DARCHIVE_GLOB=app.log.*.gz --logging.config=file:<app>/configs/fixed-cap.xml --logging.file.name=logs/app.log --logging.log4j2.rollingpolicy.strategy=cron --logging.log4j2.rollingpolicy.cron=* * * * * ? --logging.log4j2.rollingpolicy.file-name-pattern=logs/app.log.%d{yyyy-MM-dd-HH-mm-ss}.%i.gz --logging.log4j2.rollingpolicy.max-history=2
+   before:
+LOG_PATH=null LOG_FILE=logs/app.log
+   sys LOG4J2_ROLLINGPOLICY_CRON=* * * * * ?
+   sys LOG4J2_ROLLINGPOLICY_FILE_NAME_PATTERN=logs/app.log.%d{yyyy-MM-dd-HH-mm-ss}.%i.gz
+   sys LOG4J2_ROLLINGPOLICY_MAX_HISTORY=2
+   sys LOG4J2_ROLLINGPOLICY_STRATEGY=cron
+   sys LOG4J2_ROLLINGPOLICY_TOTAL_SIZE_CAP=5000
+-- logs
+   | app.log  files=1 bytes=0
+   | app.log.2026-11-26-09-54-24.<i>.gz  files=1 bytes=1811
+   | app.log.2026-11-26-09-54-25.<i>.gz  files=1 bytes=1638
+   | total .gz bytes: 3449
+
+== T6 strategy=time + OnStartup + fixed cap 2048, previous app.log from 1 h ago, no logging after start (log4j2, Boot 4.2.0)
+   args: -DLOG4J2_ROLLINGPOLICY_CLEAN_HISTORY_ON_START=true -DLOG4J2_ROLLINGPOLICY_TOTAL_SIZE_CAP=2048 -DARCHIVE_DIR=logs -DARCHIVE_GLOB=app.log.*.gz --logging.config=file:<app>/configs/fixed-cap.xml --logging.file.name=logs/app.log --logging.log4j2.rollingpolicy.strategy=time --logging.log4j2.rollingpolicy.max-history=2
+   before:
+     logs/    1 app.log
+     logs/    3 app.log.2026-11-20.<i>.gz
+     logs/    3 app.log.2026-11-21.<i>.gz
+     logs/    3 app.log.2026-11-22.<i>.gz
+LOG_PATH=null LOG_FILE=logs/app.log
+   sys LOG4J2_ROLLINGPOLICY_CLEAN_HISTORY_ON_START=true
+   sys LOG4J2_ROLLINGPOLICY_MAX_HISTORY=2
+   sys LOG4J2_ROLLINGPOLICY_STRATEGY=time
+   sys LOG4J2_ROLLINGPOLICY_TOTAL_SIZE_CAP=2048
+-- logs
+   | app.log  files=1 bytes=681
+   | app.log.2026-11-21.<i>.gz  files=2 bytes=800
+   | app.log.2026-11-22.<i>.gz  files=3 bytes=1200
+   | app.log.2026-11-26.<i>.gz  files=1 bytes=47
+   | total .gz bytes: 2047
+   first line of logs/app.log: 2026-11-26T09:54:27.938+05:30  INFO 41745 --- [main] r.App  
+
+== T7 strategy=cron + OnStartup + fixed cap 2048, previous app.log from 1 h ago, no logging after start (log4j2, Boot 4.2.0)
+   args: -DLOG4J2_ROLLINGPOLICY_CLEAN_HISTORY_ON_START=true -DLOG4J2_ROLLINGPOLICY_TOTAL_SIZE_CAP=2048 -DARCHIVE_DIR=logs -DARCHIVE_GLOB=app.log.*.gz --logging.config=file:<app>/configs/fixed-cap.xml --logging.file.name=logs/app.log --logging.log4j2.rollingpolicy.strategy=cron --logging.log4j2.rollingpolicy.max-history=2
+   before:
+     logs/    1 app.log
+     logs/    3 app.log.2026-11-20.<i>.gz
+     logs/    3 app.log.2026-11-21.<i>.gz
+     logs/    3 app.log.2026-11-22.<i>.gz
+LOG_PATH=null LOG_FILE=logs/app.log
+   sys LOG4J2_ROLLINGPOLICY_CLEAN_HISTORY_ON_START=true
+   sys LOG4J2_ROLLINGPOLICY_MAX_HISTORY=2
+   sys LOG4J2_ROLLINGPOLICY_STRATEGY=cron
+   sys LOG4J2_ROLLINGPOLICY_TOTAL_SIZE_CAP=2048
+-- logs
+   | app.log  files=1 bytes=681
+   | app.log.2026-11-21.<i>.gz  files=2 bytes=800
+   | app.log.2026-11-22.<i>.gz  files=3 bytes=1200
+   | app.log.2026-11-26.<i>.gz  files=1 bytes=47
+   | total .gz bytes: 2047
+   first line of logs/app.log: 2026-11-26T09:54:30.146+05:30  INFO 41812 --- [main] r.App  
+
+== D1 date in folder: logs/archive/%d{yyyy-MM-dd-HH-mm}/app.%d{yyyy-MM-dd-HH-mm-ss}.%i.log.gz, max-history=2, Boot XML (log4j2, Boot 4.2.0)
+   args: -Drepro.millis=4000 --logging.file.name=logs/app.log --logging.log4j2.rollingpolicy.file-name-pattern=logs/archive/%d{yyyy-MM-dd-HH-mm}/app.%d{yyyy-MM-dd-HH-mm-ss}.%i.log.gz --logging.log4j2.rollingpolicy.max-file-size=1KB --logging.log4j2.rollingpolicy.max-history=2
+   before:
+     logs/    3 archive/2026-11-20-12-00/app.2026-11-20-12-00-00.<i>.log.gz
+     logs/    3 archive/2026-11-21-12-00/app.2026-11-21-12-00-00.<i>.log.gz
+     logs/    3 archive/2026-11-22-12-00/app.2026-11-22-12-00-00.<i>.log.gz
+LOG_PATH=null LOG_FILE=logs/app.log
+   sys LOG4J2_ROLLINGPOLICY_FILE_NAME_PATTERN=logs/archive/%d{yyyy-MM-dd-HH-mm}/app.%d{yyyy-MM-dd-HH-mm-ss}.%i.log.gz
+   sys LOG4J2_ROLLINGPOLICY_MAX_FILE_SIZE=1024
+   sys LOG4J2_ROLLINGPOLICY_MAX_HISTORY=2
+-- logs
+   | app.log  files=1 bytes=1188
+   | archive/2026-11-20-12-00/app.2026-11-20-12-00-00.<i>.log.gz  files=3 bytes=1200
+   | archive/2026-11-21-12-00/app.2026-11-21-12-00-00.<i>.log.gz  files=3 bytes=1200
+   | archive/2026-11-22-12-00/app.2026-11-22-12-00-00.<i>.log.gz  files=3 bytes=1200
+   | archive/2026-11-26-09-54/app.2026-11-26-09-54-33.<i>.log.gz  files=2 bytes=226
+   | archive/2026-11-26-09-54/app.2026-11-26-09-54-34.<i>.log.gz  files=2 bytes=226
+   | archive/2026-11-26-09-54/app.2026-11-26-09-54-35.<i>.log.gz  files=2 bytes=226
+   | archive/2026-11-26-09-54/app.2026-11-26-09-54-36.<i>.log.gz  files=2 bytes=225
+   | total .gz bytes: 4503
+
+== D2 date in folder, stashed XML, logging.file.path=logs, cap 2048 (log4j2, Boot 4.2.0)
+   args: -Drepro.millis=4000 -DLOG4J2_ROLLINGPOLICY_TOTAL_SIZE_CAP=2048 --logging.config=file:<app>/configs/stashed-283b523.xml --logging.file.path=logs --logging.log4j2.rollingpolicy.file-name-pattern=logs/archive/%d{yyyy-MM-dd-HH-mm}/app.%d{yyyy-MM-dd-HH-mm-ss}.%i.log.gz --logging.log4j2.rollingpolicy.max-file-size=1KB --logging.log4j2.rollingpolicy.max-history=2
+   before:
+     logs/    3 archive/2026-11-20-12-00/app.2026-11-20-12-00-00.<i>.log.gz
+     logs/    3 archive/2026-11-21-12-00/app.2026-11-21-12-00-00.<i>.log.gz
+     logs/    3 archive/2026-11-22-12-00/app.2026-11-22-12-00-00.<i>.log.gz
+     logs/    1 other-app.log.<i>.gz
+LOG_PATH=logs LOG_FILE=logs/spring.log
+   sys LOG4J2_ROLLINGPOLICY_FILE_NAME_PATTERN=logs/archive/%d{yyyy-MM-dd-HH-mm}/app.%d{yyyy-MM-dd-HH-mm-ss}.%i.log.gz
+   sys LOG4J2_ROLLINGPOLICY_MAX_FILE_SIZE=1024
+   sys LOG4J2_ROLLINGPOLICY_MAX_HISTORY=2
+   sys LOG4J2_ROLLINGPOLICY_TOTAL_SIZE_CAP=2048
+-- logs
+   | archive/2026-11-20-12-00/app.2026-11-20-12-00-00.<i>.log.gz  files=3 bytes=1200
+   | archive/2026-11-21-12-00/app.2026-11-21-12-00-00.<i>.log.gz  files=3 bytes=1200
+   | archive/2026-11-22-12-00/app.2026-11-22-12-00-00.<i>.log.gz  files=3 bytes=1200
+   | archive/2026-11-26-09-54/app.2026-11-26-09-54-38.<i>.log.gz  files=2 bytes=226
+   | archive/2026-11-26-09-54/app.2026-11-26-09-54-39.<i>.log.gz  files=2 bytes=227
+   | archive/2026-11-26-09-54/app.2026-11-26-09-54-40.<i>.log.gz  files=2 bytes=226
+   | archive/2026-11-26-09-54/app.2026-11-26-09-54-41.<i>.log.gz  files=2 bytes=226
+   | archive/2026-11-26-09-54/app.2026-11-26-09-54-42.<i>.log.gz  files=2 bytes=226
+   | spring.log  files=1 bytes=1188
+   | total .gz bytes: 4731
+
+== D3 date in folder, fixed cap: ARCHIVE_DIR=logs/archive, glob=app.*.log.gz at depth 1 (maxDepth=1), cap 2048 (log4j2, Boot 4.2.0)
+   args: -Drepro.millis=4000 -DLOG4J2_ROLLINGPOLICY_TOTAL_SIZE_CAP=2048 -DARCHIVE_DIR=logs/archive -DARCHIVE_GLOB=app.*.log.gz --logging.config=file:<app>/configs/fixed-cap.xml --logging.file.name=logs/app.log --logging.log4j2.rollingpolicy.file-name-pattern=logs/archive/%d{yyyy-MM-dd-HH-mm}/app.%d{yyyy-MM-dd-HH-mm-ss}.%i.log.gz --logging.log4j2.rollingpolicy.max-file-size=1KB --logging.log4j2.rollingpolicy.max-history=2
+   before:
+     logs/    3 archive/2026-11-20-12-00/app.2026-11-20-12-00-00.<i>.log.gz
+     logs/    3 archive/2026-11-21-12-00/app.2026-11-21-12-00-00.<i>.log.gz
+     logs/    3 archive/2026-11-22-12-00/app.2026-11-22-12-00-00.<i>.log.gz
+     logs/    1 archive/other-app.log.<i>.gz
+LOG_PATH=null LOG_FILE=logs/app.log
+   sys LOG4J2_ROLLINGPOLICY_FILE_NAME_PATTERN=logs/archive/%d{yyyy-MM-dd-HH-mm}/app.%d{yyyy-MM-dd-HH-mm-ss}.%i.log.gz
+   sys LOG4J2_ROLLINGPOLICY_MAX_FILE_SIZE=1024
+   sys LOG4J2_ROLLINGPOLICY_MAX_HISTORY=2
+   sys LOG4J2_ROLLINGPOLICY_TOTAL_SIZE_CAP=2048
+-- logs
+   | app.log  files=1 bytes=594
+   | archive/2026-11-20-12-00/app.2026-11-20-12-00-00.<i>.log.gz  files=3 bytes=1200
+   | archive/2026-11-21-12-00/app.2026-11-21-12-00-00.<i>.log.gz  files=3 bytes=1200
+   | archive/2026-11-22-12-00/app.2026-11-22-12-00-00.<i>.log.gz  files=3 bytes=1200
+   | archive/2026-11-26-09-54/app.2026-11-26-09-54-44.<i>.log.gz  files=2 bytes=224
+   | archive/2026-11-26-09-54/app.2026-11-26-09-54-45.<i>.log.gz  files=2 bytes=224
+   | archive/2026-11-26-09-54/app.2026-11-26-09-54-46.<i>.log.gz  files=2 bytes=224
+   | archive/2026-11-26-09-54/app.2026-11-26-09-54-47.<i>.log.gz  files=2 bytes=223
+   | archive/2026-11-26-09-54/app.2026-11-26-09-54-48.<i>.log.gz  files=2 bytes=223
+   | archive/other-app.log.<i>.gz  files=1 bytes=3000
+   | total .gz bytes: 7718
+
+== D4 date in folder, fixed cap: ARCHIVE_DIR=logs/archive, glob=*/app.*.log.gz, maxDepth=2, cap 2048 (log4j2, Boot 4.2.0)
+   args: -Drepro.millis=4000 -DLOG4J2_ROLLINGPOLICY_TOTAL_SIZE_CAP=2048 -DARCHIVE_DIR=logs/archive -DARCHIVE_GLOB=*/app.*.log.gz --logging.config=file:<app>/configs/fixed-cap-nested.xml --logging.file.name=logs/app.log --logging.log4j2.rollingpolicy.file-name-pattern=logs/archive/%d{yyyy-MM-dd-HH-mm}/app.%d{yyyy-MM-dd-HH-mm-ss}.%i.log.gz --logging.log4j2.rollingpolicy.max-file-size=1KB --logging.log4j2.rollingpolicy.max-history=2
+   before:
+     logs/    3 archive/2026-11-20-12-00/app.2026-11-20-12-00-00.<i>.log.gz
+     logs/    3 archive/2026-11-21-12-00/app.2026-11-21-12-00-00.<i>.log.gz
+     logs/    3 archive/2026-11-22-12-00/app.2026-11-22-12-00-00.<i>.log.gz
+     logs/    1 archive/other-app.log.<i>.gz
+LOG_PATH=null LOG_FILE=logs/app.log
+   sys LOG4J2_ROLLINGPOLICY_FILE_NAME_PATTERN=logs/archive/%d{yyyy-MM-dd-HH-mm}/app.%d{yyyy-MM-dd-HH-mm-ss}.%i.log.gz
+   sys LOG4J2_ROLLINGPOLICY_MAX_FILE_SIZE=1024
+   sys LOG4J2_ROLLINGPOLICY_MAX_HISTORY=2
+   sys LOG4J2_ROLLINGPOLICY_TOTAL_SIZE_CAP=2048
+-- logs
+   | app.log  files=1 bytes=297
+   | archive/2026-11-20-12-00/ (empty folder)
+   | archive/2026-11-21-12-00/ (empty folder)
+   | archive/2026-11-22-12-00/app.2026-11-22-12-00-00.<i>.log.gz  files=2 bytes=800
+   | archive/2026-11-26-09-54/app.2026-11-26-09-54-51.<i>.log.gz  files=2 bytes=226
+   | archive/2026-11-26-09-54/app.2026-11-26-09-54-52.<i>.log.gz  files=2 bytes=225
+   | archive/2026-11-26-09-54/app.2026-11-26-09-54-53.<i>.log.gz  files=2 bytes=226
+   | archive/2026-11-26-09-54/app.2026-11-26-09-54-54.<i>.log.gz  files=2 bytes=224
+   | archive/2026-11-26-09-54/app.2026-11-26-09-54-55.<i>.log.gz  files=2 bytes=224
+   | archive/other-app.log.<i>.gz  files=1 bytes=3000
+   | total .gz bytes: 4925

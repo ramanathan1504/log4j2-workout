@@ -1,0 +1,5 @@
+classpath log4j jars: log4j-api-2.25.6.jar 
+PASS parameterized-null-args observed=params=null formatted=Hello!
+PASS object-array-non-serializable-element observed=[A, non-serializable, C]
+PASS control-object-array-serializable observed=[A, 1, C]
+INFO serialVersionUID ObjectArrayMessage=3470900984521271892 ParameterizedMessage=-4633763537142017035

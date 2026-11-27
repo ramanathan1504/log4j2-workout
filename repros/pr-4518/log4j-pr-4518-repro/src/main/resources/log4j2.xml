@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Configuration status="WARN">
+  <Appenders>
+    <Syslog name="UDP" host="127.0.0.1" port="${sys:udp.port}" protocol="UDP" format="RFC5424" appName="pr4518" ignoreExceptions="true"/>
+  </Appenders>
+  <Loggers>
+    <Root level="INFO"><AppenderRef ref="UDP"/></Root>
+  </Loggers>
+</Configuration>

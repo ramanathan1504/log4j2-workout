@@ -1,0 +1,12 @@
+version=pr-4448-head-2026-11-17
+log4j-jars=log4j-api-2.24.3.jar log4j-core-3.0.0-SNAPSHOT.jar log4j-kit-3.0.0-SNAPSHOT.jar log4j-plugins-3.0.0-SNAPSHOT.jar 
+PASS default-gz-level0 archive=app-1.log.gz expected=ratio>=0.9 (level 0, stored) observed=compressed:41028 raw:41000 ratio:1.001
+PASS default-gz-level0-temp archive=app-1.log.gz expected=ratio>=0.9 (level 0, stored) observed=compressed:41028 raw:41000 ratio:1.001
+PASS default-zip-level0 archive=app-1.log.zip expected=ratio>=0.9 (level 0, stored) observed=compressed:41142 raw:41000 ratio:1.003
+PASS direct-gz-level0 archive=app-1.log.gz expected=ratio>=0.9 (level 0, stored) observed=compressed:41028 raw:41000 ratio:1.001
+PASS direct-gz-level0-temp archive=app-1.log.gz expected=ratio>=0.9 (level 0, stored) observed=compressed:41028 raw:41000 ratio:1.001
+PASS default-gz-level9 archive=app-1.log.gz expected=ratio<0.5 observed=compressed:1192 raw:41000 ratio:0.029 (control)
+PASS default-gz-unset archive=app-1.log.gz expected=ratio<0.5 observed=compressed:1191 raw:41000 ratio:0.029 (control)
+PASS default-gz-level42 archive=app-1.log.gz expected=ratio<0.5 observed=compressed:1191 raw:41000 ratio:0.029 (control)
+status-logger (count, message):
+     1 main WARN Unsupported gz compression level '42' (invalid compression level); using the default level.

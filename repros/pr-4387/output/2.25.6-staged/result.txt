@@ -1,0 +1,5 @@
+classpath log4j jars: log4j-api-2.25.6.jar log4j-taglib-2.25.6.jar 
+2026-11-27T05:33:37.991238Z main ERROR Log4j API could not find a logging provider.
+PASS escaped-name-and-value observed=<dl><dt><code>&lt;name&gt;</code></dt><dd><code>&lt;script&gt;alert(&apos;xss&apos;)&lt;/script&gt;</code></dd></dl>
+PASS control-plain-attribute observed=<dl><dt><code>user</code></dt><dd><code>alice</code></dd></dl>
+PASS null-toString-value observed=<dl><dt><code>odd</code></dt><dd><code>null</code></dd></dl>

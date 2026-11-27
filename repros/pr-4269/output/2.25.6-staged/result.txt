@@ -1,0 +1,10 @@
+java.version=1.8.0_504
+PASS control-hashmap-accepted observed=accepted:java.util.HashMap
+PASS control-file-rejected observed=rejected:InvalidObjectException Class is not allowed for deserialization: java.io.File
+PASS proxy-rejected observed=rejected:InvalidObjectException Proxy classes are not allowed for deserialization
+PASS proxy-rejected-even-when-named-in-allowlist observed=rejected:InvalidObjectException Proxy classes are not allowed for deserialization
+java.version=17.0.14
+PASS control-hashmap-accepted observed=accepted:java.util.HashMap
+PASS control-file-rejected observed=rejected:InvalidObjectException Class is not allowed for deserialization: java.io.File
+PASS proxy-rejected observed=rejected:InvalidObjectException Proxy classes are not allowed for deserialization
+PASS proxy-rejected-even-when-named-in-allowlist observed=rejected:InvalidObjectException Proxy classes are not allowed for deserialization

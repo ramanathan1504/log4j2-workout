@@ -1,0 +1,9 @@
+S1 #4439 restart in the same period version=pr-head-0b5cd23786 logged=322 found=322 lost=0
+  app.log       60 lines, first: 13:21:00.113 run=S1B seq=184
+  app.log.2026-11-17-13-19       39 lines, first: 13:19:50.321 run=S1A seq=0
+  app.log.2026-11-17-13-20      223 lines, first: 13:20:00.210 run=S1A seq=39
+S2 #4449 missed fire, file created by a scheduled roll version=pr-head-0b5cd23786 logged=322 found=322 lost=0
+  app.log       40 lines, first: 13:24:00.203 run=S2B seq=204
+  app.log.2026-11-17-13-21       38 lines, first: 13:21:50.386 run=S2A seq=0
+  app.log.2026-11-17-13-22       40 lines, first: 13:22:00.041 run=S2A seq=38
+  app.log.2026-11-17-13-23      204 lines, first: 13:23:08.380 run=S2B seq=0

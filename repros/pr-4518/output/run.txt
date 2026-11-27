@@ -1,0 +1,42 @@
+== release-2.26.1 on java 1.8.0_504
+2026-11-22T21:41:01.662Z main ERROR Unable to write to stream UDP:127.0.0.1:59277 for appender UDP
+org.apache.logging.log4j.core.appender.AppenderLoggingException: Error flushing stream UDP:127.0.0.1:59277
+Caused by: java.io.IOException: Message too long (sendto failed)
+	... 23 more
+
+2026-11-22T21:41:01.667Z main ERROR An exception occurred processing Appender UDP
+org.apache.logging.log4j.core.appender.AppenderLoggingException: Error flushing stream UDP:127.0.0.1:59277
+Caused by: java.io.IOException: Message too long (sendto failed)
+	... 23 more
+
+datagram 0: 75 bytes, starts '<134>1 2026-11-23T03:11:01.668+05:30 loc', ends '9952 - - small-after'
+datagram 1: none received
+== release-2.26.1 on java 17.0.14
+2026-11-22T21:41:04.301561Z main ERROR Unable to write to stream UDP:127.0.0.1:55338 for appender UDP
+org.apache.logging.log4j.core.appender.AppenderLoggingException: Error flushing stream UDP:127.0.0.1:55338
+Caused by: java.net.SocketException: Message too long
+	... 23 more
+
+2026-11-22T21:41:04.303409Z main ERROR An exception occurred processing Appender UDP
+org.apache.logging.log4j.core.appender.AppenderLoggingException: Error flushing stream UDP:127.0.0.1:55338
+Caused by: java.net.SocketException: Message too long
+	... 23 more
+
+datagram 0: 75 bytes, starts '<134>1 2026-11-23T03:11:04.303+05:30 loc', ends '9967 - - small-after'
+datagram 1: none received
+== 2.x-base on java 1.8.0_504
+2026-11-22T21:41:06.937Z main WARN UDP datagram of 80082 bytes exceeds the maximum of 65507 bytes and will be dropped
+datagram 0: 75 bytes, starts '<134>1 2026-11-23T03:11:06.938+05:30 loc', ends '9982 - - small-after'
+datagram 1: none received
+== 2.x-base on java 17.0.14
+2026-11-22T21:41:09.547216Z main WARN UDP datagram of 80082 bytes exceeds the maximum of 65507 bytes and will be dropped
+datagram 0: 75 bytes, starts '<134>1 2026-11-23T03:11:09.547+05:30 loc', ends '9997 - - small-after'
+datagram 1: none received
+== pr-head on java 1.8.0_504
+2026-11-22T21:41:12.197Z main WARN UDP datagram truncated from 80082 to 65507 bytes
+datagram 0: 65507 bytes, starts '<134>1 2026-11-23T03:11:12.187+05:30 loc', ends 'xxxxxxxxxxxxxxxxxxxx'
+datagram 1: 75 bytes, starts '<134>1 2026-11-23T03:11:12.198+05:30 loc', ends '0012 - - small-after'
+== pr-head on java 17.0.14
+2026-11-22T21:41:12.769990Z main WARN UDP datagram truncated from 80082 to 65507 bytes
+datagram 0: 65507 bytes, starts '<134>1 2026-11-23T03:11:12.755+05:30 loc', ends 'xxxxxxxxxxxxxxxxxxxx'
+datagram 1: 75 bytes, starts '<134>1 2026-11-23T03:11:12.771+05:30 loc', ends '0027 - - small-after'

@@ -47,6 +47,7 @@ cd log4j-pr-4448-repro
 | PR head e1a8f8154b | DirectWrite gz level 0 + `tempCompressedFilePattern` | ratio ≥ 0.9 | 1.001 | PASS |
 | PR head e1a8f8154b | gz level 9 / unset / 42 (controls) | ratio < 0.5 | 0.029 each | PASS |
 | PR head e1a8f8154b | StatusLogger | one warning for 42 | 1× `WARN Unsupported gz compression level '42' (invalid compression level); using the default level.` | PASS |
+| PR head e1a8f8154b, rerun 2026-11-17 (`output/pr-4448-head-2026-11-17`) | all eight cases | as above | identical to the PR head row above: five level-0 cases ratio 1.001 / 1.003, controls 0.029, one WARN for 42 | PASS ×8 |
 
 Full output in `output/<label>/result.txt`, with the archives.
 

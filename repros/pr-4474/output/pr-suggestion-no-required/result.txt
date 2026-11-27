@@ -1,0 +1,55 @@
+classpath: target/classes:/private/tmp/claude-501/-Users-ramanathan-apache-logging-log4j2/0fa88e64-4b45-4ed5-bcb8-90bd458b8db2/scratchpad/pr-4474/log4j-api/target/log4j-api-2.27.0-SNAPSHOT.jar:/private/tmp/claude-501/-Users-ramanathan-apache-logging-log4j2/0fa88e64-4b45-4ed5-bcb8-90bd458b8db2/scratchpad/pr-4474/log4j-core/target/log4j-core-2.27.0-SNAPSHOT.jar
+== S1
+2026-11-14T10:54:19.330937Z main ERROR Could not create plugin of type class org.apache.logging.log4j.core.util.KeyValuePair for element KeyValuePair: java.lang.IllegalArgumentException: A key must be provided for KeyValuePair
+java.lang.IllegalArgumentException: A key must be provided for KeyValuePair
+	at org.apache.logging.log4j.core.util.Assert.requireNonEmpty(Assert.java:95)
+	at org.apache.logging.log4j.core.util.KeyValuePair.<init>(KeyValuePair.java:48)
+	at org.apache.logging.log4j.core.util.KeyValuePair$Builder.build(KeyValuePair.java:98)
+	at org.apache.logging.log4j.core.util.KeyValuePair$Builder.build(KeyValuePair.java:78)
+	at org.apache.logging.log4j.core.config.plugins.util.PluginBuilder.build(PluginBuilder.java:124)
+	at org.apache.logging.log4j.core.config.AbstractConfiguration.createPluginObject(AbstractConfiguration.java:1250)
+	at org.apache.logging.log4j.core.config.AbstractConfiguration.createConfiguration(AbstractConfiguration.java:1169)
+	at org.apache.logging.log4j.core.config.AbstractConfiguration.createConfiguration(AbstractConfiguration.java:1161)
+	at org.apache.logging.log4j.core.config.AbstractConfiguration.createConfiguration(AbstractConfiguration.java:1161)
+	at org.apache.logging.log4j.core.config.AbstractConfiguration.createConfiguration(AbstractConfiguration.java:1161)
+	at org.apache.logging.log4j.core.config.AbstractConfiguration.doConfigure(AbstractConfiguration.java:734)
+	at org.apache.logging.log4j.core.config.AbstractConfiguration.initialize(AbstractConfiguration.java:271)
+	at org.apache.logging.log4j.core.config.AbstractConfiguration.start(AbstractConfiguration.java:324)
+	at org.apache.logging.log4j.core.LoggerContext.setConfiguration(LoggerContext.java:705)
+	at org.apache.logging.log4j.core.LoggerContext.reconfigure(LoggerContext.java:794)
+	at org.apache.logging.log4j.core.LoggerContext.reconfigure(LoggerContext.java:816)
+	at org.apache.logging.log4j.core.LoggerContext.start(LoggerContext.java:315)
+	at org.apache.logging.log4j.core.impl.Log4jContextFactory.getContext(Log4jContextFactory.java:272)
+	at org.apache.logging.log4j.core.impl.Log4jContextFactory.getContext(Log4jContextFactory.java:48)
+	at org.apache.logging.log4j.LogManager.getContext(LogManager.java:119)
+	at org.apache.logging.log4j.LogManager.getLogger(LogManager.java:624)
+	at Repro.main(Repro.java:18)
+
+2026-11-14T10:54:19.331818Z main ERROR Unable to invoke factory method in class org.apache.logging.log4j.core.util.KeyValuePair for element KeyValuePair: java.lang.IllegalStateException: No factory method found for class org.apache.logging.log4j.core.util.KeyValuePair
+java.lang.IllegalStateException: No factory method found for class org.apache.logging.log4j.core.util.KeyValuePair
+	at org.apache.logging.log4j.core.config.plugins.util.PluginBuilder.findFactoryMethod(PluginBuilder.java:268)
+	at org.apache.logging.log4j.core.config.plugins.util.PluginBuilder.build(PluginBuilder.java:140)
+	at org.apache.logging.log4j.core.config.AbstractConfiguration.createPluginObject(AbstractConfiguration.java:1250)
+	at org.apache.logging.log4j.core.config.AbstractConfiguration.createConfiguration(AbstractConfiguration.java:1169)
+	at org.apache.logging.log4j.core.config.AbstractConfiguration.createConfiguration(AbstractConfiguration.java:1161)
+	at org.apache.logging.log4j.core.config.AbstractConfiguration.createConfiguration(AbstractConfiguration.java:1161)
+	at org.apache.logging.log4j.core.config.AbstractConfiguration.createConfiguration(AbstractConfiguration.java:1161)
+	at org.apache.logging.log4j.core.config.AbstractConfiguration.doConfigure(AbstractConfiguration.java:734)
+	at org.apache.logging.log4j.core.config.AbstractConfiguration.initialize(AbstractConfiguration.java:271)
+	at org.apache.logging.log4j.core.config.AbstractConfiguration.start(AbstractConfiguration.java:324)
+	at org.apache.logging.log4j.core.LoggerContext.setConfiguration(LoggerContext.java:705)
+	at org.apache.logging.log4j.core.LoggerContext.reconfigure(LoggerContext.java:794)
+	at org.apache.logging.log4j.core.LoggerContext.reconfigure(LoggerContext.java:816)
+	at org.apache.logging.log4j.core.LoggerContext.start(LoggerContext.java:315)
+	at org.apache.logging.log4j.core.impl.Log4jContextFactory.getContext(Log4jContextFactory.java:272)
+	at org.apache.logging.log4j.core.impl.Log4jContextFactory.getContext(Log4jContextFactory.java:48)
+	at org.apache.logging.log4j.LogManager.getContext(LogManager.java:119)
+	at org.apache.logging.log4j.LogManager.getLogger(LogManager.java:624)
+	at Repro.main(Repro.java:18)
+
+2026-11-14T10:54:19.334696Z main ERROR Null object returned for KeyValuePair in GelfLayout.
+{"version":"1.1","host":"myhost","timestamp":T,"level":6,"_thread":"main","_logger":"S1","_good":"kept","short_message":"hello"}== S2
+S2 key=null -> java.lang.IllegalArgumentException: A key must be provided for KeyValuePair
+S2 key="" -> java.lang.IllegalArgumentException: A key must be provided for KeyValuePair
+== S3
+S3 newKeyValuePair(null) -> java.lang.IllegalArgumentException: A key must be provided for KeyValuePair
